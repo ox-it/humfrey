@@ -216,7 +216,7 @@ Supported ranges are:
         response.status_code = status_code
         return response
 
-    @renderer(format="json", mimetypes=('application/json',), name='JSON')
+    #@renderer(format="json", mimetypes=('application/json',), name='JSON')
     def render_json(self, request, context, template_name):
         callback = request.GET.get('callback', request.GET.get('jsonp', None))
         context = simplify_value(context)
@@ -229,7 +229,7 @@ Supported ranges are:
 
         return HttpResponse(content, mimetype=mimetype)
 
-    @renderer(format="js", mimetypes=('text/javascript','application/javascript',), name='JavaScript')
+    #@renderer(format="js", mimetypes=('text/javascript','application/javascript',), name='JavaScript')
     def render_js(self, request, context, template_name):
         callback = request.GET.get('callback', request.GET.get('jsonp', 'callback'))
         content = simplejson.dumps(simplify_value(context))
@@ -244,7 +244,7 @@ Supported ranges are:
                                   context, context_instance=RequestContext(request),
                                   mimetype='text/html')
 
-    @renderer(format="xml", mimetypes=('application/xml', 'text/xml'), name='XML')
+    #@renderer(format="xml", mimetypes=('application/xml', 'text/xml'), name='XML')
     def render_xml(self, request, context, template_name):
         context = simplify_value(context)
         return HttpResponse(etree.tostring(serialize_to_xml(context), encoding='UTF-8'), mimetype="application/xml")

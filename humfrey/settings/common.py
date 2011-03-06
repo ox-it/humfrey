@@ -94,3 +94,6 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+QUERY_LOG_FILENAME = config.get('main', 'query_log')
+QUERY_LOG_FILENAME = os.path.join(ROOT, QUERY_LOG_FILENAME) if QUERY_LOG_FILENAME else None

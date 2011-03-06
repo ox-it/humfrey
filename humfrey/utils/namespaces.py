@@ -22,6 +22,7 @@ NS = {
     'owl': 'http://www.w3.org/2002/07/owl#',
     'cc': 'http://creativecommons.org/ns#',
     'oo': 'http://purl.org/openorg/',
+    'ov': 'http://open.vocab.org/terms/',
 
     # Function namespaces
     'fn': 'http://www.w3.org/2005/xpath-functions#',

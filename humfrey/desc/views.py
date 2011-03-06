@@ -145,21 +145,20 @@ class IdView(EndpointView):
         return HttpResponseSeeOther(context['description_url'])
 
 class DocView(EndpointView, RDFView):
-    def get_description_url(self, request, uri):
+    def get_description_url(self, request, uri, format=None):
         uri = urlparse(uri)
-        accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
-        renderers = MediaType.resolve(accepts, self.FORMATS_BY_MIMETYPE)
-        if not renderers:
-            format = None
-        else:
-            format = renderers[0].format
+        if request and not format:
+            accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
+            renderers = MediaType.resolve(accepts, self.FORMATS_BY_MIMETYPE)
+            if renderers:
+                format = renderers[0].format
         
         if uri.netloc in settings.SERVED_DOMAINS and uri.scheme == 'http' and uri.path.startswith('/id/') and not uri.query and not uri.params:
             description_url = '%s://%s/doc/%s' % (uri.scheme, uri.netloc, uri.path[4:])
             if format:
                 description_url += '.' + format
         else:
-            params = {'uri': uri}
+            params = {'uri': uri.geturl()}
             if format:
                 params['format'] = format
             description_url = '/doc/?' + urllib.urlencode(params)
@@ -190,21 +189,55 @@ class DocView(EndpointView, RDFView):
         uri = rdflib.URIRef(uri)
 
         graph = self.endpoint.describe(uri)
+        subject = Resource(uri, graph, self.endpoint)
+
         if False and with_fragments:
             graph += self.endpoint.query('DESCRIBE ?s WHERE { ?s ?p ?o . FILTER (regex(?s, "^%s#")) }' % uri)
 
+        doc_uri = rdflib.URIRef(self.get_description_url(None, uri))
+        
+        licenses, datasets = set(), set()
+        for graph_name in graph.subjects(NS['ov'].describes, uri):
+            graph.add((doc_uri, NS['dcterms'].source, graph_name))
+            licenses.update(graph.objects(graph_name, NS['dcterms'].license))
+            datasets.update(graph.objects(graph_name, NS['void'].inDataset))
+            
+        if len(licenses) == 1:
+            for license in licenses:
+                graph.add((doc_uri, NS['dcterms'].license, license))
+
         if not graph:
             raise Http404
+            
+        graph.add((doc_uri, NS['foaf'].primaryTopic, uri))
+        graph.add((doc_uri, NS['rdf'].type, NS['foaf'].Document))
+        graph.add((doc_uri, NS['dcterms']['title'], rdflib.Literal('Description of %s' % subject.label)))
+        
+        
+        formats = sorted([(r, self.get_description_url(None, uri, r.format)) for r in self.FORMATS.values()], key=lambda x:x[0].name)
+        for renderer, url in formats:
+            url = rdflib.URIRef(url)
+            map(graph.add, [
+                (doc_uri, NS['dcterms'].hasFormat, url),
+                (url, NS['dcterms']['title'], rdflib.Literal('%s description of %s' % (renderer.name, subject.label))),
+            ] + [(url, NS['dc']['format'], rdflib.Literal(mimetype)) for mimetype in renderer.mimetypes]
+            )
+             
+            
 
         return {
             'uri': uri,
             'format': format,
             'graph': graph,
-            'subject': Resource(uri, graph, self.endpoint)
+            'subject': subject,
+            'licenses': (Resource(uri, graph, self.endpoint) for uri in licenses),
+            'datasets': (Resource(uri, graph, self.endpoint) for uri in datasets),
+            'formats': formats,
         }
 
     @cached_view
     def handle_GET(self, request, context):
+        print context['formats']
         if context['format']:
             try:
                 return self.render_to_format(request, context, 'doc', context['format'])
@@ -253,5 +286,18 @@ class SparqlView(EndpointView, RDFView, SRXView):
         return self.render(request, context, 'sparql')
     handle_POST = handle_GET
         
-
+#class GraphView(BaseView):
+#    def handle_GET(self, request, context):
+#        req = urllib2.Request(settings.GRAPH_URL + '?' + urllib.urlencode({'graph': request.build_absolute_uri()}))
+#        for header in request.META:
+#            if header.startswith('
+#            req.headers[header] = request.headers[header]
+#            
+#        try:
+#            resp = urllib2.urlopen(req)
+#        except urllib2.HTTPError, e:
+#            resp = e
+#        response = HttpResponse(response, status_code=e.code)
+#        
+#        return response
 

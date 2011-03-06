@@ -6,6 +6,7 @@ try:
 except ImportError:
     from namedtuple import namedtuple
 from collections import defaultdict
+from django.conf import settings
 
 from .namespaces import NS
 from .resource import Resource
@@ -25,11 +26,12 @@ class Endpoint(object):
         self._cache = defaultdict(dict)
 
     def query(self, query, timeout=None, common_prefixes = True):
-        f = open('/srv/dataox/log/query.log', 'a')
-        f.write(str(datetime.now()) + ' ')
-        f.write(repr(query))
-        f.write('\n')
-        f.close()
+        if settings.QUERY_LOG_FILENAME:
+            f = open(settings.QUERY_LOG_FILENAME, 'a')
+            f.write(str(datetime.now()) + ' ')
+            f.write(repr(query))
+            f.write('\n')
+            f.close()
         if common_prefixes:
             query = self._namespaces + query
         request = urllib2.Request(self._url, urllib.urlencode({
