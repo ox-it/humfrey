@@ -189,7 +189,9 @@ register(Tel, 'v:Tel', 'v:Voice', 'v:Fax')
 class Class(BaseResource):
     def things_of_type(self):
         graph = self._endpoint.query("DESCRIBE ?uri WHERE { ?uri a %s } LIMIT 20" % self._identifier.n3())
-        return [Resource(s, graph, self._endpoint) for s in graph.subjects(NS['rdf'].type, self._identifier)]
+        resources = [Resource(s, graph, self._endpoint) for s in graph.subjects(NS['rdf'].type, self._identifier)]
+        resources.sort(key=lambda r:r.label)
+        return resources
 register(Class, 'rdfs:Class', 'owl:Class')
 
 class Image(BaseResource):
