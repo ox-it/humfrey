@@ -232,8 +232,8 @@ class DocView(EndpointView, RDFView):
             'format': format,
             'graph': graph,
             'subject': subject,
-            'licenses': (Resource(uri, graph, self.endpoint) for uri in licenses),
-            'datasets': (Resource(uri, graph, self.endpoint) for uri in datasets),
+            'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
+            'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'formats': formats,
             'show_follow_link': show_follow_link,
         }
