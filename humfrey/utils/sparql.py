@@ -1,4 +1,4 @@
-import urllib2, urllib, rdflib, itertools
+import urllib2, urllib, rdflib, itertools, re
 from datetime import datetime
 from lxml import etree
 try:
@@ -121,7 +121,7 @@ class Endpoint(object):
             #raise Exception(map(etree.tostring, xml.xpath('srx:boolean', namespaces=NS)))
             return xml.xpath('srx:boolean', namespaces=NS)[0].text.strip() == 'true'
 
-        fields = [e.attrib['name'] for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
+        fields = [re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', e.attrib['name'])) for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
         empty_results_dict = dict((f, None) for f in fields)
         Result = namedtuple('Result', fields)
         
@@ -132,7 +132,7 @@ class Endpoint(object):
         for result_xml in xml.xpath('srx:results/srx:result', namespaces=NS):
             result = empty_results_dict.copy()
             for binding in result_xml.xpath('srx:binding', namespaces=NS):
-                result[binding.attrib['name']] = self.parse_binding(binding[0], g)
+                result[re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', binding.attrib['name']))] = self.parse_binding(binding[0], g)
             results.append(Result(**result))
 
         return results

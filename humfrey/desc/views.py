@@ -161,7 +161,8 @@ class DocView(EndpointView, RDFView):
             params = {'uri': uri.geturl()}
             if format:
                 params['format'] = format
-            description_url = '/doc/?' + urllib.urlencode(params)
+            # FIXME!
+            description_url = 'http://%s/doc/?%s' % ('data.ox.ac.uk', urllib.urlencode(params))
 
         return description_url
 

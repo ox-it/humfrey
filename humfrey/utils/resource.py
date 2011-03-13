@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from urllib import urlencode, quote
-import urllib2, base64, re
+import urllib2, base64, re, hashlib
 from urlparse import urlparse
 from xml.sax.saxutils import escape
 
@@ -25,7 +25,7 @@ def register(cls, *types):
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
-        key = base64.b64encode('resource-metadata:%s:%s' % (f.__name__, self._identifier))
+        key = hashlib.sha1('resource-metadata:%s:%s' % (f.__name__, self._identifier)).hexdigest()
         value = cache.get(key)
         if value is None:
             value = f(self, *args, **kwargs)
@@ -38,10 +38,10 @@ def is_resource(r):
 
 class Resource(object):
     def __new__(cls, identifier, graph, endpoint):
-        classes = [(-1, BaseResource)]
+        classes = set([(-1, BaseResource)])
         for t in graph.objects(identifier, NS['rdf'].type):
             if t in TYPE_REGISTRY:
-                classes.append((getattr(TYPE_REGISTRY[t], '_priority', 0), TYPE_REGISTRY[t]))
+                classes.add((getattr(TYPE_REGISTRY[t], '_priority', 0), TYPE_REGISTRY[t]))
         classes = tuple(b for a,b in sorted(classes, reverse=True))
         cls = type(type(identifier).__name__ + cls.__name__, classes + (type(identifier),), {})
         resource = cls(identifier, graph, endpoint)
@@ -123,6 +123,8 @@ class BaseResource(object):
             inverse = False
         if ':' not in name:
             name = name.replace('_', ':', 1)
+        if ':' not in name:
+            return None
         prefix, local = name.split(':', 1)
         try:
             uri = NS[prefix][local]
@@ -151,6 +153,8 @@ class BaseResource(object):
             inverse = False
         if ':' not in name:
             name = name.replace('_', ':', 1)
+        if ':' not in name:
+            return None
         prefix, local = name.split(':', 1)
         try:
             uri = NS[prefix][local]
@@ -211,7 +215,7 @@ class Account(object):
             return mark_safe('<a href="%s">%s at %s</a>' % tuple(map(escape, (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountServiceHomepage.uri))))
     
     _WIDGET_TEMPLATES = {
-        'http://www.twitter.com/': 'widgets/twitter.html',
+        URIRef('http://www.twitter.com/'): 'widgets/twitter.html',
     }
     def widget_template(self):
         return self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)
@@ -262,7 +266,7 @@ class Image(object):
             response = urllib2.urlopen(request)
             if 'content-type' not in response.headers:
                 return False
-            return response.headers['content-type'] in ('image/jpeg', 'image/png')
+            return response.headers['content-type'] in ('image/jpeg', 'image/png', 'image/gif')
         except:
             return False
         return True
@@ -294,13 +298,16 @@ class Dataset(object):
             OPTIONAL { ?t rdfs:label ?label }
         }"""
     def used_classes(self):
-    	query = self._USED_CLASSES_QUERY % (
-    	    ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
-    	)
-    	graph = self._endpoint.query(query)
-    	classes = [Resource(c, graph, self._endpoint) for c in set(graph.subjects())]
-    	classes.sort(key=lambda c:c.label)
-    	return classes
+        query = self._USED_CLASSES_QUERY % (
+            ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
+        )
+        try:
+            graph = self._endpoint.query(query)
+        except urllib2.HTTPError:
+            return []
+        classes = [Resource(c, graph, self._endpoint) for c in set(graph.subjects())]
+        classes.sort(key=lambda c:c.label)
+        return classes
     		
     _USED_PREDICATES_QUERY = """
         CONSTRUCT { ?p a rdfs:Property ; rdfs:label ?label } WHERE {
@@ -309,12 +316,34 @@ class Dataset(object):
             OPTIONAL { ?p rdfs:label ?label }
         }"""
     def used_predicates(self):
-    	query = self._USED_PREDICATES_QUERY % (
-    	    ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
-    	)
-    	graph = self._endpoint.query(query)
-    	predicates = [Resource(p, graph, self._endpoint) for p in set(graph.subjects())]
-    	predicates.sort(key=lambda p:p.label)
-    	return predicates 
+        query = self._USED_PREDICATES_QUERY % (
+            ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
+        )
+        try:
+            graph = self._endpoint.query(query)
+        except urllib2.HTTPError:
+            return []
+        predicates = [Resource(p, graph, self._endpoint) for p in set(graph.subjects())]
+        predicates.sort(key=lambda p:p.label)
+        return predicates 
     		
 register(Dataset, 'void:Dataset')
+
+class License(object):
+    class C(set):
+        def __getattr__(self, name):
+            if ':' not in name:
+                name = name.replace('_', ':', 1)
+            if ':' not in name:
+                return None
+            prefix, local = name.split(':', 1)
+            try:
+                uri = NS[prefix][local]
+            except KeyError:
+                return False
+            return uri in self
+
+    @property
+    def requires(self):
+        return License.C(self._graph.objects(self._identifier, NS['cc'].requires))
+register(License, 'cc:License')
