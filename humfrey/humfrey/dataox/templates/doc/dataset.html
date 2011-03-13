@@ -38,6 +38,17 @@
         <td>{{ subject.dcterms_license|node }}</td>
       </tr>
       <tr class="row-even">
+        <th>Attribution:</th>
+        <td>
+          {% if subject.cc_attributionName and subject.cc_attributionURL %}
+            "{{ subject.cc_attributionName }} ({% for url in subject.all.cc_attributionURL %}<a href="{{ url.uri }}">{{ url.uri }}</a>{% if not forloop.last %}, {% endif %}{% endfor %})"
+            <em>({% if subject.dcterms_license.requires.cc_Attribution %}attribution required{% else %}attribution encouraged{% endif %})</em>
+          {% else %}
+            <em>None specified; <a href="{{ subject.oo_contact.foaf_mbox.uri }}">contact the maintainer for clarification</a>.</em>
+          {% endif %}
+        </td>
+      </tr>
+      <tr class="row-even">
         <th>Created:</th>
         <td>{{ subject.dcterms_created|node|default:"<em>unknown</em>" }}</td>
       </tr>
@@ -166,6 +177,10 @@
   <table class="description">
     <tbody>
       <tr class="row-odd">
+        <th>Dataset homepage:</th>
+        <td>{{ subject.foaf_homepage|node|default:"<em>None</em>" }}</td>
+      </tr>
+      <tr class="row-even">
         <th>Source data:</th>
         <td>
           {% for source in subject.all.dcterms_source %}
@@ -179,7 +194,7 @@
           {% endfor %}
         </td>
       </tr>
-      <tr class="row-even">
+      <tr class="row-odd">
         <th>As RDF:</th>
         <td>
          {% for document in subject.all.void_inDataset_inv %}

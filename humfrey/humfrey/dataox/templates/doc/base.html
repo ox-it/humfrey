@@ -92,12 +92,15 @@
     {% block doc_sidebar %}
     <aside class="sidebar">
       {% if subject.foaf_img %}
-        <img class="depiction" src="{{ subject.foaf_img.uri }}" alt=""/>
-        {% else %}
-          {% if subject.foaf_depiction %}
-            <img class="depiction" src="{{ subject.foaf_depiction.uri }}" alt=""/>
-          {% endif %}
+        <a href="{{ subject.foaf_img.doc_url }}">
+          <img class="depiction" src="{% url resized-image %}?url={{ subject.foaf_img.uri|urlencode }}&amp;width=200" alt=""/>
+        </a>
       {% endif %}
+      {% for depiction in subject.all.foaf_depiction %}
+        <a href="{{ depiction.doc_url }}">
+          <img class="depiction" src="{% url resized-image %}?url={{ depiction.uri|urlencode }}&amp;width=200" alt=""/>
+        </a>
+      {% endfor %}
       
       {% if subject.geo_lat and subject.geo_long %}
         {% include "widgets/map.html" %}
