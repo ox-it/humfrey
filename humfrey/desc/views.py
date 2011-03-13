@@ -226,7 +226,6 @@ class DocView(EndpointView, RDFView):
             )
              
             
-
         return {
             'uri': uri,
             'format': format,
@@ -240,14 +239,14 @@ class DocView(EndpointView, RDFView):
 
     @cached_view
     def handle_GET(self, request, context):
-        print context['formats']
         if context['format']:
             try:
-                return self.render_to_format(request, context, 'doc', context['format'])
+                return self.render_to_format(request, context, context['subject'].template_name, context['format'])
             except KeyError:
                 raise Http404
         else:
-            return self.render(request, context, 'doc')
+            return self.render(request, context, context['subject'].template_name)
+
 
 class SparqlView(EndpointView, RDFView, SRXView):    
     def perform_query(self, query, common_prefixes):
