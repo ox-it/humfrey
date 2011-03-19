@@ -45,6 +45,15 @@
               What links here
             </a>
           </li>
+          {% if subject.rdf_type %}
+            <li>
+              Other things of type:
+              {% for type in subject.all.rdf_type %}  
+                <a href="{% url sparql %}?query={{ "SELECT ?subject WHERE {  ?subject a <"|urlencode }}{{ type.uri|urlencode }}{{ "> } LIMIT 200"|urlencode }}">
+                  {{ type.label }}</a>{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </li>
+          {% endif %}
           <li><a href="http://sig.ma/search?q={{ subject.uri|urlencode }}">View at sig.ma</a></li>
         </ul>
         
@@ -102,15 +111,19 @@
         </a>
       {% endfor %}
       
+      {% for widget_template in subject.widget_templates %}
+        {% include widget_template %}
+      {% endfor %}
+      
       {% if subject.geo_lat and subject.geo_long %}
         {% include "widgets/map.html" %}
       {% endif %}
       
-      {% if subject.foaf_account.widget_template %}
+      {% for widget_template in subject.foaf_account.widget_templates %}
         {% with subject.foaf_account as account %}
-          {% include subject.foaf_account.widget_template %}
+          {% include widget_template %}
         {% endwith %}
-      {% endif %}
+      {% endfor %}
       
       {% for thing in subject.things_of_type %}
         {% if forloop.first %}
