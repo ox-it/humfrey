@@ -355,10 +355,8 @@ class CollegeHall(object):
     def _augment(self):
         self._graph += self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
         super(CollegeHall, self)._augment()
-        print self.fhs_results()
         
     def fhs_results(self):
-    	print list(self._graph.subjects(NS['fhs'].institution, self._identifier))
     	data = self._graph.subjects(NS['fhs'].institution, self._identifier)
     	data = (Resource(datum, self._graph, self._endpoint) for datum in data)
     	data = filter(lambda datum: datum.fhs_norringtonScore, data) 
