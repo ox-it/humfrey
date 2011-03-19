@@ -173,7 +173,7 @@ class DocView(EndpointView, RDFView):
             uri = request.GET['uri']
             format = request.GET.get('format')
             with_fragments = False
-            show_follow_link = True
+            show_follow_link, no_index = True, True
         else:
             uri = urlparse(request.build_absolute_uri())
             if request.path.startswith('/doc/'):
@@ -188,7 +188,7 @@ class DocView(EndpointView, RDFView):
             else:
                 format = None
             with_fragments = True
-            show_follow_link = False
+            show_follow_link, no_index = False, False
         uri = rdflib.URIRef(uri)
 
         graph = self.endpoint.describe(uri)
@@ -236,6 +236,7 @@ class DocView(EndpointView, RDFView):
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'formats': formats,
             'show_follow_link': show_follow_link,
+            'no_index': no_index,
         }
 
     @cached_view
