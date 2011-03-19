@@ -60,6 +60,9 @@ class BaseResource(object):
     
     def _augment(self):
     	pass
+    	
+    def widget_templates(self):
+    	return []    			
 
     def __unicode__(self):
         return unicode(self._identifier)
@@ -217,8 +220,8 @@ class Account(object):
     _WIDGET_TEMPLATES = {
         URIRef('http://www.twitter.com/'): 'widgets/twitter.html',
     }
-    def widget_template(self):
-        return self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)
+    def widget_templates(self):
+        return [self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)] + super(Account, self).widget_templates()
         
 register(Account, 'foaf:OnlineAccount')
 
@@ -347,3 +350,27 @@ class License(object):
     def requires(self):
         return License.C(self._graph.objects(self._identifier, NS['cc'].requires))
 register(License, 'cc:License')
+
+class CollegeHall(object):
+    def _augment(self):
+        self._graph += self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
+        super(CollegeHall, self)._augment()
+        print self.fhs_results()
+        
+    def fhs_results(self):
+    	print list(self._graph.subjects(NS['fhs'].institution, self._identifier))
+    	data = self._graph.subjects(NS['fhs'].institution, self._identifier)
+    	data = (Resource(datum, self._graph, self._endpoint) for datum in data)
+    	data = filter(lambda datum: datum.fhs_norringtonScore, data) 
+    	data = sorted(data, key=lambda datum:datum.sdmxdim_timePeriod)
+    	for datum in data:
+    		datum.fhs_two_one = datum.get('fhs:two-one')
+    		datum.fhs_two_two = datum.get('fhs:two-two')
+    		datum.fhs_norringtonScore = '%.1f%%' % (datum.get('fhs:norringtonScore').toPython() * 100)
+    	return data
+    	
+
+    def widget_templates(self):
+        return ['widgets/norrington.html'] + super(CollegeHall, self).widget_templates()
+        
+register(CollegeHall, 'oxp:Hall', 'oxp:College')
