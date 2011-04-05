@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from urllib import urlencode, quote
-import urllib2, base64, re, hashlib, itertools
+import urllib2, base64, re, hashlib, random, itertools
 from urlparse import urlparse
 from xml.sax.saxutils import escape
 
@@ -25,7 +25,8 @@ def register(cls, *types):
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
-        key = hashlib.sha1('resource-metadata:%s:%s' % (f.__name__, self._identifier)).hexdigest()
+        
+        key = hashlib.sha1('resource-metadata:%s:%s' % (f, self._identifier)).hexdigest()
         value = cache.get(key)
         if value is None:
             value = f(self, *args, **kwargs)
@@ -85,9 +86,10 @@ class BaseResource(object):
         if isinstance(self._identifier, BNode):
             return self.label
         else:
-        	return mark_safe(u'<a href="%s">%s</a>' % (escape(self.doc_url), escape(self.label)))
+            return mark_safe(u'<a href="%s">%s</a>' % (escape(self.doc_url), escape(self.label)))
 
     @property    
+    @cache_per_identifier
     def doc_url(self):
         uri = urlparse(self._identifier)
         if uri.netloc in settings.SERVED_DOMAINS and uri.path.startswith('/id/'):
@@ -323,6 +325,12 @@ class Dataset(object):
     			return self._STARS[o]
     	else:
     		return None
+
+    @property
+    def graph_names(self):
+        if not hasattr(self, '_graph_names'):
+            self._graph_names = list(self._graph.subjects(NS['void'].inDataset, self._identifier))
+        return self._graph_names
     
     _USED_CLASSES_QUERY = """
          CONSTRUCT { ?t a rdfs:Class ; rdfs:label ?label } WHERE {
@@ -332,7 +340,7 @@ class Dataset(object):
         }"""
     def used_classes(self):
         query = self._USED_CLASSES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
+            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
         )
         try:
             graph = self._endpoint.query(query)
@@ -350,7 +358,7 @@ class Dataset(object):
         }"""
     def used_predicates(self):
         query = self._USED_PREDICATES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in self._graph.subjects(NS['void'].inDataset, self._identifier))
+            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
         )
         try:
             graph = self._endpoint.query(query)
