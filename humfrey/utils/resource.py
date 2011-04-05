@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from urllib import urlencode, quote
-import urllib2, base64, re, hashlib
+import urllib2, base64, re, hashlib, itertools
 from urlparse import urlparse
 from xml.sax.saxutils import escape
 
@@ -56,10 +56,13 @@ class BaseResource(object):
 
     def __init__(self, identifier, graph, endpoint):
         self._identifier, self._graph, self._endpoint = identifier, graph, endpoint
-        self._augment()
+        for cls in type(self).__mro__:
+        	if '_augment' in cls.__dict__:
+        	    self._graph += cls._augment(self)
+        #self._augment()
     
     def _augment(self):
-    	pass
+    	return []
     	
     def widget_templates(self):
     	return []    			
@@ -134,12 +137,15 @@ class BaseResource(object):
         except KeyError:
             return None
         if inverse:
-            value = self._graph.value(None, uri, self._identifier)
+            values = list(self._graph.subjects(uri, self._identifier))
         else:
-            value = self._graph.value(self._identifier, uri, None)
-        if is_resource(value):
-            value = Resource(value, self._graph, self._endpoint)
-        return value
+            values = list(self._graph.objects(self._identifier, uri))
+        if not values:
+        	return None
+        if is_resource(values[0]):
+            return Resource(values[0], self._graph, self._endpoint)
+        else:
+        	return self.localised(values)[0]
     __getattr__ = get
     
     def get_one_of(self, *qnames):
@@ -177,6 +183,8 @@ class BaseResource(object):
             if isinstance(o, (URIRef, BNode)):
                 o = Resource(o, self._graph, self._endpoint)
             data[p].add(o)
+        for p in data:
+        	data[p] = self.localised(data[p])
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
@@ -184,22 +192,35 @@ class BaseResource(object):
     @property
     @cache_per_identifier
     def label(self):
-        label = self.get_one_of(*self._LABEL_PROPERTIES)
-        if label is not None:
-            return label
-        self._graph += self._endpoint.describe(self._identifier)
-        label = self.get_one_of(*self._LABEL_PROPERTIES)
-        if label is not None:
-            return label
-        elif isinstance(self._identifier, URIRef):
-            for prefix, uri in NS.iteritems():
-                if self._identifier.startswith(uri):
-                    localpart = self._identifier[len(uri):]
-                    if LOCALPART_RE.match(localpart):
-                        return '%s:%s' % (prefix, localpart)
-            return self._identifier
-        else:
-            return '<unnamed>'
+        labels = list(itertools.chain.from_iterable(self.get_all(p) for p in self._LABEL_PROPERTIES))
+        if not labels:
+            self._graph += self._endpoint.describe(self._identifier)
+            labels = list(itertools.chain.from_iterable(self.get_all(p) for p in self._LABEL_PROPERTIES))
+            if not labels:
+                if isinstance(self._identifier, URIRef):
+                    return self.label2
+                else:
+                    return '<unnamed>'
+    	
+    	return self.localised(labels)[0]
+    	
+    def localised(self, values):
+        def f(v):
+            if isinstance(v, (URIRef, BNode)):
+                return -4
+            else:
+                return {'en-GB': -3, 'en-US': -2, 'en': -1}.get(v.language, 0)
+        return sorted(values, key=f)
+
+    @property
+    @cache_per_identifier
+    def label2(self):
+        for prefix, uri in NS.iteritems():
+            if self._identifier.startswith(uri):
+                localpart = self._identifier[len(uri):]
+                if LOCALPART_RE.match(localpart):
+                    return '%s:%s' % (prefix, localpart)
+        return self._identifier
 
     @property
     @cache_per_identifier
@@ -208,6 +229,14 @@ class BaseResource(object):
 
     _DESCRIPTION_PROPERTIES = ('dcterms:description', 'dc:description', 'rdfs:comment')
     description = property(lambda self:self.get_one_of(*self._DESCRIPTION_PROPERTIES))
+    
+    def sorted_subjects(self, ps, os):
+    	ps = ps if isinstance(ps, tuple) else (ps,) 
+    	os = os if isinstance(os, tuple) else (os,) 
+        subjects = set(itertools.chain.from_iterable(self._graph.subjects(p, o) for (p, o) in itertools.product(ps, os)))
+        subjects = (Resource(s, self._graph, self._endpoint) for s in subjects)
+        subjects = sorted(subjects, key=lambda s: s.label)
+        return subjects
 
 class Account(object):
     def render(self):
@@ -279,10 +308,11 @@ class Dataset(object):
     _template_name = 'doc/dataset'
 	
     def _augment(self):
-        self._graph += self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:source ?s }" % self._identifier.n3())
-        self._graph += self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:license ?s }" % self._identifier.n3())
-        self._graph += self._endpoint.query("DESCRIBE ?s WHERE { ?s void:inDataset %s }" % self._identifier.n3())
-        super(Dataset, self)._augment()
+    	return itertools.chain(
+            self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:source ?s }" % self._identifier.n3()),
+            self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:license ?s }" % self._identifier.n3()),
+            self._endpoint.query("DESCRIBE ?s WHERE { ?s void:inDataset %s }" % self._identifier.n3()),
+        )
 	
     _STARS = dict((NS['oo']['opendata-%s-star' % i], ('stars/data-badge-%s.png' % i, '%s-star dataset' % i)) for i in range(6)) 
 	
@@ -353,8 +383,7 @@ register(License, 'cc:License')
 
 class CollegeHall(object):
     def _augment(self):
-        self._graph += self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
-        super(CollegeHall, self)._augment()
+        return self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
         
     def fhs_results(self):
     	data = self._graph.subjects(NS['fhs'].institution, self._identifier)
@@ -372,3 +401,20 @@ class CollegeHall(object):
         return ['widgets/norrington.html'] + super(CollegeHall, self).widget_templates()
         
 register(CollegeHall, 'oxp:Hall', 'oxp:College')
+
+class Ontology(object):
+    _template_name = 'doc/ontology'
+    
+    @cache_per_identifier
+    def _augment(self):
+        return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())
+    @cache_per_identifier
+    def defined_classes(self):
+    	classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
+    	return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+    @cache_per_identifier
+    def defined_properties(self):
+    	properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
+    	return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+	
+register(Ontology, 'owl:Ontology')
