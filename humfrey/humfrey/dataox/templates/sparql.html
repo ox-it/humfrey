@@ -25,7 +25,7 @@
 {% for result in results %}
           <tr class="row-{% cycle "odd" "even" %}">
 {% for cell in result %}
-            <td>{{ cell|node|default:"" }}</td>
+            <td>{{ cell|node|default_if_none:"" }}</td>
 {% endfor %}
           </tr>
 {% empty %}
