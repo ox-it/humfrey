@@ -200,7 +200,7 @@ class DocView(EndpointView, RDFView):
         doc_uri = rdflib.URIRef(self.get_description_url(None, uri))
         
         licenses, datasets = set(), set()
-        for graph_name in graph.subjects(NS['ov'].describes, uri):
+        for graph_name in graph.subjects(NS['ov'].describes):
             graph.add((doc_uri, NS['dcterms'].source, graph_name))
             licenses.update(graph.objects(graph_name, NS['dcterms'].license))
             datasets.update(graph.objects(graph_name, NS['void'].inDataset))
