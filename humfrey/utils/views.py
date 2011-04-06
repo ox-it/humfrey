@@ -1,5 +1,5 @@
 from inspect import isfunction
-import logging, itertools, pickle, base64
+import logging, itertools, pickle, base64, hashlib
 from datetime import datetime, date
 
 import simplejson
@@ -123,7 +123,7 @@ class BaseView(object):
             request.renderers = self.get_renderers(request)
             if request.renderers and request.renderers[0].format == 'html' and \
                getattr(method, 'cached', False) and request.method in ('GET', 'HEAD') and not request.GET:
-                key = base64.b64encode('pickled-response:%s' % request.build_absolute_uri())
+                key = hashlib.sha1('pickled-response:%s' % request.build_absolute_uri()).hexdigest()
                 pickled_response = cache.get(key)
                 if pickled_response is not None:
                     try:
