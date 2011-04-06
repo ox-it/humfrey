@@ -41,7 +41,7 @@
       <td>
         {{ class.label }}
       </td>
-      <td>{{ class.rdfs_comment }}</td>
+      <td>{{ class|property:"skos:definition,rdfs:comment"|default_if_none:"" }}</td>
     </tr>
 {% endfor %}
   </tbody>
@@ -76,7 +76,7 @@
             {{ p|node2 }}{% if not forloop.last %}, {% endif %}
           {% endfor %}
         {% endif %}
-        {% if property.owl_equivalentProperty %}<br/> <abbr title="equivalent property">&#8838;</abbr>
+        {% if property.owl_equivalentProperty %}<br/> <abbr title="equivalent property">&#8781;</abbr>
           {% for p in property.all.owl_equivalentProperty %}
             {{ p|node2 }}{% if not forloop.last %}, {% endif %}
           {% endfor %}
@@ -85,7 +85,7 @@
       <td>
         {{ property.label|default_if_none:"" }}
       </td>
-      <td>{{ property.rdfs_comment|default_if_none:"" }}</td>
+      <td>{{ property|property:"skos:definition,rdfs:comment"|default_if_none:"" }}</td>
     </tr>
 {% endfor %}
   </tbody>
