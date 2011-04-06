@@ -151,6 +151,5 @@ class Endpoint(object):
         if isinstance(obj, tuple):
             return self.query("ASK WHERE { %s }" % ' '.join(map(self.quote, obj)))
         else:
-            results = self.query("SELECT (count(?o) as ?c) WHERE { %s ?p ?o }" % self.quote(obj))
-            return len(results) > 0 and int(results[0].c) > 0
+            return self.query("ASK WHERE { %s ?p ?o }" % self.quote(obj))
 
