@@ -199,6 +199,7 @@
         <td>
          {% for document in subject.all.void_inDataset_inv %}
            {{ document|node }}
+           {% if not forloop.last %}&#8226;{% endif %}
          {% empty %}
            <em>This dataset is not available as RDF through <strong>data.ox.ac.uk</strong>.</em>
          {% endfor %}
