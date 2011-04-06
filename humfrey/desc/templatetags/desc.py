@@ -24,6 +24,8 @@ def get_list(r):
 		yield r.rdf_first
 		r = r.rdf_rest
 
+
+
 @register.filter
 def node2(obj):
     if isinstance(obj, BaseResource):
@@ -32,10 +34,14 @@ def node2(obj):
         elif obj.owl_intersectionOf:
             return mark_safe(u'(%s)' % ' &#8746; '.join(map(node2, get_list(obj.get('owl:intersectionOf')))))
         elif isinstance(obj, URIRef):
-            return mark_safe(u'<a href="%s">%s</a>' % (quoteattr(obj.doc_url), escape(obj.label2)))
+            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(obj.doc_url), escape(obj.label2)))
         else:
             return mark_safe(u'<em>unnamed</em>')
     elif isinstance(obj, Literal):
         return obj.toPython()
     else:
         return unicode(obj)
+
+@register.filter
+def property(obj, value):
+    return obj.get_one_of(*value.split(','))
