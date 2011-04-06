@@ -3,7 +3,7 @@ from functools import partial
 from urllib import urlencode, quote
 import urllib2, base64, re, hashlib, random, itertools
 from urlparse import urlparse
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode
 
@@ -86,7 +86,7 @@ class BaseResource(object):
         if isinstance(self._identifier, BNode):
             return self.label
         else:
-            return mark_safe(u'<a href="%s">%s</a>' % (escape(self.doc_url), escape(self.label)))
+            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
     @property    
     @cache_per_identifier
@@ -97,7 +97,7 @@ class BaseResource(object):
         elif self.in_store:
             return '%s?%s' % (reverse('doc'), urlencode({'uri': self._identifier}))
         else:
-            return escape(self._identifier)
+            return self._identifier
     	
     	
 
@@ -147,7 +147,7 @@ class BaseResource(object):
         if is_resource(values[0]):
             return Resource(values[0], self._graph, self._endpoint)
         else:
-        	return self.localised(values)[0]
+            return self.localised(values)[0]
     __getattr__ = get
     
     def get_one_of(self, *qnames):
@@ -165,12 +165,12 @@ class BaseResource(object):
         if ':' not in name:
             name = name.replace('_', ':', 1)
         if ':' not in name:
-            return None
+            return []
         prefix, local = name.split(':', 1)
         try:
             uri = NS[prefix][local]
         except KeyError:
-            return None
+            return []
         if inverse:
             values = self._graph.subjects(uri, self._identifier)
         else:
@@ -194,10 +194,10 @@ class BaseResource(object):
     @property
     @cache_per_identifier
     def label(self):
-        labels = list(itertools.chain.from_iterable(self.get_all(p) for p in self._LABEL_PROPERTIES))
+        labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
         if not labels:
             self._graph += self._endpoint.describe(self._identifier)
-            labels = list(itertools.chain.from_iterable(self.get_all(p) for p in self._LABEL_PROPERTIES))
+            labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
             if not labels:
                 if isinstance(self._identifier, URIRef):
                     return self.label2
@@ -235,7 +235,7 @@ class BaseResource(object):
     def sorted_subjects(self, ps, os):
     	ps = ps if isinstance(ps, tuple) else (ps,) 
     	os = os if isinstance(os, tuple) else (os,) 
-        subjects = set(itertools.chain.from_iterable(self._graph.subjects(p, o) for (p, o) in itertools.product(ps, os)))
+        subjects = set(itertools.chain(*[self._graph.subjects(p, o) for p in ps for o in os]))
         subjects = (Resource(s, self._graph, self._endpoint) for s in subjects)
         subjects = sorted(subjects, key=lambda s: s.label)
         return subjects
@@ -416,11 +416,11 @@ class Ontology(object):
     @cache_per_identifier
     def _augment(self):
         return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())
-    @cache_per_identifier
+    #@cache_per_identifier
     def defined_classes(self):
     	classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
     	return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
-    @cache_per_identifier
+    #@cache_per_identifier
     def defined_properties(self):
     	properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
     	return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
