@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<section>
+  <h1>Moderate pingbacks</h1>
+
+  <form method="post" action=".">
+
+  <ul style="list-style:none; padding-left:0; font-size:12px">
+{% for pingback in pingbacks %}
+    <li style="margin-top:10px; margin-bottom:10px;{% if not forloop.first %} border-top:1px solid #aaa{% endif %}">
+        <div style="float:right; border:1px solid #aaa; padding:2px; margin-top:10px">
+          <input type="radio" name="action:{{ pingback.hash }}" id="{{ forloop.index0 }}-defer" value="defer" checked="checked"/>
+          <label for="{{ forloop.index0 }}-defer">Defer</label>
+          <input type="radio" name="action:{{ pingback.hash }}" id="{{ forloop.index0 }}-reject" value="reject"/>
+          <label for="{{ forloop.index0 }}-reject">Reject</label>
+          <input type="radio" name="action:{{ pingback.hash }}" id="{{ forloop.index0 }}-accept" value="accept"/>
+          <label for="{{ forloop.index0 }}-accept">Accept</label>
+        </div>
+        <h2>{{ pingback.source }} ⇒ {{ pingback.target }}</h2>
+        <p>
+          <strong>{{ pingback.hostname }} ({{ pingback.remote_addr }})</strong> at <strong>{{ pingback.date }}</strong>;
+          <strong>{{ pingback.user_agent }}</strong>
+        </p>
+        <pre style="font-size:8px; overflow:scroll">{{ pingback.graph.serialize|linebreaksbr }}</pre>
+    </li>
+{% endfor %}
+   </ul>
+   
+   <input type="submit" value="Update"/>
+   
+   </form>
+ </section>
+
+{% endblock %}
