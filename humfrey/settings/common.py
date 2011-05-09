@@ -11,7 +11,6 @@ DEBUG = config.get('main', 'debug', 'false') == 'true'
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('Open Data RT Queue', 'opendata@rt.oucs.ox.ac.uk'),
     # ('Your Name', 'your_email@domain.com'),
 )
 
