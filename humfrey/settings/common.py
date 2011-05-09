@@ -2,10 +2,11 @@
 import ConfigParser
 import os
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-config = ConfigParser.ConfigParser()
-config.read(os.path.join(ROOT, 'config.ini'))
+try:
+    config = ConfigParser.ConfigParser()
+    config.read(os.environ['HUMFREY_CONFIG_FILE'])
+except KeyError:
+    raise RuntimeError('You need to provide a HUMFREY_CONFIG_FILE environment variable pointing to an ini file')
 
 DEBUG = config.get('main', 'debug', 'false') == 'true'
 TEMPLATE_DEBUG = DEBUG
@@ -94,5 +95,3 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
-QUERY_LOG_FILENAME = config.get('main', 'query_log')
-QUERY_LOG_FILENAME = os.path.join(ROOT, QUERY_LOG_FILENAME) if QUERY_LOG_FILENAME else None

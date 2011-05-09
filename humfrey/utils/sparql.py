@@ -17,23 +17,22 @@ def is_qname(uri):
 class ResultList(list):
     pass
 
+logger = logging.getLogger('humfrey.sparql.queries')
+
 class Endpoint(object):
     def __init__(self, url, update_url=None, namespaces={}):
         self._url, self._update_url = url, update_url
         _namespaces = NS.copy()
         _namespaces.update(namespaces)
-        self._namespaces = '\n'.join('prefix %s: <%s>' % i for i in _namespaces.items())
+        self._namespaces = '\n'.join('prefix %s: <%s>' % i for i in _namespaces.items()) + '\n\n'
         self._cache = defaultdict(dict)
 
     def query(self, query, timeout=None, common_prefixes = True):
-        if settings.QUERY_LOG_FILENAME:
-            f = open(settings.QUERY_LOG_FILENAME, 'a')
-            f.write(str(datetime.now()) + ' ')
-            f.write(repr(query))
-            f.write('\n')
-            f.close()
         if common_prefixes:
             query = self._namespaces + query
+
+        logger.info('SPARQL query: %r', query)
+
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query,
         }))
