@@ -1,4 +1,4 @@
-import urllib2, urllib, rdflib, itertools, re
+import urllib2, urllib, rdflib, itertools, re, logging
 from datetime import datetime
 from lxml import etree
 try:
