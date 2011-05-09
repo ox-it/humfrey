@@ -1,0 +1,5 @@
+redis
+Django==1.2
+simplejson
+lxml
+python-memcached
