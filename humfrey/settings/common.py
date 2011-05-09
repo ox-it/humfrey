@@ -3,10 +3,12 @@ import ConfigParser
 import os
 
 try:
-    config = ConfigParser.ConfigParser()
-    config.read(os.environ['HUMFREY_CONFIG_FILE'])
+    HUMFREY_CONFIG_FILE = os.environ['HUMFREY_CONFIG_FILE']
 except KeyError:
     raise RuntimeError('You need to provide a HUMFREY_CONFIG_FILE environment variable pointing to an ini file')
+
+config = ConfigParser.ConfigParser()
+config.read(HUMFREY_CONFIG_FILE)
 
 DEBUG = config.get('main', 'debug', 'false') == 'true'
 TEMPLATE_DEBUG = DEBUG
@@ -62,7 +64,9 @@ MEDIA_URL = '/site-media/'
 ADMIN_MEDIA_PREFIX = '/admin-media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'dbzoar52j3@b+%+zbqv#9m3&yj*uq=ojd&kjp%8-$3(1_8dcfl'
+SECRET_KEY = config.get('main', 'secret_key')
+if not SECRET_KEY:
+    raise RuntimeError("You need to specify a secret_key in your config.ini.")
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -95,3 +99,32 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
+# Load pingback functionality if specified in the config.
+if config.get('pingback', 'enabled', 'false') == 'true':
+    MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
+    INSTALLED_APPS += ('humfrey.pingback',)
+
+# Pull e-mail configuration from config file.
+EMAIL_HOST = config.get('email', 'host', None)
+EMAIL_PORT = int(config.get('email', 'port', 0)) or None
+EMAIL_HOST_USER = config.get('email', 'user', None)
+EMAIL_HOST_PASSWORD = config.get('email', 'password', None)
+SERVER_EMAIL = config.get('email', 'server_email_address', None)
+DEFAULT_FROM_EMAIL = config.get('email', 'default_from_email_address', None)
+
+# Endpoint details
+ENDPOINT_QUERY = config.get('endpoints', 'query')
+ENDPOINT_UPDATE = config.get('endpoints', 'update', None)
+ENDPOINT_GRAPH = config.get('endpoints', 'graph', None)
+
+CACHE_BACKEND = config.get('supporting_services', 'cache_backend', 'locmem://')
+REDIS_PARAMS = {'host': config.get('supporting_services', 'redis_host', None),
+                'port': config.get('supporting_services', 'redis_port', None)}
+
+LOG_FILENAMES = {}
+for k in ('access', 'pingback', 'query'):
+    v = config.get('logging', k, None)
+    if v:
+        v = os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), v))
+    LOG_FILENAMES[k] = v
+del k, v
