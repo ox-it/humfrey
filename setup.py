@@ -6,7 +6,7 @@ setup(
     author='Oxford University Computing Services',
     author_email='opendata@oucs.ox.ac.uk',
     version='0.1',
-    packages=['humfrey', 'humfrey.desc', 'humfrey.pingback', 'humfrey.utils', 'humfrey.settings'],
+    packages=['humfrey', 'humfrey.desc', 'humfrey.desc.templatetags', 'humfrey.pingback', 'humfrey.utils', 'humfrey.settings'],
     scripts=['humfrey/pingback/bin/pingback.py'],
     license='BSD',
     long_description=open('README.txt').read(),
