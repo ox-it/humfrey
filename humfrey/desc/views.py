@@ -1,11 +1,14 @@
 from urlparse import urlparse
 import urllib, urllib2, rdflib, simplejson
 
+from types import GeneratorType
 from lxml import etree
 from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django.http import Http404, HttpResponse
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
 from ..utils.views import BaseView, renderer
 from ..utils.http import HttpResponseSeeOther, MediaType
@@ -41,6 +44,24 @@ class RDFView(BaseView):
             return render
         locals()['render_%s' % format] = f(format, mimetype, method, name)
     del f, format, mimetype, method, name
+
+    @renderer(format='kml', mimetypes=('application/vnd.google-earth.kml+xml',), name='KML')
+    def render_kml(self, request, context, template_name):
+        if not isinstance(context.get('graph'), rdflib.ConjunctiveGraph):
+            raise NotImplementedError
+        graph = context['graph']
+        subjects = set()
+        for s in set(graph.subjects()):
+        	subject = Resource(s, graph, self.endpoint)
+        	if subject.geo_lat and subject.geo_long and isinstance(subject, rdflib.URIRef):
+        		subjects.add(subject)
+        context['subjects'] = subjects
+        context['hostname'] = request.META['HTTP_HOST']
+
+        return render_to_response('render.kml',
+                                  context, context_instance=RequestContext(request),
+                                  mimetype='application/vnd.google-earth.kml+xmll')
+
 
 class SRXView(BaseView):
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
