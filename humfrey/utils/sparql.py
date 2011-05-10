@@ -34,7 +34,7 @@ class Endpoint(object):
         logger.info('SPARQL query: %r', query)
 
         request = urllib2.Request(self._url, urllib.urlencode({
-            'query': query,
+            'query': query.encode('utf-8'),
         }))
         request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml, text/plain'
         request.headers['User-Agent'] = 'sparql.py'
