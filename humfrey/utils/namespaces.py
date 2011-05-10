@@ -1,6 +1,8 @@
 from rdflib import Namespace
 
-__all__ = 'NS'
+from django.conf import settings
+
+__all__ = ['NS', 'register']
 
 NS = {
     'aiiso': 'http://purl.org/vocab/aiiso/schema#',
@@ -36,4 +38,9 @@ NS = {
     'afn': 'http://jena.hpl.hp.com/ARQ/function#',
 }
 
+NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
+
 NS = dict((k,Namespace(v)) for k,v in NS.iteritems())
+
+def register(k, v):
+	NS[k] = Namespace(v)
