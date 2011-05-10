@@ -52,9 +52,9 @@ class RDFView(BaseView):
         graph = context['graph']
         subjects = set()
         for s in set(graph.subjects()):
-        	subject = Resource(s, graph, self.endpoint)
-        	if subject.geo_lat and subject.geo_long and isinstance(subject, rdflib.URIRef):
-        		subjects.add(subject)
+            subject = Resource(s, graph, self.endpoint)
+            if subject.geo_lat and subject.geo_long and isinstance(subject, rdflib.URIRef):
+                subjects.add(subject)
         context['subjects'] = subjects
         context['hostname'] = request.META['HTTP_HOST']
 
