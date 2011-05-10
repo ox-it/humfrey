@@ -71,23 +71,16 @@ class Resource(object):
 
 class BaseResource(object):
     _priority = -1
-    _template_name = 'doc/base'
-	
+    template_name = 'doc/base'
+
     def __new__(cls, identifier, graph, endpoint):
         return super(BaseResource, cls).__new__(cls, identifier)
 
     def __init__(self, identifier, graph, endpoint):
         self._identifier, self._graph, self._endpoint = identifier, graph, endpoint
-        for cls in type(self).__mro__:
-        	if '_augment' in cls.__dict__:
-        	    self._graph += cls._augment(self)
-        #self._augment()
-    
-    def _augment(self):
-    	return []
-    	
+
     def widget_templates(self):
-    	return []    			
+        return []
 
     def __unicode__(self):
         return unicode(self._identifier)
