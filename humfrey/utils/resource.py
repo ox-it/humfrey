@@ -60,12 +60,12 @@ def is_resource(r):
 
 class Resource(object):
     def __new__(cls, identifier, graph, endpoint):
-        classes = set([(-1, BaseResource)])
+        classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
             if t in TYPE_REGISTRY:
-                classes.add((getattr(TYPE_REGISTRY[t], '_priority', 0), TYPE_REGISTRY[t]))
-        classes = tuple(b for a,b in sorted(classes, reverse=True))
-        cls = type(type(identifier).__name__ + cls.__name__, classes + (type(identifier),), {})
+                classes.append(TYPE_REGISTRY[t])
+        classes.sort(key=lambda cls:-getattr(cls, '_priority', 0))
+        cls = type(type(identifier).__name__ + classes[0].__name__, tuple(classes) + (type(identifier),), {})
         resource = cls(identifier, graph, endpoint)
         return resource
 
