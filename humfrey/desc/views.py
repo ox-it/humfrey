@@ -1,5 +1,5 @@
 from urlparse import urlparse
-import urllib, urllib2, rdflib, simplejson
+import urllib, urllib2, rdflib, simplejson, hashlib, pickle, base64
 
 from types import GeneratorType
 from lxml import etree
@@ -9,11 +9,12 @@ from django.conf import settings
 from django.http import Http404, HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.core.cache import cache
 
 from ..utils.views import BaseView, renderer
 from ..utils.http import HttpResponseSeeOther, MediaType
 from ..utils import sparql
-from ..utils.resource import Resource
+from ..utils.resource import Resource, get_describe_query
 from ..utils.namespaces import NS
 from ..utils.cache import cached_view
 
@@ -21,6 +22,16 @@ from .forms import SparqlQueryForm
 
 class EndpointView(BaseView):
     endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
+
+    def get_types(self, uri):
+        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
+        types = cache.get(key_name)
+        if types:
+            types = pickle.loads(base64.b64decode(types))
+        else:
+            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { GRAPH ?g { %s a ?type } }' % uri.n3()))
+            cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
+        return types
 
 class RDFView(BaseView):
     def render_generic_rdf(self, graph, method, mimetype):
@@ -180,8 +191,7 @@ class IndexView(BaseView):
 class IdView(EndpointView):
     def initial_context(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
-        contained = self.endpoint.query('ASK WHERE { GRAPH ?g { %s ?p ?o } }' % uri.n3())
-        if not contained:
+        if not self.get_types(uri):
             raise Http404
         return {
            'uri': uri,
@@ -239,13 +249,17 @@ class DocView(EndpointView, RDFView):
             show_follow_link, no_index = False, False
         uri = rdflib.URIRef(uri)
 
-        graph = self.endpoint.describe(uri)
+        types = self.get_types(uri)
+        if not types:
+            raise Http404
+
+        graph = self.endpoint.query(get_describe_query(uri, types))
         subject = Resource(uri, graph, self.endpoint)
 
         if False and with_fragments:
             graph += self.endpoint.query('DESCRIBE ?s WHERE { ?s ?p ?o . FILTER (regex(?s, "^%s#")) }' % uri)
 
-        doc_uri = rdflib.URIRef(self.get_description_url(None, uri))
+        doc_uri = rdflib.URIRef(self.get_description_url(request, uri))
         
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):
