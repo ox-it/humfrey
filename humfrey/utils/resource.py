@@ -117,35 +117,27 @@ class BaseResource(object):
             return '%s?%s' % (reverse('doc'), urlencode({'uri': self._identifier}))
         else:
             return self._identifier
-    	
-    	
 
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self)
-        
+
     def replace(self, *args, **kwargs):
         return unicode(self).replace(*args, **kwargs)
-        
-    @property
-    def template_name(self):
-    	for cls in type(self).__bases__:
-    		if hasattr(cls, '_template_name'):
-    			return cls._template_name
-        
+
     @property
     def uri(self):
-        return self._identifier
-    
+        return unicode(self._identifier)
+
     @property
     def all(self):
-    	class C(object):
-    		def __getattr__(_, name):
-    			return self.get_all(name)
-    	return C()
-    
+        class C(object):
+            def __getattr__(_, name):
+                return self.get_all(name)
+        return C()
+
     def get(self, name):
         if name.endswith('_inv'):
-    	    name, inverse = name[:-4], True
+            name, inverse = name[:-4], True
         else:
             inverse = False
         if ':' not in name:
@@ -162,23 +154,23 @@ class BaseResource(object):
         else:
             values = list(self._graph.objects(self._identifier, uri))
         if not values:
-        	return None
+            return None
         if is_resource(values[0]):
             return Resource(values[0], self._graph, self._endpoint)
         else:
             return self.localised(values)[0]
     __getattr__ = get
-    
+
     def get_one_of(self, *qnames):
         for qname in qnames:
             value = self.get(qname)
             if value is not None:
                 return value
         return None
-        
+
     def get_all(self, name):
         if name.endswith('_inv'):
-    	    name, inverse = name[:-4], True
+            name, inverse = name[:-4], True
         else:
             inverse = False
         if ':' not in name:
@@ -197,7 +189,7 @@ class BaseResource(object):
         values = [Resource(v, self._graph, self._endpoint) if is_resource(v) else v for v in values]
         values.sort(key=lambda r: (r.label if is_resource(r) else r))
         return values
-    
+
     def properties(self):
         data = defaultdict(set)
         for p, o in self._graph.predicate_objects(self._identifier):
@@ -205,7 +197,7 @@ class BaseResource(object):
                 o = Resource(o, self._graph, self._endpoint)
             data[p].add(o)
         for p in data:
-        	data[p] = self.localised(data[p])
+            data[p] = self.localised(data[p])
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
@@ -222,9 +214,8 @@ class BaseResource(object):
                     return self.label2
                 else:
                     return '<unnamed>'
-    	
-    	return self.localised(labels)[0]
-    	
+        return self.localised(labels)[0]
+
     def localised(self, values):
         def f(v):
             if isinstance(v, (URIRef, BNode)):
@@ -246,14 +237,14 @@ class BaseResource(object):
     @property
     @cache_per_identifier
     def in_store(self):
-        return self._identifier in self._endpoint
+        return self._identifier in self._graph.subjects() or self._identifier in self._endpoint
 
     _DESCRIPTION_PROPERTIES = ('dcterms:description', 'dc:description', 'rdfs:comment')
     description = property(lambda self:self.get_one_of(*self._DESCRIPTION_PROPERTIES))
     
     def sorted_subjects(self, ps, os):
-    	ps = ps if isinstance(ps, tuple) else (ps,) 
-    	os = os if isinstance(os, tuple) else (os,) 
+        ps = ps if isinstance(ps, tuple) else (ps,)
+        os = os if isinstance(os, tuple) else (os,)
         subjects = set(itertools.chain(*[self._graph.subjects(p, o) for p in ps for o in os]))
         subjects = (Resource(s, self._graph, self._endpoint) for s in subjects)
         subjects = sorted(subjects, key=lambda s: s.label)
@@ -326,24 +317,27 @@ class Image(object):
 register(Image, 'foaf:Image')
 
 class Dataset(object):
-    _template_name = 'doc/dataset'
-	
-    def _augment(self):
-    	return itertools.chain(
-            self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:source ?s }" % self._identifier.n3()),
-            self._endpoint.query("DESCRIBE ?s WHERE { %s dcterms:license ?s }" % self._identifier.n3()),
-            self._endpoint.query("DESCRIBE ?s WHERE { ?s void:inDataset %s }" % self._identifier.n3()),
-        )
-	
+    template_name = 'doc/dataset'
+
+    @classmethod
+    def _describe_patterns(cls, uri, get_names):
+        name, = get_names(1)
+        params = {'uri': uri.n3(), 'name': name}
+        return [
+            '%(uri)s dcterms:source %(name)s' % params,
+            '%(uri)s dcterms:license %(name)s' % params,
+            '%(name)s void:inDataset %(uri)s' % params,
+        ]
+
     _STARS = dict((NS['oo']['opendata-%s-star' % i], ('stars/data-badge-%s.png' % i, '%s-star dataset' % i)) for i in range(6)) 
-	
+
     @property
     def open_data_stars(self):
-    	for o in self._graph.objects(self._identifier, NS['dcterms'].conformsTo):
-    		if o in self._STARS:
-    			return self._STARS[o]
-    	else:
-    		return None
+        for o in self._graph.objects(self._identifier, NS['dcterms'].conformsTo):
+            if o in self._STARS:
+                return self._STARS[o]
+        else:
+            return None
 
     @property
     def graph_names(self):
@@ -368,7 +362,7 @@ class Dataset(object):
         classes = [Resource(c, graph, self._endpoint) for c in set(graph.subjects())]
         classes.sort(key=lambda c:c.label)
         return classes
-    		
+
     _USED_PREDICATES_QUERY = """
         CONSTRUCT { ?p a rdfs:Property ; rdfs:label ?label } WHERE {
             GRAPH ?g { ?s ?p ?o } .
@@ -386,7 +380,7 @@ class Dataset(object):
         predicates = [Resource(p, graph, self._endpoint) for p in set(graph.subjects())]
         predicates.sort(key=lambda p:p.label)
         return predicates 
-    		
+
 register(Dataset, 'void:Dataset')
 
 class License(object):
@@ -413,16 +407,15 @@ class CollegeHall(object):
         return self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
         
     def fhs_results(self):
-    	data = self._graph.subjects(NS['fhs'].institution, self._identifier)
-    	data = (Resource(datum, self._graph, self._endpoint) for datum in data)
-    	data = filter(lambda datum: datum.fhs_norringtonScore, data) 
-    	data = sorted(data, key=lambda datum:datum.sdmxdim_timePeriod)
-    	for datum in data:
-    		datum.fhs_two_one = datum.get('fhs:two-one')
-    		datum.fhs_two_two = datum.get('fhs:two-two')
-    		datum.fhs_norringtonScore = '%.1f%%' % (datum.get('fhs:norringtonScore').toPython() * 100)
-    	return data
-    	
+        data = self._graph.subjects(NS['fhs'].institution, self._identifier)
+        data = (Resource(datum, self._graph, self._endpoint) for datum in data)
+        data = filter(lambda datum: datum.fhs_norringtonScore, data)
+        data = sorted(data, key=lambda datum:datum.sdmxdim_timePeriod)
+        for datum in data:
+            datum.fhs_two_one = datum.get('fhs:two-one')
+            datum.fhs_two_two = datum.get('fhs:two-two')
+            datum.fhs_norringtonScore = '%.1f%%' % (datum.get('fhs:norringtonScore').toPython() * 100)
+        return data
 
     def widget_templates(self):
         return ['widgets/norrington.html'] + super(CollegeHall, self).widget_templates()
@@ -437,11 +430,11 @@ class Ontology(object):
         return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())
     #@cache_per_identifier
     def defined_classes(self):
-    	classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
-    	return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+        classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
+        return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
     #@cache_per_identifier
     def defined_properties(self):
-    	properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
-    	return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
-	
+        properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
+        return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+
 register(Ontology, 'owl:Ontology')
