@@ -97,8 +97,13 @@ class BaseResource(object):
 #        raise AttributeError
         
     def render(self):
+        uri = urlparse(self._identifier)
         if isinstance(self._identifier, BNode):
             return self.label
+        if uri.netloc in settings.SERVED_DOMAINS and uri.path.startswith('/id/'):
+            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self._identifier), escape(self.label)))
+        elif self.in_store:
+            return mark_safe(u'<a href="%s?%s">%s</a>' % (reverse('doc'), urlencode({'uri': self._identifier}), escape(self.label)))
         else:
             return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
