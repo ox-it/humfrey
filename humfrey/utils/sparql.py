@@ -183,7 +183,9 @@ class Endpoint(object):
         elif t == 'bnode':
             return Resource(rdflib.BNode(binding['value']), graph, self)
         elif t == 'literal':
-            return rdflib.Literal(binding['value'], datatype=binding.get('datatype'), lang=binding.get('lang'))
+            return rdflib.Literal(binding['value'], lang=binding.get('lang'))
+        elif t == 'typed-literal':
+            return rdflib.Literal(binding['value'], datatype=binding.get('datatype'))
         else:
             raise AssertionError("Unexpected binding type")
 
