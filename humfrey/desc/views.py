@@ -64,86 +64,113 @@ class RDFView(BaseView):
 
 
 class SRXView(BaseView):
+    def _spool_srx_boolean(self, result):
+        yield '<?xml version="1.0"?>\n'
+        yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
+        yield '  <head/>\n'
+        yield '  <boolean>%s</boolean>\n' % ('true' if result else 'false')
+        yield '</sparql>\n'
+
+    def _spool_srx_resultset(self, results):
+        yield '<?xml version="1.0"?>\n'
+        yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
+        yield '  <head>\n'
+        for binding in results.fields:
+            yield '    <variable name="%s"/>\n' % escape(binding)
+        yield '  </head>\n'
+        yield '  <results>\n'
+        for result in results:
+            yield '    <result>\n'
+            for field in result._fields:
+                yield '      <binding name="%s">\n' % escape(field)
+                yield ' '*8
+                value = getattr(result, field)
+                if isinstance(value, rdflib.URIRef):
+                    yield '<uri>%s</uri>' % escape(value).encode('utf-8')
+                elif isinstance(value, rdflib.BNode):
+                    yield '<bnode>%s</bnode>' % escape(value).encode('utf-8')
+                elif isinstance(value, rdflib.Literal):
+                    yield '<literal'
+                    if value.datatype:
+                        yield ' datatype="%s"' % escape(value.datatype).encode('utf-8')
+                    if value.language:
+                        yield ' xml:lang="%s"' % escape(value.language).encode('utf-8')
+                    yield '>%s</literal>' % escape(value).encode('utf-8')
+                yield '\n      </binding>\n'
+            yield '    </result>\n'
+        yield '  </results>\n'
+        yield '</sparql>\n'
+
+    def _spool_srj_boolean(self, result):
+        yield '{\n'
+        yield '  "head": {},\n'
+        yield '  "boolean": %s\n' % ('true' if result else 'false')
+        yield '}\n'
+
+    def _spool_srj_resultset(self, results):
+        dumps = simplejson.dumps
+        yield '{\n'
+        yield '  "head": {\n'
+        yield '    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields)
+        yield '  },\n'
+        yield '  "results": [\n'
+        for i, result in enumerate(results):
+            yield '    {' if i == 0 else ',\n    {'
+            for j, (name, value) in enumerate(result._asdict().iteritems()):
+                yield ',\n' if j > 0 else '\n'
+                yield '      %s: { "type": ' % dumps(name.encode('utf8'))
+                if isinstance(value, rdflib.URIRef):
+                    yield dumps('uri')
+                elif isinstance(value, rdflib.BNode):
+                    yield dumps('bnode')
+                elif value.datatype:
+                    yield '%s, "datatype": %s' % (dumps('typed-literal'), dumps(value.datatype.encode('utf8')))
+                elif value.language:
+                    yield '%s, "xml:lang": %s' % (dumps('literal'), dumps(value.language.encode('utf8')))
+                else:
+                    yield dumps('literal')
+                yield ', "value": %s' % dumps(value.encode('utf8'))
+            yield '\n    }'
+        yield '\n  ]\n'
+        yield '}\n'
+
+    def _spool_csv_boolean(self, result):
+        yield '%s\n' % ('true' if result else 'false')
+
+    def _spool_csv_resultset(self, results):
+        for result in results:
+            yield ",".join(quote(v) for v in result)
+            yield '\n'
+
+    def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
+        if isinstance(context.get('result'), bool):
+            spool = spool_boolean(context['result'])
+        elif isinstance(context.get('results'), list):
+            spool = spool_resultset(context['results'])
+        else:
+            raise NotImplementedError
+        return HttpResponse(spool, mimetype=mimetype)
+
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
     def render_srx(self, request, context, template_name):
-        if not isinstance(context.get('results'), list):
-            raise NotImplementedError
-        def spool(results):
-            yield '<?xml version="1.0">\n'
-            yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
-            yield '  <head>\n'
-            for binding in results.fields:
-                yield '    <variable name="%s"/>\n' % escape(binding)
-            yield '  </head>\n'
-            yield '  <results>\n'
-            for result in results:
-                yield '    <result>\n'
-                for field in result._fields:
-                    yield '      <binding name="%s">\n' % escape(field)
-                    yield ' '*8
-                    value = getattr(result, field)
-                    if isinstance(value, rdflib.URIRef):
-                        yield '<uri>%s</uri>' % escape(value).encode('utf-8')
-                    elif isinstance(value, rdflib.BNode):
-                        yield '<bnode>%s</bnode>' % escape(value).encode('utf-8')
-                    elif isinstance(value, rdflib.Literal):
-                        yield '<literal'
-                        if value.datatype:
-                            yield ' datatype="%s"' % escape(value.datatype).encode('utf-8')
-                        if value.language:
-                            yield ' xml:lang="%s"' % escape(value.language).encode('utf-8')
-                        yield '>%s</literal>' % escape(value).encode('utf-8')
-                    yield '\n      </binding>\n'
-                yield '    </result>\n'
-            yield '  </results>\n'
-            yield '</sparql>\n'
- 
-        return HttpResponse(spool(context['results']), mimetype='application/sparql-results+xml')
+        return self.render_resultset(request, context,
+                                     self._spool_srx_boolean,
+                                     self._spool_srx_resultset,
+                                     'application/sparql-results+xml')
         
-    @renderer(format='csv', mimetypes=('text/csv',), name='CSV')
-    def render_csv(self, request, context, template_name):
-        if not isinstance(context.get('results'), list):
-            raise NotImplementedError
-        def quote(value):
-            value = value.replace(r'"', r'\"')
-            if any(c in ' \n\t' for c in value):
-                value = value.replace('\n', r'\n')
-                value = '"%s"' % value
-            return value
-        def spool(results):
-            for result in results:
-                yield ",".join(quote(v) for v in result)
-                yield '\n'
-        return HttpResponse(spool(context['results']), mimetype='text/csv')
-    
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):
-        if not isinstance(context.get('results'), list):
-            raise NotImplementedError
-        results = context['results']
-        bindings = []
-        data = {
-            'head': {'vars': results.fields},
-            'results': {'bindings': bindings},
-        }
-        for result in results:
-            binding = {}
-#            raise Exception(unicode)
-            for name, value in result._asdict().iteritems():
-                if isinstance(value, rdflib.URIRef):
-                    #raise Exception(type(value))
-                    binding[name] = {'type': 'uri', 'value': unicode(value)}
-                elif isinstance(value, rdflib.BNode):
-                    binding[name] = {'type': 'bnode', 'value': unicode(value)}
-                elif isinstance(value, rdflib.Literal):
-                    binding[name] = {'type': 'typed-literal' if value.datatype else 'literal' , 'value': unicode(value)}
-                    if value.datatype:
-                        binding[name]['datatype'] = unicode(value.datatype)
-                    elif value.language:
-                        binding[name]['xml:lang'] = unicode(value.language)
-            bindings.append(binding)
-        return HttpResponse(simplejson.dumps(data), mimetype='application/sparql-results+json')
-        
+        return self.render_resultset(request, context,
+                                     self._spool_srj_boolean,
+                                     self._spool_srj_resultset,
+                                     'application/sparql-results+json')
+
+    @renderer(format='csv', mimetypes=('text/csv',), name='CSV')
+    def render_csv(self, request, context, template_name):
+        return self.render_resultset(request, context,
+                                     self._spool_csv_boolean,
+                                     self._spool_csv_resultset,
+                                     'text/csv;charset=UTF-8')
 
 class IndexView(BaseView):
     @cached_view
