@@ -1,4 +1,4 @@
-import urllib2, urllib, rdflib, itertools, re, logging
+import urllib2, urllib, rdflib, itertools, re, simplejson, logging
 from datetime import datetime
 from lxml import etree
 try:
@@ -45,9 +45,14 @@ class Endpoint(object):
             raise
             print e.read()
 
+        content_type, params = response.headers['Content-type'].split(';', 1)
+        params = dict(p.split('=', 1) for p in params.split(';'))
+        charset = params.get('charset', 'UTF-8')
 
-        if response.headers.get('Content-Type') == 'application/sparql-results+xml':
+        if content_type == 'application/sparql-results+xml':
             return self.parse_results(response)
+        elif content_type == 'application/sparql-results+json':
+            return self.parse_json_results(response)
         else: # response.headers['Content-Type'] == 'application/rdf+xml':
             g = rdflib.ConjunctiveGraph()
             g.parse(response)
@@ -151,4 +156,34 @@ class Endpoint(object):
             return self.query("ASK WHERE { %s }" % ' '.join(map(self.quote, obj)))
         else:
             return self.query("ASK WHERE { %s ?p ?o }" % self.quote(obj))
+
+    def parse_json_results(self, response):
+        graph = rdflib.ConjunctiveGraph()
+        json = simplejson.load(response)
+
+        if 'boolean' in json:
+        	return json['boolean'] == True
+
+        vars_ = json['head']['vars']
+        Result = namedtuple('Result', json['head']['vars'])
+        pb = self.parse_json_binding
+
+        results = ResultList()
+        for binding in json['results']['bindings']:
+            results.append( Result(*[pb(binding.get(v), graph) for v in vars_]) )
+        results.fields = vars_
+        return results
+
+    def parse_json_binding(self, binding, graph):
+        if not binding:
+            return None
+        t = binding['type']
+        if t == 'uri':
+            return Resource(rdflib.URIRef(binding['value']), graph, self)
+        elif t == 'bnode':
+            return Resource(rdflib.BNode(binding['value']), graph, self)
+        elif t == 'literal':
+            return rdflib.Literal(binding['value'], datatype=binding.get('datatype'), lang=binding.get('lang'))
+        else:
+            raise AssertionError("Unexpected binding type")
 
