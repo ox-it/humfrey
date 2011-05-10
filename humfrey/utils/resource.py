@@ -17,11 +17,13 @@ from .namespaces import NS
 TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
+def expand(qname):
+    prefix, local = qname.split(':', 1)
+    return NS[prefix][local]
+
 def register(cls, *types):
     for t in types:
-        prefix, local = t.split(':', 1)
-        uri = NS[prefix][local]
-        TYPE_REGISTRY[uri] = cls
+        TYPE_REGISTRY[expand(t)] = cls
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
