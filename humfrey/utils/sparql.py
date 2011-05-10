@@ -38,15 +38,19 @@ class Endpoint(object):
         }))
         request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml, text/plain'
         request.headers['User-Agent'] = 'sparql.py'
-        
+
         try:
             response = urllib2.urlopen(request)
         except urllib2.HTTPError, e:
             raise
             print e.read()
 
-        content_type, params = response.headers['Content-type'].split(';', 1)
-        params = dict(p.split('=', 1) for p in params.split(';'))
+        content_type, params = response.headers.get('Content-Type', 'application/rdf+xml'), {}
+        if ';' in content_type:
+            content_type, params_ = content_type.split(';', 1)
+            for param in params_.split(';'):
+                if '=' in param:
+                    params.__setitem__(*param.split('=', 1))
         charset = params.get('charset', 'UTF-8')
 
         if content_type == 'application/sparql-results+xml':
