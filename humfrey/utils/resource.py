@@ -56,7 +56,7 @@ def get_describe_query(uri, types):
         return 'DESCRIBE %s' % uri.n3()
 
 def is_resource(r):
-	return isinstance(r, (URIRef, BNode))    
+    return isinstance(r, (URIRef, BNode))
 
 class Resource(object):
     def __new__(cls, identifier, graph, endpoint):
