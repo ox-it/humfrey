@@ -28,7 +28,7 @@ def register(cls, *types):
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
         
-        key = hashlib.sha1('resource-metadata:%s:%s' % (f, self._identifier)).hexdigest()
+        key = hashlib.sha1('resource-metadata:%s:%s' % (f, base64.b64encode(self._identifier.encode('utf-8')))).hexdigest()
         value = cache.get(key)
         if value is None:
             value = f(self, *args, **kwargs)
