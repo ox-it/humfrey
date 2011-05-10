@@ -122,7 +122,6 @@ class Endpoint(object):
             return '<%s>' % uri
 
     def parse_results(self, response):
-
         xml = etree.parse(response).getroot()
 
         if len(xml.xpath('srx:boolean', namespaces=NS)):
@@ -166,7 +165,7 @@ class Endpoint(object):
         json = simplejson.load(response)
 
         if 'boolean' in json:
-        	return json['boolean'] == True
+            return json['boolean'] == True
 
         vars_ = json['head']['vars']
         Result = namedtuple('Result', json['head']['vars'])
