@@ -20,7 +20,7 @@ from ..utils.cache import cached_view
 from .forms import SparqlQueryForm
 
 class EndpointView(BaseView):
-    endpoint = sparql.Endpoint(settings.ENDPOINT_URL)
+    endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
 
 class RDFView(BaseView):
     def render_generic_rdf(self, graph, method, mimetype):
