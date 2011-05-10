@@ -279,7 +279,7 @@ class DocView(EndpointView, RDFView):
         graph.add((doc_uri, NS['dcterms']['title'], rdflib.Literal('Description of %s' % subject.label)))
         
         
-        formats = sorted([(r, self.get_description_url(None, uri, r.format)) for r in self.FORMATS.values()], key=lambda x:x[0].name)
+        formats = sorted([(r, self.get_description_url(request, uri, r.format)) for r in self.FORMATS.values()], key=lambda x:x[0].name)
         for renderer, url in formats:
             url = rdflib.URIRef(url)
             map(graph.add, [
