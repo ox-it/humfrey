@@ -136,7 +136,7 @@ class SRXView(BaseView):
                 elif isinstance(value, rdflib.BNode):
                     binding[name] = {'type': 'bnode', 'value': unicode(value)}
                 elif isinstance(value, rdflib.Literal):
-                    binding[name] = {'type': 'literal', 'value': unicode(value)}
+                    binding[name] = {'type': 'typed-literal' if value.datatype else 'literal' , 'value': unicode(value)}
                     if value.datatype:
                         binding[name]['datatype'] = unicode(value.datatype)
                     elif value.language:
