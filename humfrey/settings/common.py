@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # Django settings for humfrey project.
 import ConfigParser
 import os
@@ -123,6 +125,9 @@ CACHE_BACKEND = config.get('supporting_services', 'cache_backend', 'locmem://')
 REDIS_PARAMS = {'host': config.get('supporting_services', 'redis_host', None),
                 'port': config.get('supporting_services', 'redis_port', None)}
 
+# These will be linked directly, others will be described using /doc/?uri=… syntax.
+SERVED_DOMAINS = ()
+
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
     v = config.get('logging', k, None)
@@ -130,3 +135,11 @@ for k in ('access', 'pingback', 'query'):
         v = os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), v))
     LOG_FILENAMES[k] = v
 del k, v
+
+if config.get('main', 'log_to_stderr', 'false') == 'true':
+    import logging, sys
+    log_level = config.get('main', 'log_level', 'WARNING')
+    if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
+        raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
+    logging.basicConfig(stream=sys.stderr,
+                        level=getattr(logging, log_level))
