@@ -99,6 +99,8 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
+IMAGE_TYPES = ('foaf:Image',)
+
 # Load pingback functionality if specified in the config.
 if config.get('pingback', 'enabled', 'false') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
@@ -106,7 +108,7 @@ if config.get('pingback', 'enabled', 'false') == 'true':
 
 # Pull e-mail configuration from config file.
 EMAIL_HOST = config.get('email', 'host', None)
-EMAIL_PORT = int(config.get('email', 'port', 0)) or None
+EMAIL_PORT = int(config.get('email', 'port', 0) or 0) or None
 EMAIL_HOST_USER = config.get('email', 'user', None)
 EMAIL_HOST_PASSWORD = config.get('email', 'password', None)
 SERVER_EMAIL = config.get('email', 'server_email_address', None)
