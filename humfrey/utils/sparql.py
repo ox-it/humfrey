@@ -1,4 +1,4 @@
-import urllib2, urllib, rdflib, itertools, re, simplejson, logging
+import urllib2, urllib, rdflib, itertools, re, simplejson, logging, time
 from datetime import datetime
 from lxml import etree
 try:
@@ -31,36 +31,42 @@ class Endpoint(object):
         if common_prefixes:
             query = self._namespaces + query
 
-        logger.info('SPARQL query: %r', query)
-
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
         }))
         request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml, text/plain'
         request.headers['User-Agent'] = 'sparql.py'
 
+        start_time = time.time()
+
         try:
             response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
-            raise
-            print e.read()
 
-        content_type, params = response.headers.get('Content-Type', 'application/rdf+xml'), {}
-        if ';' in content_type:
-            content_type, params_ = content_type.split(';', 1)
-            for param in params_.split(';'):
-                if '=' in param:
-                    params.__setitem__(*param.split('=', 1))
-        charset = params.get('charset', 'UTF-8')
+            time_to_start = time.time() - start_time
 
-        if content_type == 'application/sparql-results+xml':
-            return self.parse_results(response)
-        elif content_type == 'application/sparql-results+json':
-            return self.parse_json_results(response)
-        else: # response.headers['Content-Type'] == 'application/rdf+xml':
-            g = rdflib.ConjunctiveGraph()
-            g.parse(response)
-            return g
+            content_type, params = response.headers.get('Content-Type', 'application/rdf+xml'), {}
+            if ';' in content_type:
+                content_type, params_ = content_type.split(';', 1)
+                for param in params_.split(';'):
+                    if '=' in param:
+                        params.__setitem__(*param.split('=', 1))
+            charset = params.get('charset', 'UTF-8')
+
+            if content_type == 'application/sparql-results+xml':
+                return self.parse_results(response)
+            elif content_type == 'application/sparql-results+json':
+                return self.parse_json_results(response)
+            else: # response.headers['Content-Type'] == 'application/rdf+xml':
+                g = rdflib.ConjunctiveGraph()
+                g.parse(response)
+                return g
+        except Exception, e:
+            logging.exception("Failed query: %r; took %.2f seconds", query, time.time() - start_time)
+        finally:
+            try:
+                logging.info("SPARQL query: %r; took %.2f (%.2f) seconds", query, time.time() - start_time, time_to_start)
+            except UnboundLocalError, e:
+                pass
 
     def update(self, query):
         request = urllib2.Request(self._update_url, urllib.urlencode({
