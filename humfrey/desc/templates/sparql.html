@@ -8,8 +8,6 @@
     
     {% if results.fields or result or subjects %}
       <h2>Results</h2>
-    {% else %}
-      <p>New to SPARQL? <a href="{% url help %}#sparql">Find out more…</a></p>
     {% endif %}
     
     {% if results.fields %}
