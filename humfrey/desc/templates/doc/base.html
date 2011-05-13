@@ -105,10 +105,12 @@
           <img class="depiction" src="{% url resized-image %}?url={{ subject.foaf_img.uri|urlencode }}&amp;width=200" alt=""/>
         </a>
       {% endif %}
-      {% for depiction in subject.all.foaf_depiction %}
+      {% for depiction in subject.depictions %}
+        {% ifnotequal depiction.uri subject.foaf_img.uri %}
         <a href="{{ depiction.doc_url }}">
           <img class="depiction" src="{% url resized-image %}?url={{ depiction.uri|urlencode }}&amp;width=200" alt=""/>
         </a>
+        {% endifnotequal %}
       {% endfor %}
       
       {% for widget_template in subject.widget_templates %}

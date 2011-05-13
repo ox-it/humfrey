@@ -202,6 +202,10 @@ class BaseResource(object):
 
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
 
+    def depictions(self):
+        ds = list(itertools.chain(*map(self.get_all, settings.IMAGE_TYPES)))
+        return ds
+
     @property
     @cache_per_identifier
     def label(self):
@@ -314,7 +318,7 @@ class Image(object):
         except:
             return False
         return True
-register(Image, 'foaf:Image')
+register(Image, *settings.IMAGE_TYPES)
 
 class Dataset(object):
     template_name = 'doc/dataset'
