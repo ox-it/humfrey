@@ -100,23 +100,21 @@ class BaseResource(object):
         uri = urlparse(self._identifier)
         if isinstance(self._identifier, BNode):
             return self.label
-        if uri.netloc in settings.SERVED_DOMAINS and uri.path.startswith('/id/'):
-            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self._identifier), escape(self.label)))
-        elif self.in_store:
-            return mark_safe(u'<a href="%s?%s">%s</a>' % (reverse('doc'), urlencode({'uri': self._identifier}), escape(self.label)))
-        else:
-            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
+        return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
-    @property    
-    @cache_per_identifier
+    @property
     def doc_url(self):
-        uri = urlparse(self._identifier)
-        if uri.netloc in settings.SERVED_DOMAINS and uri.path.startswith('/id/'):
-            return escape(self._identifier)
-        elif self.in_store:
-            return '%s?%s' % (reverse('doc'), urlencode({'uri': self._identifier}))
+        print "DOC for " + self._identifier
+        url = urlparse(self._identifier)
+        if url.netloc in settings.SERVED_DOMAINS and url.path.startswith('/id/'):
+            print "A"
+            return unicode(self._identifier)
+        elif any(self._graph.triples((self._identifier, None, None))):
+            print "B"
+            return "%s?%s" % (reverse('doc'), urlencode({'uri': self._identifier}))
         else:
-            return self._identifier
+            print "C", "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier}))
+            return "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier}))
 
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self)

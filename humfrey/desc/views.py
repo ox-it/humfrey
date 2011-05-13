@@ -6,13 +6,13 @@ from lxml import etree
 from xml.sax.saxutils import escape
 
 from django.conf import settings
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.core.cache import cache
 
 from ..utils.views import BaseView, renderer
-from ..utils.http import HttpResponseSeeOther, MediaType
+from ..utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect, MediaType
 from ..utils import sparql
 from ..utils.resource import Resource, get_describe_query
 from ..utils.namespaces import NS
@@ -201,6 +201,26 @@ class IdView(EndpointView):
     @cached_view
     def handle_GET(self, request, context):
         return HttpResponseSeeOther(context['description_url'])
+
+class DescView(EndpointView):
+    """
+    Will redirect to DocView if described by endpoint, otherwise to the URI given.
+
+    Allows us to be lazy when determining whether to go on- or off-site.
+    """
+    def handle_GET(self, request, context):
+        uri = rdflib.URIRef(request.GET.get('uri', ''))
+        try:
+            url = urlparse(uri)
+        except Exception:
+            raise
+            raise Http404
+        if self.get_types(uri):
+            return HttpResponsePermanentRedirect(DocView().get_description_url(request, uri))
+        elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
+            return HttpResponseTemporaryRedirect(unicode(uri))
+        else:
+            raise Http404
 
 class DocView(EndpointView, RDFView):
     def get_description_url(self, request, uri, format=None):
