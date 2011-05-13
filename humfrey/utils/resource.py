@@ -12,14 +12,10 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe, SafeData
 
-from .namespaces import NS
+from .namespaces import NS, expand
 
 TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
-
-def expand(qname):
-    prefix, local = qname.split(':', 1)
-    return NS[prefix][local]
 
 def register(cls, *types):
     for t in types:

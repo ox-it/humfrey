@@ -2,7 +2,7 @@ from rdflib import Namespace
 
 from django.conf import settings
 
-__all__ = ['NS', 'register']
+__all__ = ['NS', 'register', 'expand']
 
 NS = {
     'aiiso': 'http://purl.org/vocab/aiiso/schema#',
@@ -44,3 +44,7 @@ NS = dict((k,Namespace(v)) for k,v in NS.iteritems())
 
 def register(k, v):
 	NS[k] = Namespace(v)
+
+def expand(qname):
+    prefix, local = qname.split(':', 1)
+    return NS[prefix][local]
