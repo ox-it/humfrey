@@ -180,18 +180,33 @@ class BaseResource(object):
             values = self._graph.subjects(uri, self._identifier)
         else:
             values = self._graph.objects(self._identifier, uri)
+        values = list(values)
         values = [Resource(v, self._graph, self._endpoint) if is_resource(v) else v for v in values]
         values.sort(key=lambda r: (r.label if is_resource(r) else r))
         return values
 
     def properties(self):
-        data = defaultdict(set)
+        data, objects = defaultdict(set), set()
         for p, o in self._graph.predicate_objects(self._identifier):
+            objects.add(p)
             if isinstance(o, (URIRef, BNode)):
                 o = Resource(o, self._graph, self._endpoint)
+            if isinstance(o, URIRef):
+                objects.add(o)
             data[p].add(o)
         for p in data:
             data[p] = self.localised(data[p])
+
+        self._graph += self._endpoint.query("""
+            CONSTRUCT {
+              ?s rdfs:label ?label
+            } WHERE {
+              ?s ?p ?label .
+              FILTER ( %s ) .
+              FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title )
+            }
+        """ % ' || '.join('?s = %s' % o.n3() for o in objects))
+
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
