@@ -219,14 +219,14 @@ class BaseResource(object):
     @cache_per_identifier
     def label(self):
         labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
+        #if not labels:
+        #    self._graph += self._endpoint.describe(self._identifier)
+        #    labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
         if not labels:
-            self._graph += self._endpoint.describe(self._identifier)
-            labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
-            if not labels:
-                if isinstance(self._identifier, URIRef):
-                    return self.label2
-                else:
-                    return '<unnamed>'
+            if isinstance(self._identifier, URIRef):
+                return self.label2
+            else:
+                return '<unnamed>'
         return self.localised(labels)[0]
 
     def localised(self, values):
