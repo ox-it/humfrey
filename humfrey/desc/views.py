@@ -24,6 +24,8 @@ class EndpointView(BaseView):
     endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
 
     def get_types(self, uri):
+        if ' ' in uri:
+            return set()
         key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
         types = cache.get(key_name)
         if types:
