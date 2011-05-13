@@ -28,6 +28,7 @@ class Endpoint(object):
         self._cache = defaultdict(dict)
 
     def query(self, query, timeout=None, common_prefixes = True):
+        original_query = query
         if common_prefixes:
             query = self._namespaces + query
 
@@ -61,10 +62,11 @@ class Endpoint(object):
                 g.parse(response)
                 return g
         except Exception, e:
-            logging.exception("Failed query: %r; took %.2f seconds", query, time.time() - start_time)
+            logging.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
+            raise
         finally:
             try:
-                logging.info("SPARQL query: %r; took %.2f (%.2f) seconds", query, time.time() - start_time, time_to_start)
+                logging.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
             except UnboundLocalError, e:
                 pass
 
