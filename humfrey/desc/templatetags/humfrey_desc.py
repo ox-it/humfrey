@@ -18,13 +18,11 @@ def node(obj):
         return obj.toPython()
     else:
         return obj
-    	
+
 def get_list(r):
-	while r and r.rdf_first:
-		yield r.rdf_first
-		r = r.rdf_rest
-
-
+    while r and r.rdf_first:
+        yield r.rdf_first
+        r = r.rdf_rest
 
 @register.filter
 def node2(obj):
