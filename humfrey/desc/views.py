@@ -274,6 +274,19 @@ class DocView(EndpointView, RDFView):
         types = self.get_types(uri)
         if not types:
             raise Http404
+            
+        return {
+            'uri': uri,
+            'format': format,
+            'types': types,
+            'show_follow_link': show_follow_link,
+            'no_index': no_index,
+            
+        }
+
+    @cached_view
+    def handle_GET(self, request, context):
+        uri, types = context['uri'], context['types']
 
         graph = self.endpoint.query(get_describe_query(uri, types))
         subject = Resource(uri, graph, self.endpoint)
@@ -311,20 +324,14 @@ class DocView(EndpointView, RDFView):
             )
              
             
-        return {
-            'uri': uri,
-            'format': format,
+        context.update({
             'graph': graph,
             'subject': subject,
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'formats': formats,
-            'show_follow_link': show_follow_link,
-            'no_index': no_index,
-        }
+        })
 
-    @cached_view
-    def handle_GET(self, request, context):
         if context['format']:
             try:
                 return self.render_to_format(request, context, context['subject'].template_name, context['format'])
