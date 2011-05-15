@@ -104,6 +104,7 @@ INSTALLED_APPS = (
 )
 
 IMAGE_TYPES = ('foaf:Image',)
+IMAGE_PROPERTIES = ('foaf:depiction',)
 
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':

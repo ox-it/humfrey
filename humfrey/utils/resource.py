@@ -100,16 +100,12 @@ class BaseResource(object):
 
     @property
     def doc_url(self):
-        print "DOC for " + self._identifier
         url = urlparse(self._identifier)
         if url.netloc in settings.SERVED_DOMAINS and url.path.startswith('/id/'):
-            print "A"
             return unicode(self._identifier)
         elif any(self._graph.triples((self._identifier, None, None))):
-            print "B"
             return "%s?%s" % (reverse('doc'), urlencode({'uri': self._identifier}))
         else:
-            print "C", "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier}))
             return "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier}))
 
     def __repr__(self):
