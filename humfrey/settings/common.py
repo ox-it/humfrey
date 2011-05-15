@@ -128,6 +128,8 @@ REDIS_PARAMS = {'host': config.get('supporting_services', 'redis_host', None),
 # These will be linked directly, others will be described using /doc/?uri=… syntax.
 SERVED_DOMAINS = ()
 
+RESIZED_IMAGE_CACHE_DIR = config.get('images', 'external_image_cache')
+
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
     v = config.get('logging', k, None)
