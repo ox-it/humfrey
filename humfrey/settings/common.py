@@ -12,7 +12,9 @@ except KeyError:
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
 
-DEBUG = config.get('main', 'debug', 'false') == 'true'
+config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
+
+DEBUG = config.get('main:debug') == 'true'
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -66,7 +68,7 @@ MEDIA_URL = '/site-media/'
 ADMIN_MEDIA_PREFIX = '/admin-media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = config.get('main', 'secret_key')
+SECRET_KEY = config.get('main:secret_key')
 if not SECRET_KEY:
     raise RuntimeError("You need to specify a secret_key in your config.ini.")
 
@@ -104,43 +106,43 @@ INSTALLED_APPS = (
 IMAGE_TYPES = ('foaf:Image',)
 
 # Load pingback functionality if specified in the config.
-if config.get('pingback', 'enabled', 'false') == 'true':
+if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
     INSTALLED_APPS += ('humfrey.pingback',)
 
 # Pull e-mail configuration from config file.
-EMAIL_HOST = config.get('email', 'host', None)
-EMAIL_PORT = int(config.get('email', 'port', 0) or 0) or None
-EMAIL_HOST_USER = config.get('email', 'user', None)
-EMAIL_HOST_PASSWORD = config.get('email', 'password', None)
-SERVER_EMAIL = config.get('email', 'server_email_address', None)
-DEFAULT_FROM_EMAIL = config.get('email', 'default_from_email_address', None)
+EMAIL_HOST = config.get('email:host')
+EMAIL_PORT = int(config.get('email:port') or 0) or None
+EMAIL_HOST_USER = config.get('email:user')
+EMAIL_HOST_PASSWORD = config.get('email:password')
+SERVER_EMAIL = config.get('email:server_email_address')
+DEFAULT_FROM_EMAIL = config.get('email:default_from_email_address')
 
 # Endpoint details
-ENDPOINT_QUERY = config.get('endpoints', 'query')
-ENDPOINT_UPDATE = config.get('endpoints', 'update', None)
-ENDPOINT_GRAPH = config.get('endpoints', 'graph', None)
+ENDPOINT_QUERY = config.get('endpoints:query')
+ENDPOINT_UPDATE = config.get('endpoints:update')
+ENDPOINT_GRAPH = config.get('endpoints:graph')
 
-CACHE_BACKEND = config.get('supporting_services', 'cache_backend', 'locmem://')
-REDIS_PARAMS = {'host': config.get('supporting_services', 'redis_host', None),
-                'port': config.get('supporting_services', 'redis_port', None)}
+CACHE_BACKEND = config.get('supporting_services:cache_backend', 'locmem://')
+REDIS_PARAMS = {'host': config.get('supporting_services:redis_host'),
+                'port': config.get('supporting_services:redis_port')}
 
 # These will be linked directly, others will be described using /doc/?uri=… syntax.
 SERVED_DOMAINS = ()
 
-RESIZED_IMAGE_CACHE_DIR = config.get('images', 'external_image_cache')
+RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
 
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
-    v = config.get('logging', k, None)
+    v = config.get('logging:%s' % k, None)
     if v:
         v = os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), v))
     LOG_FILENAMES[k] = v
 del k, v
 
-if config.get('main', 'log_to_stderr', 'false') == 'true':
+if config.get('main:log_to_stderr') == 'true':
     import logging, sys
-    log_level = config.get('main', 'log_level', 'WARNING')
+    log_level = config.get('main:log_level') or 'WARNING'
     if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
         raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
     logging.basicConfig(stream=sys.stderr,
