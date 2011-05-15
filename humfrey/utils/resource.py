@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from urllib import urlencode, quote
-import urllib2, base64, re, hashlib, random, itertools
+import urllib2, base64, re, hashlib, random, itertools, logging
 from urlparse import urlparse
 from xml.sax.saxutils import escape, quoteattr
 
@@ -13,6 +13,8 @@ from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe, SafeData
 
 from .namespaces import NS, expand
+
+image_logger = logging.getLogger('humfrey.utils.resource.image')
 
 TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
@@ -318,9 +320,12 @@ class Image(object):
         try:
             response = urllib2.urlopen(request)
             if 'content-type' not in response.headers:
+                image_logger.warning("Image resource doesn't respond with Content-Type: %r", unicode(self._identifier))
                 return False
-            return response.headers['content-type'] in ('image/jpeg', 'image/png', 'image/gif')
+            if response.headers['content-type'] not in ('image/jpeg', 'image/png', 'image/gif'):
+                image_logger.warning("Image resource has wrong content type: %r (%r)", response.headers['Content-Type'], unicode(self._identifier))
         except:
+            logging.exception("HEAD request for image failed: %r", unicode(self._identifier))
             return False
         return True
 register(Image, *settings.IMAGE_TYPES)
