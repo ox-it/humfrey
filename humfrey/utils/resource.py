@@ -210,7 +210,7 @@ class BaseResource(object):
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
 
     def depictions(self):
-        ds = list(itertools.chain(*map(self.get_all, settings.IMAGE_TYPES)))
+        ds = list(itertools.chain(*map(self.get_all, settings.IMAGE_PROPERTIES)))
         return ds
 
     @property
