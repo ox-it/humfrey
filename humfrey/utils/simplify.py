@@ -3,7 +3,12 @@ import itertools, datetime
 from lxml import etree
 import rdflib
 
-from django.contrib.gis.geos import Point
+try:
+    from django.contrib.gis.geos import Point
+except ImportError:
+    # GEOS not installed; ignore
+    pass
+
 from django.core.paginator import Paginator
 from django.db import models
 
