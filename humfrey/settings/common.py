@@ -132,6 +132,7 @@ REDIS_PARAMS = {'host': config.get('supporting_services:redis_host'),
 SERVED_DOMAINS = ()
 
 RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
+THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):

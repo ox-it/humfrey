@@ -17,7 +17,7 @@ class ResizedImageView(EndpointView):
     	try:
             url = rdflib.URIRef(request.GET['url'])
             width = int(request.GET['width'])
-            if width not in (200,):
+            if width not in settings.THUMBNAIL_WIDTHS:
                 raise Http404
             types = self.get_types(url)
             if not (types & self._image_types):
