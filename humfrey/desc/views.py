@@ -363,7 +363,7 @@ class SparqlView(EndpointView, RDFView, SRXView):
         try:        
             results = self.perform_query(query, form.cleaned_data['common_prefixes'])
         except urllib2.HTTPError, e:
-            context['error'] = etree.parse(e).find('.//pre').text
+            context['error'] = e.read() #parse(e).find('.//pre').text
             context['status_code'] = e.code
             return context
         
