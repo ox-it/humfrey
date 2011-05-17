@@ -374,6 +374,8 @@ class SparqlView(EndpointView, RDFView, SRXView):
         elif isinstance(results, rdflib.ConjunctiveGraph):
             context['graph'] = results
             context['subjects'] = results.subjects()
+
+        context['query'] = results.query
         
         return context
     
