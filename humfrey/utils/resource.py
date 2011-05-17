@@ -223,6 +223,8 @@ class BaseResource(object):
         if not labels:
             if isinstance(self._identifier, URIRef):
                 return self.label2
+            elif self.rdf_type:
+                return '<unnamed %s>' % self.rdf_type.label
             else:
                 return '<unnamed>'
         return self.localised(labels)[0]
