@@ -207,7 +207,7 @@ class BaseResource(object):
 
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
-    _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title')
+    _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title', 'rdf:value')
 
     def depictions(self):
         ds = list(itertools.chain(*map(self.get_all, settings.IMAGE_PROPERTIES)))
