@@ -281,7 +281,6 @@ class DocView(EndpointView, RDFView):
             'types': types,
             'show_follow_link': show_follow_link,
             'no_index': no_index,
-            
         }
 
     @cached_view
@@ -330,6 +329,7 @@ class DocView(EndpointView, RDFView):
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'formats': formats,
+            'query': graph.query,
         })
 
         if context['format']:
