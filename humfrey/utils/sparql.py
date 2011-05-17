@@ -1,4 +1,4 @@
-import urllib2, urllib, rdflib, itertools, re, simplejson, logging, time
+import urllib2, urllib, rdflib, itertools, re, simplejson, logging, time, sys
 from datetime import datetime
 from lxml import etree
 try:
@@ -19,18 +19,48 @@ class ResultList(list):
 
 logger = logging.getLogger('humfrey.sparql.queries')
 
+def trim_indentation(s):
+    """Taken from PEP-0257"""
+    if not s:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = s.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxint
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxint:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a single string:
+    return '\n'.join(trimmed)
+
+
 class Endpoint(object):
     def __init__(self, url, update_url=None, namespaces={}):
         self._url, self._update_url = url, update_url
-        _namespaces = NS.copy()
-        _namespaces.update(namespaces)
-        self._namespaces = '\n'.join('prefix %s: <%s>' % i for i in _namespaces.items()) + '\n\n'
+        self._namespaces = NS.copy()
+        self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
     def query(self, query, timeout=None, common_prefixes = True):
         original_query = query
         if common_prefixes:
-            query = self._namespaces + query
+            q = ['\n', trim_indentation(query)]
+            for prefix, uri in self._namespaces.iteritems():
+                if '%s:' % prefix in query:
+                    q.insert(0, 'PREFIX %s: <%s>\n' % (prefix, uri))
+            query = ''.join(q)
 
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
@@ -54,13 +84,14 @@ class Endpoint(object):
             charset = params.get('charset', 'UTF-8')
 
             if content_type == 'application/sparql-results+xml':
-                return self.parse_results(response)
+                result = self.parse_results(response)
             elif content_type == 'application/sparql-results+json':
-                return self.parse_json_results(response)
+                result = self.parse_json_results(response)
             else: # response.headers['Content-Type'] == 'application/rdf+xml':
-                g = rdflib.ConjunctiveGraph()
-                g.parse(response)
-                return g
+                result = rdflib.ConjunctiveGraph()
+                result.parse(response)
+            result.query = query
+            return result
         except Exception, e:
             logging.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
             raise
