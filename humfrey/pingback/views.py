@@ -42,8 +42,6 @@ class PingbackView(BaseView):
             client.rpush(self._QUEUE_KEY, ping_hash)
         else:
             raise self.AlreadyRegisteredError()
-        
-        print "PING", source, target
 
 class XMLRPCPingbackView(PingbackView):
     _RESPONSE_CODES = {
@@ -73,8 +71,6 @@ class XMLRPCPingbackView(PingbackView):
         except self.PingbackError:
             return self._RESPONSE_CODES['GENERIC_FAULT']
         except Exception, e:
-            import traceback
-            traceback.print_exc()
             raise
         else:
             return "OK"

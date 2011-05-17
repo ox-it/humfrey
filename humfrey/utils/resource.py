@@ -86,14 +86,6 @@ class BaseResource(object):
     def __hash__(self):
         return hash((self.__class__, self._identifier))
         
-#    def __getattribute__(self, name):
-#        import traceback, pprint
-#        if name == 'replace':
-#            print '='*80
-#            pprint.pprint(traceback.extract_stack()[-8:])
-#            print '='*80
-#        raise AttributeError
-        
     def render(self):
         uri = urlparse(self._identifier)
         if isinstance(self._identifier, BNode):

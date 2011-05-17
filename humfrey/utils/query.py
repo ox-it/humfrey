@@ -100,24 +100,12 @@ class GraphMeta(object):
 
     def _update_graph_meta(self):
         self._graphs = self._endpoint.query(self._graph_meta_query)
-#        print '\n'.join(map(str, sorted(self._graphs)))
         self._updated = time.time()
 
     def graphs_for_date(self, when):
         if self._updated + 60 < time.time():
             self._update_graph_meta()
-#        print '\n'.join(sorted([g.name for g in self._graphs if (not g.beginning or g.beginning <= when) and (not g.end or g.end > when)]))
         return [g.name for g in self._graphs if (not g.beginning or g.beginning <= when) and (not g.end or g.end > when)]
     def current_graphs(self):
         return graphs_for_date(datetime.now().strptime('%Y-%m-%d'))
-
-
-if __name__ == '__main__':
-    import sys
-    endpoint = sparql.Endpoint('http://localhost:3030/dataset/query')
-    query = OxPointsQuery(endpoint, graph_meta=GraphMeta(endpoint), about=rdflib.URIRef('http://oxpoints.oucs.ox.ac.uk/id/23233567'), date=sys.argv[1] if len(sys.argv)>1 else None)
-    graph = query.get_describe()
-    print graph.serialize()
-
-
 
