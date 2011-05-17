@@ -98,9 +98,9 @@ class BaseResource(object):
         if url.netloc in settings.SERVED_DOMAINS and url.path.startswith('/id/'):
             return unicode(self._identifier)
         elif any(self._graph.triples((self._identifier, None, None))):
-            return "%s?%s" % (reverse('doc'), urlencode({'uri': self._identifier}))
+            return "%s?%s" % (reverse('doc'), urlencode({'uri': self._identifier.encode('utf-8')}))
         else:
-            return "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier}))
+            return "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier.encode('utf-8')}))
 
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self)
