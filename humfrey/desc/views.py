@@ -238,11 +238,11 @@ class DocView(EndpointView, RDFView):
             if format:
                 description_url += '.' + format
         else:
-            params = (('uri', uri.geturl()),)
+            params = (('uri', uri.geturl().encode('utf-8')),)
             if format:
                 params += (('format', format),)
             # FIXME!
-            description_url = 'http://%s/doc/?%s' % (request.META['HTTP_HOST'], urllib.urlencode(params))
+            description_url = u'http://%s/doc/?%s' % (request.META['HTTP_HOST'], urllib.urlencode(params))
 
         return description_url
 
