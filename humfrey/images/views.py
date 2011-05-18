@@ -39,7 +39,10 @@ class ResizedImageView(EndpointView):
             	url = url[:-4] + '.jpg'
             temporary_filename, _ = urllib.urlretrieve(url)
             try:
-                im = Image.open(temporary_filename)
+                try:
+                    im = Image.open(temporary_filename)
+                except Exception, e:
+                    raise Http404
                 size = im.size
                 ratio = size[1] / size[0]
 
