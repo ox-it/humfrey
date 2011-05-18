@@ -400,7 +400,7 @@ class SparqlView(EndpointView, RDFView, SRXView):
             context['error'] = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
             context['status_code'] = 403
             return context
-        except lxml.XMLSyntaxError, e:
+        except etree.XMLSyntaxError, e:
             context['error'] = "Your query could not be returned in the time allotted it.\nPlease try a simpler query or using LIMIT to reduce the number of returned results."
             context['status_code'] = 403
             return context
