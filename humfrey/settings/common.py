@@ -125,8 +125,8 @@ ENDPOINT_UPDATE = config.get('endpoints:update')
 ENDPOINT_GRAPH = config.get('endpoints:graph')
 
 CACHE_BACKEND = config.get('supporting_services:cache_backend', 'locmem://')
-REDIS_PARAMS = {'host': config.get('supporting_services:redis_host'),
-                'port': config.get('supporting_services:redis_port')}
+REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
+                'port': int(config.get('supporting_services:redis_port') or 6379)}
 
 # These will be linked directly, others will be described using /doc/?uri=… syntax.
 SERVED_DOMAINS = ()

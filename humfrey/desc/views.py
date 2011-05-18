@@ -1,5 +1,5 @@
 from urlparse import urlparse
-import urllib, urllib2, rdflib, simplejson, hashlib, pickle, base64
+import urllib, urllib2, rdflib, simplejson, hashlib, pickle, base64, redis, time
 
 from types import GeneratorType
 from lxml import etree
@@ -342,8 +342,34 @@ class DocView(EndpointView, RDFView):
 
 
 class SparqlView(EndpointView, RDFView, SRXView):    
-    def perform_query(self, query, common_prefixes):
-        return self.endpoint.query(query, timeout=5, common_prefixes=common_prefixes)
+    class SparqlViewException(Exception): pass
+    class ConcurrentQueryException(SparqlViewException): pass
+    class ExcessiveQueryException(SparqlViewException): pass
+
+    def perform_query(self, request, query, common_prefixes):
+        client = redis.client.Redis(**settings.REDIS_PARAMS)
+        addr = request.META['REMOTE_ADDR']
+        if not client.setnx('sparql:lock:%s' % addr, 1):
+            raise self.ConcurrentQueryException
+        try:
+            intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
+            last = float(client.get('sparql:last:%s' % addr) or 0)
+            intensity = max(0, intensity - (time.time() - last) / 20)
+            if intensity > 20:
+                raise self.ExcessiveQueryException
+            elif intensity > 10:
+                time.sleep(intensity - 10)
+
+            start = time.time()
+            results = self.endpoint.query(query, timeout=5, common_prefixes=common_prefixes)
+            end = time.time()
+
+            client.set('sparql:intensity:%s' % addr, intensity + end - start)
+            client.set('sparql:last:%s' % addr, end)
+
+            return results
+        finally:
+            client.delete('sparql:lock:%s' % addr)
     
     def initial_context(self, request):
         query = request.REQUEST.get('query')
@@ -361,10 +387,18 @@ class SparqlView(EndpointView, RDFView, SRXView):
             return context
 
         try:        
-            results = self.perform_query(query, form.cleaned_data['common_prefixes'])
+            results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
         except urllib2.HTTPError, e:
             context['error'] = e.read() #parse(e).find('.//pre').text
             context['status_code'] = e.code
+            return context
+        except self.ConcurrentQueryException, e:
+            context['error'] = "You cannot perform more than one query at a time.\nPlease wait for your previous query to complete or time out first."
+            context['status_code'] = 403
+            return context
+        except self.ExcessiveQueryException, e:
+            context['error'] = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
+            context['status_code'] = 403
             return context
         
         if isinstance(results, list):
