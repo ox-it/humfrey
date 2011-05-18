@@ -91,6 +91,7 @@ class Endpoint(object):
                 result = rdflib.ConjunctiveGraph()
                 result.parse(response)
             result.query = query
+            result.duration = time.time() - start_time
             return result
         except Exception, e:
             logging.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)

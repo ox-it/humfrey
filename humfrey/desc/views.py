@@ -415,6 +415,7 @@ class SparqlView(EndpointView, RDFView, SRXView):
             context['subjects'] = results.subjects()
 
         context['query'] = results.query
+        context['duration'] = results.duration
         
         return context
     
