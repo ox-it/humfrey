@@ -228,10 +228,15 @@ class DocView(EndpointView, RDFView):
     def get_description_url(self, request, uri, format=None, strip_format=False):
         uri = urlparse(uri)
         if request and not format:
-            accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
-            renderers = MediaType.resolve(accepts, self.FORMATS_BY_MIMETYPE)
-            if renderers:
-                format = renderers[0].format
+            try:
+                accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
+            except KeyError, e:
+                # What are they playing at, not sending an Accept header?
+                pass
+            else:
+                renderers = MediaType.resolve(accepts, self.FORMATS_BY_MIMETYPE)
+                if renderers:
+                    format = renderers[0].format
         
         if uri.netloc in settings.SERVED_DOMAINS and uri.scheme == 'http' and uri.path.startswith('/id/') and not uri.query and not uri.params:
             description_url = '%s://%s/doc/%s' % (uri.scheme, uri.netloc, uri.path[4:])
