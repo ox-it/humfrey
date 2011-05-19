@@ -225,7 +225,7 @@ class DescView(EndpointView):
             raise Http404
 
 class DocView(EndpointView, RDFView):
-    def get_description_url(self, request, uri, format=None):
+    def get_description_url(self, request, uri, format=None, strip_format=False):
         uri = urlparse(uri)
         if request and not format:
             accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
@@ -239,7 +239,7 @@ class DocView(EndpointView, RDFView):
                 description_url += '.' + format
         else:
             params = (('uri', uri.geturl().encode('utf-8')),)
-            if format:
+            if format and not strip_format:
                 params += (('format', format),)
             # FIXME!
             description_url = u'http://%s/doc/?%s' % (request.META['HTTP_HOST'], urllib.urlencode(params))
@@ -293,7 +293,7 @@ class DocView(EndpointView, RDFView):
         if False and with_fragments:
             graph += self.endpoint.query('DESCRIBE ?s WHERE { ?s ?p ?o . FILTER (regex(?s, "^%s#")) }' % uri)
 
-        doc_uri = rdflib.URIRef(self.get_description_url(request, uri))
+        doc_uri = rdflib.URIRef(self.get_description_url(request, uri, strip_format=True))
         
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):
