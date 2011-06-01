@@ -43,7 +43,7 @@ def renderer(format, mimetypes=(), priority=0, name=None):
         return f
     return g
 
-class ViewMetaclass(type):
+class BaseViewMetaclass(type):
     def __new__(cls, name, bases, dict):
 
         # Pull the renderers from the bases into a couple of new dicts for
@@ -83,7 +83,7 @@ class ViewMetaclass(type):
 
 
 class BaseView(object):
-    __metaclass__ = ViewMetaclass
+    __metaclass__ = BaseViewMetaclass
 
     ALLOWABLE_METHODS = ('GET', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'PUT')
 
