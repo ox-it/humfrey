@@ -131,6 +131,8 @@ REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localho
 # These will be linked directly, others will be described using /doc/?uri=… syntax.
 SERVED_DOMAINS = ()
 
+ID_MAPPING = ()
+
 RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
