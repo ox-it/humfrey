@@ -1,4 +1,4 @@
-import pickle, base64, urllib, urllib2, sys, threading, logging, time, rdflib, urlparse, hashlib, socket, signal
+import pickle, base64, urllib, urllib2, sys, threading, logging, time, rdflib, urlparse, socket
 from collections import defaultdict
 from functools import wraps
 
@@ -44,7 +44,7 @@ def set_data(client, ping_hash, data):
 def get_data(client, ping_hash):
     return pickle.loads(base64.b64decode(client.get('pingback.data:%s' % ping_hash)))
 def set_expiry(client, ping_hash):
-    client.expire('pingback.data:%s' % ping_hash, 3600*24*7)
+    client.expire('pingback.data:%s' % ping_hash, 3600 * 24 * 7)
 
 def redis_queue(client, key, bail):
     while not bail.is_set():
@@ -213,7 +213,7 @@ def worker(client_locks, host_locks, bail):
             elif data['state'] == 'pending':
                 client.sadd('pingback.pending', ping_hash)
             else:
-            	logging.error('Unexpected state')
+                logging.error('Unexpected state')
                 
             time.sleep(1)
 
@@ -230,7 +230,7 @@ def accepted_manager(bail):
         request = PutRequest(url, data=graph.serialize())
         request.headers['Content-type'] = 'application/rdf+xml'
         try:
-            response = urllib2.urlopen(request)
+            urllib2.urlopen(request)
         except urllib2.HTTPError, e:
             if e.code not in (201, 204,):
                 raise
@@ -244,7 +244,6 @@ def interrupt_handler(bail):
         logging.info("Bailing")
         bail.set()
     return f
-	
 
 def run():
     #signal.signal(signal.SIGINT, interrupt_handler)
@@ -269,7 +268,7 @@ def run():
     try:
         while True: time.sleep(100)
     except KeyboardInterrupt:
-    	bail.set()
+        bail.set()
     
     logging.info("Shutting down")
 

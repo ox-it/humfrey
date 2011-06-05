@@ -1,6 +1,4 @@
 from collections import defaultdict
-from functools import partial
-from urllib import urlencode, quote
 import urllib2, base64, re, hashlib, random, itertools, logging
 from urlparse import urlparse
 from xml.sax.saxutils import escape, quoteattr
@@ -9,10 +7,10 @@ from rdflib import URIRef, BNode
 
 from django.core.cache import cache
 from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.utils.safestring import mark_safe, SafeData
+from django.utils.safestring import mark_safe
 
-from .namespaces import NS, expand
+from humfrey.utils.namespaces import NS, expand
+from humfrey.linkeddata.uri import doc_forward
 
 image_logger = logging.getLogger('humfrey.utils.resource.image')
 
@@ -87,20 +85,13 @@ class BaseResource(object):
         return hash((self.__class__, self._identifier))
         
     def render(self):
-        uri = urlparse(self._identifier)
         if isinstance(self._identifier, BNode):
             return self.label
         return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
     @property
     def doc_url(self):
-        url = urlparse(self._identifier)
-        if url.netloc in settings.SERVED_DOMAINS and url.path.startswith('/id/'):
-            return unicode(self._identifier)
-        elif any(self._graph.triples((self._identifier, None, None))):
-            return "%s?%s" % (reverse('doc'), urlencode({'uri': self._identifier.encode('utf-8')}))
-        else:
-            return "%s?%s" % (reverse('desc'), urlencode({'uri': self._identifier.encode('utf-8')}))
+        return doc_forward(self._identifier, graph=self._graph)
 
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self)

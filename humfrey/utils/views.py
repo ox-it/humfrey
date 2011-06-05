@@ -200,6 +200,7 @@ Supported ranges are:
             response.status_code = 406 # Not Acceptable
             return response
 
+    @classmethod
     def parse_accept_header(cls, accept):
         media_types = []
         for media_type in accept.split(','):

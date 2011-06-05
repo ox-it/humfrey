@@ -6,6 +6,7 @@ import rdflib
 
 from django.conf import settings
 from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.core.cache import cache
 
 from humfrey.utils.views import BaseView, BaseViewMetaclass, renderer
 from humfrey.utils import sparql

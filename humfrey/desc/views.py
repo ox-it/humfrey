@@ -1,20 +1,19 @@
+import time
+import urllib2
 from urlparse import urlparse
-import urllib, urllib2, rdflib, simplejson, hashlib, pickle, base64, redis, time
 
-from types import GeneratorType
 from lxml import etree
-from xml.sax.saxutils import escape
+import rdflib
+import redis
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
-from django.shortcuts import render_to_response
-from django.template import RequestContext
-from django.core.cache import cache
+from django.http import Http404, HttpResponsePermanentRedirect
 
 from humfrey.linkeddata.views import EndpointView, RDFView, ResultSetView
+from humfrey.linkeddata.uri import doc_forward, doc_forwards, doc_backward
 
 from humfrey.utils.views import BaseView
-from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect, MediaType
+from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 from humfrey.utils.resource import Resource, get_describe_query
 from humfrey.utils.namespaces import NS
 from humfrey.utils.cache import cached_view
@@ -34,7 +33,7 @@ class IdView(EndpointView):
             raise Http404
         return {
            'uri': uri,
-           'description_url': DocView().get_description_url(request, uri),
+           'description_url': doc_forward(uri, request, described=True),
         }
 
     @cached_view
@@ -52,90 +51,53 @@ class DescView(EndpointView):
         try:
             url = urlparse(uri)
         except Exception:
-            raise
             raise Http404
         if self.get_types(uri):
-            return HttpResponsePermanentRedirect(DocView().get_description_url(request, uri))
+            return HttpResponsePermanentRedirect(doc_forward(uri, request, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
             return HttpResponseTemporaryRedirect(unicode(uri))
         else:
             raise Http404
 
 class DocView(EndpointView, RDFView):
-    def get_description_url(self, request, uri, format=None, strip_format=False):
-        uri = urlparse(uri)
-        if request and not format:
-            try:
-                accepts = self.parse_accept_header(request.META['HTTP_ACCEPT'])
-            except KeyError, e:
-                # What are they playing at, not sending an Accept header?
-                pass
-            else:
-                renderers = MediaType.resolve(accepts, self.FORMATS_BY_MIMETYPE)
-                if renderers:
-                    format = renderers[0].format
-        
-        if uri.netloc in settings.SERVED_DOMAINS and uri.scheme == 'http' and uri.path.startswith('/id/') and not uri.query and not uri.params:
-            description_url = '%s://%s/doc/%s' % (uri.scheme, uri.netloc, uri.path[4:])
-            if format:
-                description_url += '.' + format
-        else:
-            params = (('uri', uri.geturl().encode('utf-8')),)
-            if format and not strip_format:
-                params += (('format', format),)
-            # FIXME!
-            description_url = u'http://%s/doc/?%s' % (request.META['HTTP_HOST'], urllib.urlencode(params))
-
-        return description_url
 
     def initial_context(self, request):
-        if request.path == '/doc/':
-            if 'uri' not in request.GET:
-                raise Http404
-            uri = request.GET['uri']
-            format = request.GET.get('format')
-            with_fragments = False
-            show_follow_link, no_index = True, True
-        else:
-            uri = urlparse(request.build_absolute_uri())
-            if request.path.startswith('/doc/'):
-                uri = '%s://%s/id/%s' % (uri.scheme, uri.netloc, uri.path[5:])
-            else:
-                uri = request.build_absolute_uri()
-            for format in self.FORMATS:
-                if uri.endswith('.' + format):
-                    uri = uri[:-(1+len(format))]
-                    request.path = request.path[:-(1+len(format))]
-                    break
-            else:
-                format = None
-            with_fragments = True
-            show_follow_link, no_index = False, False
-        uri = rdflib.URIRef(uri)
-
+        doc_url = request.build_absolute_uri()
+        
+        uri, format, is_local = doc_backward(doc_url, request)
+        if not uri:
+            raise Http404
+        format = format or 'html'
+        
+        expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        
         types = self.get_types(uri)
         if not types:
             raise Http404
             
         return {
+            'doc_url': doc_url,
+            'expected_doc_url': expected_doc_url,
             'uri': uri,
             'format': format,
             'types': types,
-            'show_follow_link': show_follow_link,
-            'no_index': no_index,
+            'show_follow_link': not is_local,
+            'no_index': not is_local,
         }
 
     @cached_view
     def handle_GET(self, request, context):
+        expected_doc_url, doc_url = context['expected_doc_url'], context['doc_url']
+        if expected_doc_url != doc_url:
+            return HttpResponsePermanentRedirect(expected_doc_url)
+
         uri, types = context['uri'], context['types']
 
         graph = self.endpoint.query(get_describe_query(uri, types))
         subject = Resource(uri, graph, self.endpoint)
 
-        if False and with_fragments:
-            graph += self.endpoint.query('DESCRIBE ?s WHERE { ?s ?p ?o . FILTER (regex(?s, "^%s#")) }' % uri)
-
-        doc_uri = rdflib.URIRef(self.get_description_url(request, uri, strip_format=True))
+        format_urls = doc_forwards(uri, self.FORMATS, described=True)
+        doc_uri = rdflib.URIRef(format_urls[None])
         
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):
@@ -149,21 +111,23 @@ class DocView(EndpointView, RDFView):
 
         if not graph:
             raise Http404
+        
             
         graph.add((doc_uri, NS['foaf'].primaryTopic, uri))
         graph.add((doc_uri, NS['rdf'].type, NS['foaf'].Document))
         graph.add((doc_uri, NS['dcterms']['title'], rdflib.Literal('Description of %s' % subject.label)))
         
         
-        formats = sorted([(r, self.get_description_url(request, uri, r.format)) for r in self.FORMATS.values()], key=lambda x:x[0].name)
-        for renderer, url in formats:
-            url = rdflib.URIRef(url)
+        formats = []
+        for renderer in self.FORMATS.itervalues():
+            url = rdflib.URIRef(format_urls[renderer.format])
+            formats.append((renderer, url))
             map(graph.add, [
                 (doc_uri, NS['dcterms'].hasFormat, url),
                 (url, NS['dcterms']['title'], rdflib.Literal('%s description of %s' % (renderer.name, subject.label))),
             ] + [(url, NS['dc']['format'], rdflib.Literal(mimetype)) for mimetype in renderer.mimetypes]
             )
-             
+        formats.sort(key=lambda x:x[0].name)
             
         context.update({
             'graph': graph,
