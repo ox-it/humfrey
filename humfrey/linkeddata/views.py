@@ -1,15 +1,20 @@
 import base64
 import hashlib
 import pickle
+from xml.sax.saxutils import escape
 
 import rdflib
+import simplejson
 
 from django.conf import settings
 from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.core.cache import cache
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
 from humfrey.utils.views import BaseView, BaseViewMetaclass, renderer
 from humfrey.utils import sparql
+from humfrey.utils.resource import Resource
 
 class EndpointView(BaseView):
     endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
