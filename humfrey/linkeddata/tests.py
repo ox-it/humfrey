@@ -13,7 +13,16 @@ TEST_ID_MAPPING = (
     ('http://id.example.org/', 'http://data.example.org/doc/', True)
 )
 
+def stub_reverse_crossdomain(host, url):
+    if (host, url) == ('data', 'doc-generic'):
+        return '//data.example.org/doc/'
+    elif (host, url) == ('data', 'desc'):
+        return '//data.example.org/desc/'
+    else:
+        raise AssertionError("reverse_crossdomain called with unexpected arguments.")
+
 @mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING)
+@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
 class URITestCase(unittest2.TestCase):
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
@@ -26,8 +35,8 @@ class URITestCase(unittest2.TestCase):
     
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
-        doc_root = 'http:' + reverse_crossdomain('data', 'doc-generic')
-        desc_root = 'http:' + reverse_crossdomain('data', 'desc')
+        doc_root = 'http://data.example.org/doc/'
+        desc_root = 'http://data.example.org/desc/'
         qs_with_format = '?uri=http%3A%2F%2Fremote.example.org%2Ffoo&format=nt'
         qs_without_format = '?uri=http%3A%2F%2Fremote.example.org%2Ffoo'
         
