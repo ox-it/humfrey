@@ -30,7 +30,7 @@ def doc_forwards(uri, formats, graph=None, described=None):
     if described == False:
         urls[None] = uri
         for format in formats:
-            urls[format] = format
+            urls[format] = uri
         return urls  
     
     if described == True:      
