@@ -39,8 +39,8 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
                 'SUPPORTS_TRANSACTIONS': False,
             })
 
-        if '--junit' in sys.argv:
-            import junit
+        if os.environ.get('HUMFREY_JUNIT_TEST'):
+            import junitxml
             with open('../xmlresults.xml', 'w') as report:
                 result = junitxml.JUnitXmlResult(report)
                 result.startTestRun()
