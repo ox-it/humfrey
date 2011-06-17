@@ -1,7 +1,5 @@
 import unittest, tempfile, os
 
-import junitxml
-
 from django.test.simple import DjangoTestSuiteRunner, build_suite, reorder_suite
 from django.test import TestCase as DjangoTestCase
 from django.test._doctest import DocTestCase
@@ -41,13 +39,16 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
                 'SUPPORTS_TRANSACTIONS': False,
             })
 
-        with open('../xmlresults.xml', 'w') as report:
-            result = junitxml.JUnitXmlResult(report)
-            result.startTestRun()
-            suite.run(result)
-            result.stopTestRun()
-
-        return super(HumfreyTestSuiteRunner, self).run_suite(suite, **kwargs)
+        if '--junit' in sys.argv:
+            import junit
+            with open('../xmlresults.xml', 'w') as report:
+                result = junitxml.JUnitXmlResult(report)
+                result.startTestRun()
+                suite.run(result)
+                result.stopTestRun()
+            return result
+        else:
+            return super(HumfreyTestSuiteRunner, self).run_suite(suite, **kwargs)
         
     def build_suite(self, test_labels, extra_tests=None, **kwargs):
 
