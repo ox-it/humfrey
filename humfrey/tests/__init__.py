@@ -41,7 +41,7 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
 
         if os.environ.get('HUMFREY_JUNIT_TEST'):
             import junitxml
-            report_filename = os.path.join(os.path.dirname(__file__), '..', '..', 'xmlresults.xml')
+            report_filename = os.path.join(os.path.dirname(__file__), '..', 'xmlresults.xml')
             with open(report_filename, 'w') as report:
                 result = junitxml.JUnitXmlResult(report)
                 result.startTestRun()
