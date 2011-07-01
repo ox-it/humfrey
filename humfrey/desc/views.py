@@ -63,18 +63,18 @@ class DocView(EndpointView, RDFView):
 
     def initial_context(self, request):
         doc_url = request.build_absolute_uri()
-        
+
         uri, format, is_local = doc_backward(doc_url, request)
         if not uri:
             raise Http404
         format = format or 'html'
-        
+
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
-        
+
         types = self.get_types(uri)
         if not types:
             raise Http404
-            
+
         return {
             'doc_url': doc_url,
             'expected_doc_url': expected_doc_url,
