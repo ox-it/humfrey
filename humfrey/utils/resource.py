@@ -70,7 +70,7 @@ class Resource(object):
     def __new__(cls, identifier, graph, endpoint):
         classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
-            if t in TYPE_REGISTRY:
+            if t in TYPE_REGISTRY and TYPE_REGISTRY[t] not in classes:
                 classes.append(TYPE_REGISTRY[t])
         classes.sort(key=lambda cls:-getattr(cls, '_priority', 0))
         cls = type(type(identifier).__name__ + classes[0].__name__, tuple(classes) + (type(identifier),), {})
