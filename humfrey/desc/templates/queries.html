@@ -1,0 +1,11 @@
+{% if queries %}
+<section class="used-queries">
+  <h2>SPARQL quer{{ queries|pluralize:"y,ies" }} used to generate this page</h2>
+
+  <ul class="used-query-list">
+{% for query in queries %}
+    <li class="used-query"><code>{{ query }}</code></li>
+{% endfor %}
+  </ul>
+</section>
+{% endif %}

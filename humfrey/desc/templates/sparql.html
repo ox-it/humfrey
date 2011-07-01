@@ -3,7 +3,7 @@
 {% block title %}SPARQL{% endblock %}
 
 {% block body %}
-  <section>
+  <article>
     <h1>SPARQL</h1>
     
     {% if results.fields or result or subjects %}
@@ -11,7 +11,7 @@
     {% endif %}
     
     {% if results.fields %}
-      <table class="sparql-results">
+      <table class="results">
         <thead>
           <tr>
 {% for field in results.fields %}
@@ -59,6 +59,8 @@
         </tfoot>
       </table>
     </form>
+    
+    {% include "queries.html" %}
   
-  </section>
+  </article>
 {% endblock %}
