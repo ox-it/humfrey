@@ -91,10 +91,16 @@ class DocView(EndpointView, RDFView):
         if expected_doc_url != doc_url:
             return HttpResponsePermanentRedirect(expected_doc_url)
 
+        queries, graph = [], rdflib.ConjunctiveGraph()
+        for prefix, ns in NS.iteritems():
+            graph.namespace_manager.bind(prefix, ns)
         uri, types = context['uri'], context['types']
-
-        graph = self.endpoint.query(get_describe_query(uri, types))
+        graph += ((uri, NS.rdf.type, t) for t in types)
         subject = Resource(uri, graph, self.endpoint)
+
+        for query in subject.get_queries():
+            graph += self.endpoint.query(query)
+            queries.append(query)
 
         format_urls = doc_forwards(uri, self.FORMATS, described=True)
         doc_uri = rdflib.URIRef(format_urls[None])
@@ -135,7 +141,7 @@ class DocView(EndpointView, RDFView):
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'formats': formats,
-            'query': graph.query,
+            'queries': queries,
         })
 
         if context['format']:
@@ -185,7 +191,6 @@ class SparqlView(EndpointView, RDFView, ResultSetView):
         form = SparqlQueryForm(data if query else None, formats=self.FORMATS)
         context = {
             'namespaces': NS,
-            'query': query,
             'form': form,
         }
         
@@ -220,7 +225,7 @@ class SparqlView(EndpointView, RDFView, ResultSetView):
             context['graph'] = results
             context['subjects'] = results.subjects()
 
-        context['query'] = results.query
+        context['queries'] = [results.query]
         context['duration'] = results.duration
         
         return context
