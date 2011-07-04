@@ -2,6 +2,9 @@
 
 {% block title %}{{ subject.label }}{% endblock %}
 
+{% block extrahead %}{{ block.super }}{% for format, url in formats %}
+  <link rel="alternate" type="{{ format.mimetypes.0 }}" href="{{ url }}" title="{{ format.name }} description of {{ subject.label }}"/>{% endfor %}{% endblock %}
+
 {% block body %}
   <section>
 
