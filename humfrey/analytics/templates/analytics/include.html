@@ -1,7 +1,7 @@
 {% if google_analytics %}
 <script type="application/javascript">
   var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', '{{ google_analytics.account|safe }}']);
+  _gaq.push(['_setAccount', '{{ google_analytics.key|safe }}']);
   {% if google_analytics.zero_timeouts %}
   _gaq.push(['_setCampaignCookieTimeout', 0]);
   _gaq.push(['_setVisitorCookieTimeout', 0]);
