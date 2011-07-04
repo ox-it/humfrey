@@ -4,6 +4,8 @@
 import ConfigParser
 import os
 
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+
 try:
     HUMFREY_CONFIG_FILE = os.environ['HUMFREY_CONFIG_FILE']
 except KeyError:
@@ -152,7 +154,7 @@ if config.get('main:log_to_stderr') == 'true':
 
 if config.get('google_analytics:key'):
     INSTALLED_APPS += ('humfrey.analytics',)
-    CONTEXT_PROCESSORS += ('humfrey.analytics.context_processors.google_analytics',)
+    TEMPLATE_CONTEXT_PROCESSORS += ('humfrey.analytics.context_processors.google_analytics',)
     GOOGLE_ANALYTICS = {
         'key': config['google_analytics:key'],
         'zero_timeouts': config.get('google_analytics:zero_timeouts') == 'true',
