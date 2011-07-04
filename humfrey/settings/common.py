@@ -149,3 +149,11 @@ if config.get('main:log_to_stderr') == 'true':
         raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
     logging.basicConfig(stream=sys.stderr,
                         level=getattr(logging, log_level))
+
+if config.get('google_analytics:key'):
+    INSTALLED_APPS += ('humfrey.analytics',)
+    CONTEXT_PROCESSORS += ('humfrey.analytics.context_processors.google_analytics',)
+    GOOGLE_ANALYTICS = {
+        'key': config['google_analytics:key'],
+        'zero_timeouts': config.get('google_analytics:zero_timeouts') == 'true',
+    }
