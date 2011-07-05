@@ -159,3 +159,8 @@ if config.get('google_analytics:key'):
         'key': config['google_analytics:key'],
         'zero_timeouts': config.get('google_analytics:zero_timeouts') == 'true',
     }
+
+DOC_RDF_PROCESSORS = (
+    'humfrey.desc.rdf_processors.doc_meta',
+    'humfrey.desc.rdf_processors.formats',
+)

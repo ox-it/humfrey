@@ -9,19 +9,21 @@ from django_hosts.reverse import reverse_crossdomain
 
 from humfrey.utils.http import MediaType
 
-def doc_forwards(uri, formats, graph=None, described=None):
+def doc_forwards(uri, renderers, graph=None, described=None):
     """
     Determines all doc URLs for a URI.
     
     graph is an rdflib.ConjunctiveGraph that can be checked for a description
     of uri. described is a ternary boolean.
     """
+
+    format_names = set(renderer.format for renderer in renderers)
     
     urls = {}
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
         if uri.startswith(id_prefix):
             urls[None] = doc_prefix + uri[len(id_prefix):]
-            for format in formats:
+            for format in format_names:
                 urls[format] = '%s.%s' % (urls[None], format) 
             return urls
     if graph and not described and any(graph.triples((uri, None, None))):
@@ -29,7 +31,7 @@ def doc_forwards(uri, formats, graph=None, described=None):
     
     if described == False:
         urls[None] = uri
-        for format in formats:
+        for format in format_names:
             urls[format] = uri
         return urls  
     
@@ -39,7 +41,7 @@ def doc_forwards(uri, formats, graph=None, described=None):
         view_name = 'desc'
     urls[None] = 'http:%s?%s' % (reverse_crossdomain('data', view_name),
                                  urllib.urlencode((('uri', uri.encode('utf-8')),)))
-    for format in formats:
+    for format in format_names:
         urls[format] = '%s&%s' % (urls[None],
                                   urllib.urlencode((('format', format),)))
     return urls
@@ -62,7 +64,7 @@ def doc_forward(uri, request=None, graph=None, described=None, format=None):
     if request and not format:
         format = get_format(request)
 
-    return doc_forwards(uri, DocView.FORMATS, graph, described)[format]
+    return doc_forwards(uri, DocView().FORMATS.values(), graph, described)[format]
     
 def doc_backward(url, request=None):
     from humfrey.desc.views import DocView

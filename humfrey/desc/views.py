@@ -8,9 +8,11 @@ import redis
 
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
+from django.utils.importlib import import_module
+from django.core.exceptions import ImproperlyConfigured
 
 from humfrey.linkeddata.views import EndpointView, RDFView, ResultSetView
-from humfrey.linkeddata.uri import doc_forward, doc_forwards, doc_backward
+from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.utils.views import BaseView
 from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
@@ -75,10 +77,14 @@ class DocView(EndpointView, RDFView):
         if not types:
             raise Http404
 
+        if expected_doc_url != doc_url:
+            return HttpResponsePermanentRedirect(expected_doc_url)
+
+        doc_uri = doc_forward(uri, request, format=None, described=True)
+
         return {
-            'doc_url': doc_url,
-            'expected_doc_url': expected_doc_url,
-            'uri': uri,
+            'subject_uri': uri,
+            'doc_uri': doc_uri,
             'format': format,
             'types': types,
             'show_follow_link': not is_local,
@@ -87,24 +93,20 @@ class DocView(EndpointView, RDFView):
 
     @cached_view
     def handle_GET(self, request, context):
-        expected_doc_url, doc_url = context['expected_doc_url'], context['doc_url']
-        if expected_doc_url != doc_url:
-            return HttpResponsePermanentRedirect(expected_doc_url)
+        subject_uri, doc_uri = context['subject_uri'], context['doc_uri']
+        types = context['types']
 
         queries, graph = [], rdflib.ConjunctiveGraph()
         for prefix, ns in NS.iteritems():
             graph.namespace_manager.bind(prefix, ns)
-        uri, types = context['uri'], context['types']
-        graph += ((uri, NS.rdf.type, t) for t in types)
-        subject = Resource(uri, graph, self.endpoint)
+
+        graph += ((subject_uri, NS.rdf.type, t) for t in types)
+        subject = Resource(subject_uri, graph, self.endpoint)
 
         for query in subject.get_queries():
             graph += self.endpoint.query(query)
             queries.append(query)
 
-        format_urls = doc_forwards(uri, self.FORMATS, described=True)
-        doc_uri = rdflib.URIRef(format_urls[None])
-        
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):
             graph.add((doc_uri, NS['dcterms'].source, graph_name))
@@ -117,30 +119,22 @@ class DocView(EndpointView, RDFView):
 
         if not graph:
             raise Http404
+
+        for doc_rdf_processor in self._doc_rdf_processors:
+            additional_context = doc_rdf_processor(graph=graph,
+                                                   doc_uri=doc_uri,
+                                                   subject_uri=subject_uri,
+                                                   subject=subject,
+                                                   endpoint=self.endpoint,
+                                                   renderers=self.FORMATS.values())
+            if additional_context:
+                context.update(additional_context)
         
-            
-        graph.add((doc_uri, NS['foaf'].primaryTopic, uri))
-        graph.add((doc_uri, NS['rdf'].type, NS['foaf'].Document))
-        graph.add((doc_uri, NS['dcterms']['title'], rdflib.Literal('Description of %s' % subject.label)))
-        
-        
-        formats = []
-        for renderer in self.FORMATS.itervalues():
-            url = rdflib.URIRef(format_urls[renderer.format])
-            formats.append((renderer, url))
-            map(graph.add, [
-                (doc_uri, NS['dcterms'].hasFormat, url),
-                (url, NS['dcterms']['title'], rdflib.Literal('%s description of %s' % (renderer.name, subject.label))),
-            ] + [(url, NS['dc']['format'], rdflib.Literal(mimetype)) for mimetype in renderer.mimetypes]
-            )
-        formats.sort(key=lambda x:x[0].name)
-            
         context.update({
             'graph': graph,
             'subject': subject,
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
-            'formats': formats,
             'queries': queries,
         })
 
@@ -151,6 +145,25 @@ class DocView(EndpointView, RDFView):
                 raise Http404
         else:
             return self.render(request, context, context['subject'].template_name)
+
+    @property
+    def _doc_rdf_processors(self):
+        if hasattr(self, '_doc_rdf_processors_cache'):
+            return self._doc_rdf_processors_cache
+        processors = []
+        for name in settings.DOC_RDF_PROCESSORS:
+            module_name, attribute_name = name.rsplit('.', 1)
+            try:
+                module = import_module(module_name)
+            except ImportError, e:
+                raise ImproperlyConfigured('Error importing doc RDF processor module %s: "%s"' % (module_name, e))
+            try:
+                processors.append(getattr(module, attribute_name))
+            except AttributeError:
+                raise ImproperlyConfigured('Module "%s" does not define a "%s" callable doc RDF processor' % (module_name, attribute_name))
+        self._doc_rdf_processors_cache = tuple(processors)
+        return self._doc_rdf_processors_cache
+
 
 
 class SparqlView(EndpointView, RDFView, ResultSetView):
