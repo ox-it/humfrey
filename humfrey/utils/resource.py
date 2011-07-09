@@ -209,7 +209,6 @@ class BaseResource(object):
         return ds
 
     @property
-    @cache_per_identifier
     def label(self):
         labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
         #if not labels:
@@ -233,7 +232,6 @@ class BaseResource(object):
         return sorted(values, key=f)
 
     @property
-    @cache_per_identifier
     def label2(self):
         for prefix, uri in NS.iteritems():
             if self._identifier.startswith(uri):
