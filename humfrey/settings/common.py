@@ -164,3 +164,5 @@ DOC_RDF_PROCESSORS = (
     'humfrey.desc.rdf_processors.doc_meta',
     'humfrey.desc.rdf_processors.formats',
 )
+
+SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
