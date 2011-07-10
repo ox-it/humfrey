@@ -133,7 +133,7 @@ class BaseView(object):
                 context = self.initial_context(request, *args, **kwargs)
                 response = method(request, context, *args, **kwargs)
                 pickled_response = base64.b64encode(pickle.dumps(response))
-                cache.set(key, pickled_response, 1800)
+                cache.set(key, pickled_response, settings.CACHE_TIMES['page'])
                 return response
             context = self.initial_context(request, *args, **kwargs)
             response = method(request, context, *args, **kwargs)

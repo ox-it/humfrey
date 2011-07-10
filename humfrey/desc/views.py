@@ -7,7 +7,7 @@ import rdflib
 import redis
 
 from django.conf import settings
-from django.http import Http404, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
@@ -80,7 +80,7 @@ class DocView(EndpointView, RDFView):
         if expected_doc_url != doc_url:
             return HttpResponsePermanentRedirect(expected_doc_url)
 
-        doc_uri = doc_forward(uri, request, format=None, described=True)
+        doc_uri = rdflib.URIRef(doc_forward(uri, request, format=None, described=True))
 
         return {
             'subject_uri': uri,
@@ -93,6 +93,8 @@ class DocView(EndpointView, RDFView):
 
     @cached_view
     def handle_GET(self, request, context):
+        if isinstance(context, HttpResponse):
+            return context
         subject_uri, doc_uri = context['subject_uri'], context['doc_uri']
         types = context['types']
 

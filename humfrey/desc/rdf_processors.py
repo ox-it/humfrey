@@ -7,7 +7,6 @@ def formats(graph, doc_uri, subject_uri, subject, endpoint, renderers):
     format_urls = doc_forwards(subject_uri, renderers, described=True)
     formats_for_context = []
     for renderer in renderers:
-        print renderer
         url = rdflib.URIRef(format_urls[renderer.format])
         formats_for_context.append({
             'url': url,

@@ -77,6 +77,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django_hosts.middleware.HostsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -93,6 +94,8 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django_hosts',
+    'humfrey.base',
     'humfrey.desc',
     'humfrey.linkeddata',
     # Uncomment the next line to enable the admin:
@@ -166,3 +169,8 @@ DOC_RDF_PROCESSORS = (
 )
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
+
+CACHE_TIMES = {
+    'page': 1800,
+}
+CACHE_TIMES.update(dict((k[6:], int(v)) for k, v in config.iteritems() if k.startswith('cache:')))
