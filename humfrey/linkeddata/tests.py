@@ -4,22 +4,14 @@ import rdflib
 
 from django.conf import settings
 from django.core.handlers.base import BaseHandler
-from django_hosts.reverse import reverse_crossdomain
 
 from humfrey.linkeddata.uri import doc_forward, doc_backward
+from humfrey.tests.stubs import stub_reverse_crossdomain
 
 TEST_ID_MAPPING = (
     ('http://random.example.org/id/', 'http://data.example.org/doc:random/', False),
     ('http://id.example.org/', 'http://data.example.org/doc/', True)
 )
-
-def stub_reverse_crossdomain(host, url):
-    if (host, url) == ('data', 'doc-generic'):
-        return '//data.example.org/doc/'
-    elif (host, url) == ('data', 'desc'):
-        return '//data.example.org/desc/'
-    else:
-        raise AssertionError("reverse_crossdomain called with unexpected arguments.")
 
 @mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING)
 @mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
@@ -107,8 +99,6 @@ class DocViewTestCase(unittest2.TestCase):
 
 
 
-
-#    def testDoc
 
         
 if __name__ == '__main__':
