@@ -127,7 +127,7 @@ ENDPOINT_QUERY = config.get('endpoints:query')
 ENDPOINT_UPDATE = config.get('endpoints:update')
 ENDPOINT_GRAPH = config.get('endpoints:graph')
 
-CACHE_BACKEND = config.get('supporting_services:cache_backend', 'locmem://')
+CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
                 'port': int(config.get('supporting_services:redis_port') or 6379)}
 
