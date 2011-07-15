@@ -4,6 +4,7 @@ from urlparse import urlparse
 from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode
+from rdflib.term import Identifier
 
 from django.core.cache import cache
 from django.conf import settings
@@ -23,7 +24,7 @@ def register(cls, *types):
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
-        
+
         key = hashlib.sha1('resource-metadata:%s:%s' % (f, base64.b64encode(self._identifier.encode('utf-8')))).hexdigest()
         value = cache.get(key)
         if value is None:
@@ -31,6 +32,17 @@ def cache_per_identifier(f):
             cache.set(key, value, 18000)
         return value
     return g
+
+class SparqlQueryVars(dict):
+    def __init__(self, **kwargs):
+        super(SparqlQueryVars, self).__init__(**dict((k, v.n3()) for k, v in kwargs.iteritems()))
+    def __getitem__(self, key):
+        try:
+            return super(SparqlQueryVars, self).__getitem__(key)
+        except KeyError:
+            var = '?' + key
+            self[key] = var
+            return var
 
 def get_describe_query(uri, types):
     patterns, variables = set(), set()
@@ -58,7 +70,7 @@ class Resource(object):
     def __new__(cls, identifier, graph, endpoint):
         classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
-            if t in TYPE_REGISTRY:
+            if t in TYPE_REGISTRY and TYPE_REGISTRY[t] not in classes:
                 classes.append(TYPE_REGISTRY[t])
         classes.sort(key=lambda cls:-getattr(cls, '_priority', 0))
         cls = type(type(identifier).__name__ + classes[0].__name__, tuple(classes) + (type(identifier),), {})
@@ -80,10 +92,10 @@ class BaseResource(object):
 
     def __unicode__(self):
         return unicode(self._identifier)
-        
+
     def __hash__(self):
         return hash((self.__class__, self._identifier))
-        
+
     def render(self):
         if isinstance(self._identifier, BNode):
             return self.label
@@ -197,7 +209,6 @@ class BaseResource(object):
         return ds
 
     @property
-    @cache_per_identifier
     def label(self):
         labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
         #if not labels:
@@ -221,7 +232,6 @@ class BaseResource(object):
         return sorted(values, key=f)
 
     @property
-    @cache_per_identifier
     def label2(self):
         for prefix, uri in NS.iteritems():
             if self._identifier.startswith(uri):
@@ -237,7 +247,7 @@ class BaseResource(object):
 
     _DESCRIPTION_PROPERTIES = ('dcterms:description', 'dc:description', 'rdfs:comment')
     description = property(lambda self:self.get_one_of(*self._DESCRIPTION_PROPERTIES))
-    
+
     def sorted_subjects(self, ps, os):
         ps = ps if isinstance(ps, tuple) else (ps,)
         os = os if isinstance(os, tuple) else (os,)
@@ -246,6 +256,44 @@ class BaseResource(object):
         subjects = sorted(subjects, key=lambda s: s.label)
         return subjects
 
+    def get_queries(self):
+        for f in (self.get_describe_query, self.get_construct_query):
+            query = f()
+            if query:
+                yield query
+
+    def get_describe_query(self):
+        patterns, vars = set(), SparqlQueryVars(uri=self._identifier)
+
+        for base in type(self).__bases__:
+            if hasattr(base, '_describe_patterns'):
+                patterns |= set(p % vars for p in base._describe_patterns())
+        query = 'DESCRIBE %s' % ' '.join(sorted(vars.values()))
+        if patterns:
+            query += ' {\n  %s\n}' % '\n  UNION\n  '.join('{ %s }' % p for p in patterns)
+        return query
+
+    def get_construct_query(self):
+        constructs, patterns, vars = set(), set(), SparqlQueryVars(uri=self._identifier)
+
+        for base in type(self).__bases__:
+            if hasattr(base, '_construct_patterns'):
+                for pattern in base._construct_patterns():
+                    if not isinstance(pattern, tuple):
+                        pattern = (pattern, pattern)
+                    constructs.add(pattern[0] % vars)
+                    patterns.add(pattern[1] % vars)
+        if patterns:
+            return 'CONSTRUCT {\n  %s\n} WHERE {\n  %s\n}' % (
+                ' .\n  '.join(constructs),
+                '\n  UNION\n  '.join('{ %s }' % p for p in patterns))
+        else:
+            return None
+
+    @property
+    def hexhash(self):
+        return hashlib.sha1(self._identifier).hexdigest()[:8]
+
 class Account(object):
     def render(self):
         if self.foaf_accountServiceHomepage.uri == URIRef('http://www.twitter.com/'):
@@ -253,13 +301,13 @@ class Account(object):
                 (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountName))))
         else:
             return mark_safe('<a href="%s">%s at %s</a>' % tuple(map(escape, (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountServiceHomepage.uri))))
-    
+
     _WIDGET_TEMPLATES = {
         URIRef('http://www.twitter.com/'): 'widgets/twitter.html',
     }
     def widget_templates(self):
         return [self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)] + super(Account, self).widget_templates()
-        
+
 register(Account, 'foaf:OnlineAccount')
 
 class Address(object):
@@ -319,16 +367,14 @@ class Dataset(object):
     template_name = 'doc/dataset'
 
     @classmethod
-    def _describe_patterns(cls, uri, get_names):
-        name, = get_names(1)
-        params = {'uri': uri.n3(), 'name': name}
+    def _describe_patterns(cls):
         return [
-            '%(uri)s dcterms:source %(name)s' % params,
-            '%(uri)s dcterms:license %(name)s' % params,
-            '%(name)s void:inDataset %(uri)s' % params,
+            '%(uri)s dcterms:source %(name)s',
+            '%(uri)s dcterms:license %(name)s',
+            '%(name)s void:inDataset %(uri)s',
         ]
 
-    _STARS = dict((NS['oo']['opendata-%s-star' % i], ('stars/data-badge-%s.png' % i, '%s-star dataset' % i)) for i in range(6)) 
+    _STARS = dict((NS['oo']['opendata-%s-star' % i], ('stars/data-badge-%s.png' % i, '%s-star dataset' % i)) for i in range(6))
 
     @property
     def open_data_stars(self):
@@ -343,11 +389,11 @@ class Dataset(object):
         if not hasattr(self, '_graph_names'):
             self._graph_names = list(self._graph.subjects(NS['void'].inDataset, self._identifier))
         return self._graph_names
-    
+
     _USED_CLASSES_QUERY = """
          CONSTRUCT { ?t a rdfs:Class ; rdfs:label ?label } WHERE {
             GRAPH ?g { ?s a ?t } .
-            FILTER ( %s ) .            
+            FILTER ( %s ) .
             OPTIONAL { ?t rdfs:label ?label }
         }"""
     def used_classes(self):
@@ -378,7 +424,7 @@ class Dataset(object):
             return []
         predicates = [Resource(p, graph, self._endpoint) for p in set(graph.subjects())]
         predicates.sort(key=lambda p:p.label)
-        return predicates 
+        return predicates
 
 register(Dataset, 'void:Dataset')
 
@@ -404,7 +450,7 @@ register(License, 'cc:License')
 class CollegeHall(object):
     def _augment(self):
         return self._endpoint.query("DESCRIBE ?s WHERE { ?s qb:dataset <http://data.ox.ac.uk/id/dataset/norrington> ; fhs:institution %s }" % self._identifier.n3())
-        
+
     def fhs_results(self):
         data = self._graph.subjects(NS['fhs'].institution, self._identifier)
         data = (Resource(datum, self._graph, self._endpoint) for datum in data)
@@ -418,12 +464,12 @@ class CollegeHall(object):
 
     def widget_templates(self):
         return ['widgets/norrington.html'] + super(CollegeHall, self).widget_templates()
-        
+
 register(CollegeHall, 'oxp:Hall', 'oxp:College')
 
 class Ontology(object):
     _template_name = 'doc/ontology'
-    
+
     @cache_per_identifier
     def _augment(self):
         return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())

@@ -57,10 +57,13 @@ class Endpoint(object):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
+            prefixes = []
             for prefix, uri in self._namespaces.iteritems():
                 if '%s:' % prefix in query:
-                    q.insert(0, 'PREFIX %s: <%s>\n' % (prefix, uri))
-            query = ''.join(q)
+                    prefixes.append((prefix, uri))
+            prefixes.sort()
+            prefixes = ['PREFIX %s: <%s>\n' % i for i in prefixes]
+            query = ''.join(prefixes + q)
 
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),

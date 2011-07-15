@@ -4,6 +4,8 @@
 import ConfigParser
 import os
 
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+
 try:
     HUMFREY_CONFIG_FILE = os.environ['HUMFREY_CONFIG_FILE']
 except KeyError:
@@ -75,6 +77,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django_hosts.middleware.HostsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -91,6 +94,8 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django_hosts',
+    'humfrey.base',
     'humfrey.desc',
     'humfrey.linkeddata',
     # Uncomment the next line to enable the admin:
@@ -122,7 +127,7 @@ ENDPOINT_QUERY = config.get('endpoints:query')
 ENDPOINT_UPDATE = config.get('endpoints:update')
 ENDPOINT_GRAPH = config.get('endpoints:graph')
 
-CACHE_BACKEND = config.get('supporting_services:cache_backend', 'locmem://')
+CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
                 'port': int(config.get('supporting_services:redis_port') or 6379)}
 
@@ -149,3 +154,23 @@ if config.get('main:log_to_stderr') == 'true':
         raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
     logging.basicConfig(stream=sys.stderr,
                         level=getattr(logging, log_level))
+
+if config.get('google_analytics:key'):
+    INSTALLED_APPS += ('humfrey.analytics',)
+    TEMPLATE_CONTEXT_PROCESSORS += ('humfrey.analytics.context_processors.google_analytics',)
+    GOOGLE_ANALYTICS = {
+        'key': config['google_analytics:key'],
+        'zero_timeouts': config.get('google_analytics:zero_timeouts') == 'true',
+    }
+
+DOC_RDF_PROCESSORS = (
+    'humfrey.desc.rdf_processors.doc_meta',
+    'humfrey.desc.rdf_processors.formats',
+)
+
+SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
+
+CACHE_TIMES = {
+    'page': 1800,
+}
+CACHE_TIMES.update(dict((k[6:], int(v)) for k, v in config.iteritems() if k.startswith('cache:')))

@@ -11,6 +11,7 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse, resolve, NoReverseMatch
 from django.core.cache import cache
+from django.conf import settings
 
 logger = logging.getLogger('core.requests')
 
@@ -133,7 +134,7 @@ class BaseView(object):
                 context = self.initial_context(request, *args, **kwargs)
                 response = method(request, context, *args, **kwargs)
                 pickled_response = base64.b64encode(pickle.dumps(response))
-                cache.set(key, pickled_response, 1800)
+                cache.set(key, pickled_response, settings.CACHE_TIMES['page'])
                 return response
             context = self.initial_context(request, *args, **kwargs)
             response = method(request, context, *args, **kwargs)

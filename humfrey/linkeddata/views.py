@@ -76,7 +76,7 @@ class RDFView(BaseView):
 
         return render_to_response('render.kml',
                                   context, context_instance=RequestContext(request),
-                                  mimetype='application/vnd.google-earth.kml+xmll')
+                                  mimetype='application/vnd.google-earth.kml+xml')
 
 
 class ResultSetView(BaseView):

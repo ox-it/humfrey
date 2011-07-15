@@ -40,7 +40,11 @@ NS = {
 
 NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
 
-NS = dict((k,Namespace(v)) for k,v in NS.iteritems())
+class _NS(dict):
+    def __getattr__(self, key):
+        return self[key]
+
+NS = _NS((k,Namespace(v)) for k,v in NS.iteritems())
 
 def register(k, v):
 	NS[k] = Namespace(v)
