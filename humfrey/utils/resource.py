@@ -18,6 +18,8 @@ image_logger = logging.getLogger('humfrey.utils.resource.image')
 TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
+IRI = re.compile(u'^([^\\<>"{}|^`\x00-\x20])*$')
+
 def register(cls, *types):
     for t in types:
         TYPE_REGISTRY[expand(t)] = cls
@@ -198,7 +200,7 @@ class BaseResource(object):
               FILTER ( %s ) .
               FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title )
             }
-        """ % ' || '.join('?s = %s' % o.n3() for o in objects))
+        """ % ' || '.join('?s = %s' % o.n3() for o in objects if IRI.match(o)))
 
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
