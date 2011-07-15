@@ -16,7 +16,7 @@ from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.utils.views import BaseView
 from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
-from humfrey.utils.resource import Resource, get_describe_query
+from humfrey.utils.resource import Resource, get_describe_query, IRI
 from humfrey.utils.namespaces import NS
 from humfrey.utils.cache import cached_view
 
@@ -31,6 +31,8 @@ class IndexView(BaseView):
 class IdView(EndpointView):
     def initial_context(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
+        if not IRI.match(uri):
+            raise Http404
         if not self.get_types(uri):
             raise Http404
         return {
@@ -54,6 +56,8 @@ class DescView(EndpointView):
             url = urlparse(uri)
         except Exception:
             raise Http404
+        if not IRI.match(uri):
+            return HttpResponseTemporaryRedirect(unicode(uri))
         if self.get_types(uri):
             return HttpResponsePermanentRedirect(doc_forward(uri, request, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
