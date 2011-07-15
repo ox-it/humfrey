@@ -46,25 +46,6 @@ class SparqlQueryVars(dict):
             self[key] = var
             return var
 
-def get_describe_query(uri, types):
-    patterns, variables = set(), set()
-    def get_names(count):
-        for i in range(count):
-            name = '?var%d' % i
-            variables.add(name)
-            yield name
-
-    for t in types:
-        if hasattr(TYPE_REGISTRY.get(t), '_describe_patterns'):
-            patterns |= set(TYPE_REGISTRY[t]._describe_patterns(uri, get_names))
-    if patterns:
-        return 'DESCRIBE %s %s WHERE {\n  %s\n}' % (
-            uri.n3(),
-            ' '.join(sorted(variables)),
-            '\n  UNION\n  '.join('{ %s }' % pattern for pattern in patterns))
-    else:
-        return 'DESCRIBE %s' % uri.n3()
-
 def is_resource(r):
     return isinstance(r, (URIRef, BNode))
 

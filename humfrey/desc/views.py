@@ -16,7 +16,7 @@ from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.utils.views import BaseView
 from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
-from humfrey.utils.resource import Resource, get_describe_query, IRI
+from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 from humfrey.utils.cache import cached_view
 
