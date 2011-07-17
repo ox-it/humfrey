@@ -47,7 +47,7 @@ class _RDFViewMetaclass(BaseViewMetaclass):
         if 'RDF_SERIALIZATIONS' in dict:
             serializations = dict.pop('RDF_SERIALIZATIONS')
             for format, mimetype, method, name in serializations:
-                dict['render_%s' % format] = cls.get_rdf_renderer(format, mimetype, method, name)
+                dict['render_%s' % format] = mcs.get_rdf_renderer(format, mimetype, method, name)
 
         return super(_RDFViewMetaclass, mcs).__new__(mcs, name, bases, dict)
 
