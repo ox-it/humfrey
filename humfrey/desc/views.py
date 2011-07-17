@@ -66,6 +66,9 @@ class DescView(EndpointView):
             raise Http404
 
 class DocView(EndpointView, RDFView):
+    
+    def __init__(self, *args, **kwargs):
+        self._doc_rdf_processors_cache = None
 
     def initial_context(self, request):
         doc_url = request.build_absolute_uri()
@@ -154,7 +157,7 @@ class DocView(EndpointView, RDFView):
 
     @property
     def _doc_rdf_processors(self):
-        if hasattr(self, '_doc_rdf_processors_cache'):
+        if self._doc_rdf_processors_cache is not None:
             return self._doc_rdf_processors_cache
         processors = []
         for name in settings.DOC_RDF_PROCESSORS:
@@ -173,9 +176,12 @@ class DocView(EndpointView, RDFView):
 
 
 class SparqlView(EndpointView, RDFView, ResultSetView):
-    class SparqlViewException(Exception): pass
-    class ConcurrentQueryException(SparqlViewException): pass
-    class ExcessiveQueryException(SparqlViewException): pass
+    class SparqlViewException(Exception):
+        pass
+    class ConcurrentQueryException(SparqlViewException):
+        pass
+    class ExcessiveQueryException(SparqlViewException):
+        pass
 
     def perform_query(self, request, query, common_prefixes):
         client = redis.client.Redis(**settings.REDIS_PARAMS)

@@ -7,7 +7,7 @@ import rdflib
 import simplejson
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.http import HttpResponse
 from django.core.cache import cache
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -33,7 +33,7 @@ class EndpointView(BaseView):
 
 class _RDFViewMetaclass(BaseViewMetaclass):
     @classmethod
-    def get_rdf_renderer(cls, format, mimetype, method, name):
+    def get_rdf_renderer(mcs, format, mimetype, method, name):
         @renderer(format=format, mimetypes=(mimetype,), name=name)
         def render(self, request, context, template_name):
             graph = context.get('graph')
@@ -43,15 +43,15 @@ class _RDFViewMetaclass(BaseViewMetaclass):
         render.__name__ = 'render_%s' % format
         return render
 
-    def __new__(cls, name, bases, dict):
+    def __new__(mcs, name, bases, dict):
         if 'RDF_SERIALIZATIONS' in dict:
             serializations = dict.pop('RDF_SERIALIZATIONS')
             for format, mimetype, method, name in serializations:
                 dict['render_%s' % format] = cls.get_rdf_renderer(format, mimetype, method, name)
 
-        return super(_RDFViewMetaclass, cls).__new__(cls, name, bases, dict)
+        return super(_RDFViewMetaclass, mcs).__new__(mcs, name, bases, dict)
 
-class RDFView(BaseView):
+class RDFView(EndpointView):
     __metaclass__ = _RDFViewMetaclass
 
     RDF_SERIALIZATIONS = (
@@ -67,8 +67,8 @@ class RDFView(BaseView):
             raise NotImplementedError
         graph = context['graph']
         subjects = set()
-        for s in set(graph.subjects()):
-            subject = Resource(s, graph, self.endpoint)
+        for subject in set(graph.subjects()):
+            subject = Resource(subject, graph, self.endpoint)
             if subject.geo_lat and subject.geo_long and isinstance(subject, rdflib.URIRef):
                 subjects.add(subject)
         context['subjects'] = subjects
@@ -158,15 +158,15 @@ class ResultSetView(BaseView):
         yield '%s\n' % ('true' if result else 'false')
 
     def _spool_csv_resultset(self, results):
-        def quote(s):
-            if s is None:
+        def quote(value):
+            if value is None:
                 return ''
-            s = s.replace('"', '""')
-            if any(c in s for c in '\n" ,'):
-                s = '"%s"' % s
-            return s
+            value = value.replace('"', '""')
+            if any(bad_char in value for bad_char in '\n" ,'):
+                value = '"%s"' % value
+            return value
         for result in results:
-            yield ",".join(quote(v) for v in result)
+            yield ",".join(quote(value) for value in result)
             yield '\n'
 
     def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
