@@ -192,7 +192,7 @@ class SparqlView(EndpointView, RDFView, ResultSetView):
                 time.sleep(intensity - 10)
 
             start = time.time()
-            results = self.endpoint.query(query, timeout=5, common_prefixes=common_prefixes)
+            results = self.endpoint.query(query, common_prefixes=common_prefixes)
             end = time.time()
 
             client.set('sparql:intensity:%s' % addr, intensity + end - start)

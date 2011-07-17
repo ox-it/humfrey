@@ -53,7 +53,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, timeout=None, common_prefixes = True):
+    def query(self, query, common_prefixes = True):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
