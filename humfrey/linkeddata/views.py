@@ -132,7 +132,10 @@ class ResultSetView(BaseView):
         yield '  "results": [\n'
         for i, result in enumerate(results):
             yield '    {' if i == 0 else ',\n    {'
-            for j, (name, value) in enumerate(result._asdict().iteritems()):
+            j = 0
+            for name, value in result._asdict().iteritems():
+                if value is None:
+                    continue
                 yield ',\n' if j > 0 else '\n'
                 yield '      %s: { "type": ' % dumps(name.encode('utf8'))
                 if isinstance(value, rdflib.URIRef):
@@ -145,7 +148,8 @@ class ResultSetView(BaseView):
                     yield '%s, "xml:lang": %s' % (dumps('literal'), dumps(value.language.encode('utf8')))
                 else:
                     yield dumps('literal')
-                yield ', "value": %s' % dumps(value.encode('utf8'))
+                yield ', "value": %s }' % dumps(value.encode('utf8'))
+                j += 1
             yield '\n    }'
         yield '\n  ]\n'
         yield '}\n'
