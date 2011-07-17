@@ -1,0 +1,45 @@
+{
+  "head": {
+    "vars": [ "one", "two" ]
+  },
+  "results": [
+    {
+      "one": { "type": "uri", "value": "http://example.org/one" },
+      "two": { "type": "bnode", "value": "first" }
+    },
+    {
+      "one": { "type": "literal", "value": "hello" },
+      "two": { "type": "literal", "xml:lang": "en", "value": "hello" }
+    },
+    {
+      "one": { "type": "literal", "value": "foo\"bar" },
+      "two": { "type": "literal", "value": "foo\nbar" }
+    },
+    {
+      "one": { "type": "literal", "value": "foo,bar" },
+      "two": { "type": "literal", "value": "foo;bar" }
+    },
+    {
+      "one": { "type": "literal", "value": "foo bar" },
+      "two": { "type": "literal", "value": "foo\tbar" }
+    },
+    {
+      "one": { "type": "typed-literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer", "value": "1" },
+      "two": { "type": "typed-literal", "datatype": "http://www.w3.org/2001/XMLSchema#timeDate", "value": "2011-01-02T12:34:56Z" }
+    },
+    {
+    },
+    {
+      "one": { "type": "bnode", "value": "first" },
+      "two": { "type": "bnode", "value": "second" }
+    },
+    {
+      "one": { "type": "uri", "value": "http://example.org/" },
+      "two": { "type": "uri", "value": "mailto:alice@example.org" }
+    },
+    {
+      "one": { "type": "uri", "value": "urn:isbn:9781449306595" },
+      "two": { "type": "uri", "value": "tag:bob@example.org,2011:foo" }
+    }
+  ]
+}
