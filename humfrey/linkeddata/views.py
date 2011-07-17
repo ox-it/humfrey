@@ -159,8 +159,10 @@ class ResultSetView(BaseView):
 
     def _spool_csv_resultset(self, results):
         def quote(s):
+            if s is None:
+                return ''
             s = s.replace('"', '""')
-            if any(c in s for c in '\n" '):
+            if any(c in s for c in '\n" ,'):
                 s = '"%s"' % s
             return s
         for result in results:
