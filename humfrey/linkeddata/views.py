@@ -79,7 +79,7 @@ class RDFView(EndpointView):
                                   mimetype='application/vnd.google-earth.kml+xml')
 
 
-class ResultSetView(BaseView):
+class ResultSetView(EndpointView):
     def _spool_srx_boolean(self, result):
         yield '<?xml version="1.0"?>\n'
         yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'

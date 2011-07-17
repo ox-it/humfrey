@@ -65,10 +65,11 @@ class DescView(EndpointView):
         else:
             raise Http404
 
-class DocView(EndpointView, RDFView):
+class DocView(RDFView):
     
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None
+        super(DocView, self).__init__(*args, **kwargs)
 
     def initial_context(self, request):
         doc_url = request.build_absolute_uri()
@@ -174,8 +175,7 @@ class DocView(EndpointView, RDFView):
         return self._doc_rdf_processors_cache
 
 
-
-class SparqlView(EndpointView, RDFView, ResultSetView):
+class SparqlView(RDFView, ResultSetView):
     class SparqlViewException(Exception):
         pass
     class ConcurrentQueryException(SparqlViewException):
