@@ -168,16 +168,10 @@ class CSVRendererTestCase(unittest2.TestCase):
         except Exception, e:
             raise AssertionError(e)
         
-        mapping = {}
         for result, target_result in zip(data, TEST_RESULTSET):
             for term, target_term in zip(result, target_result):
                 term = term.decode('utf-8')
-                if isinstance(target_term, rdflib.BNode):
-                    if target_term in mapping:
-                        self.assertEqual(term, mapping[target_term])
-                    else:
-                        mapping[target_term] = term
-                elif target_term is None:
+                if target_term is None:
                     self.assertEqual(term, '')
                 else:
                     self.assertEqual(term, unicode(target_term))
