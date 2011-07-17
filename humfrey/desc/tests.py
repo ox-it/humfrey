@@ -35,6 +35,10 @@ class GraphTestMixin(object):
         for term in itertools.chain.from_iterable(graph):
             self.assertIsInstance(term, rdflib.term.Identifier)
 
+class ClientTestCase(unittest2.TestCase):
+    def setUp(self):
+        self.client = Client()
+
 @mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
 class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     _ALL = [
@@ -58,12 +62,9 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
             self.assertIsInstance(context, (type(None), dict))
 
 #@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
-class DocViewTestCase(unittest2.TestCase, GraphTestMixin):
+class DocViewTestCase(ClientTestCase, GraphTestMixin):
     _TEST_URI = 'http://data/example.com/id/Foo'
     _HTTP_HOST = 'data.example.org'
-
-    def setUp(self):
-        self.client = Client()
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
     def testNoTypes(self, get_types):
@@ -81,6 +82,8 @@ class DocViewTestCase(unittest2.TestCase, GraphTestMixin):
         self.assertIsInstance(response.context['subject_uri'], rdflib.URIRef)
         self.assertIsInstance(response.context['doc_uri'], rdflib.URIRef)
         self.check_valid_terms(response.context['graph'])
+
+class SparqlViewTestCase(ClientTestCase, GraphTestMixin):
 
     @mock.patch('humfrey.desc.views.redis.client.Redis')
     @mock.patch('humfrey.desc.views.SparqlView.endpoint')
