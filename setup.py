@@ -35,10 +35,9 @@ root_dir = os.path.dirname(__file__)
 if root_dir != '':
     os.chdir(root_dir)
 
-for dirpath, dirnames, filenames in os.walk(os.path.join(root_dir, 'humfrey')):
+for dirpath, dirnames, filenames in os.walk('humfrey'):
     # Ignore dirnames that start with '.'
-    for i, dirname in enumerate(dirnames):
-        if dirname.startswith('.'): del dirnames[i]
+    dirnames[:] = [dirname for dirname in dirnames if not dirname.startswith('.')]
     if '__init__.py' in filenames:
         packages.append('.'.join(fullsplit(dirpath)))
     elif filenames:
@@ -47,6 +46,8 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(root_dir, 'humfrey')):
 #################################
 # END borrowed from Django      #
 #################################
+
+print data_files
 
 setup(
     name='humfrey',
