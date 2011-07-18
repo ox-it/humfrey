@@ -98,9 +98,11 @@ class ResultSetView(EndpointView):
         for result in results:
             yield '    <result>\n'
             for field in result._fields:
+                value = getattr(result, field)
+                if value is None:
+                    continue
                 yield '      <binding name="%s">\n' % escape(field)
                 yield ' '*8
-                value = getattr(result, field)
                 if isinstance(value, rdflib.URIRef):
                     yield '<uri>%s</uri>' % escape(value).encode('utf-8')
                 elif isinstance(value, rdflib.BNode):
