@@ -47,7 +47,16 @@ for dirpath, dirnames, filenames in os.walk('humfrey'):
 # END borrowed from Django      #
 #################################
 
-print data_files
+
+# Idea borrowed from http://cburgmer.posterous.com/pip-requirementstxt-and-setuppy
+install_requires, dependency_links = [], []
+for line in open('requirements.txt'):
+    line = line.strip()
+    if line.startswith('-e'):
+        dependency_links.append(line[2:].strip())
+    elif line:
+        install_requires.append(line)
+
 
 setup(
     name='humfrey',
@@ -70,5 +79,6 @@ setup(
                  'Topic :: Software Development :: Libraries :: Python Modules'],
     keywords=['sparql', 'linked data', 'RDF', 'REST'],
     data_files=data_files,
-
+    install_requires=install_requires,
+    dependency_links=dependency_links,
 )
