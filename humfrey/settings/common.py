@@ -13,6 +13,7 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
+relative_path = lambda *args: os.path.abspath(os.path.join(HUMFREY_CONFIG_FILE, *args))
 
 config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
@@ -137,13 +138,15 @@ SERVED_DOMAINS = ()
 ID_MAPPING = ()
 
 RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
+if RESIZED_IMAGE_CACHE_DIR:
+    RESIZED_IMAGE_CACHE_DIR = relative_path(RESIZED_IMAGE_CACHE_DIR)
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
     v = config.get('logging:%s' % k, None)
     if v:
-        v = os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), v))
+        v = relative_path(v)
     LOG_FILENAMES[k] = v
 del k, v
 

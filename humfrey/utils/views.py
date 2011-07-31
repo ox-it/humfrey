@@ -176,7 +176,7 @@ class BaseView(object):
         else:
             renderers = [self.FORMATS['html']]
         return renderers
-    	
+
 
     def render(self, request, context, template_name):
 
