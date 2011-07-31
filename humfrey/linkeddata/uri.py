@@ -1,5 +1,10 @@
 import urllib
+
 import urlparse
+try:
+    from urlparse import parse_qs
+except ImportError:
+    from cgi import parse_qs
 
 import rdflib
 
@@ -73,7 +78,7 @@ def doc_backward(url, request=None):
     else:
         format = None
     parsed_url = urlparse.urlparse(url)
-    query = urlparse.parse_qs(parsed_url.query)
+    query = parse_qs(parsed_url.query)
     if url.split(':', 1)[-1].split('?')[0] == reverse_crossdomain('data', 'doc-generic'):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
     if url.rsplit('.', 1)[-1] in DocView.FORMATS:
