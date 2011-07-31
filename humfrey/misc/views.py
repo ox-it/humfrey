@@ -19,7 +19,7 @@ else:
             try:
                 feed = feedparser.parse(rss_url)
                 for entry in feed.entries:
-                    entry.updated_datetime = datetime.datetime(*entry.updated_parsed[:6], tzinfo=pytz.utc) \
+                    entry.updated_datetime = datetime.datetime(*entry.updated_parsed[:6]+(pytz.utc,)) \
                                                  .astimezone(pytz.timezone(settings.TIME_ZONE))
             except Exception, e:
                 feed = None
