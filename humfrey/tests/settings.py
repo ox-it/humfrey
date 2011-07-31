@@ -1,6 +1,6 @@
 import os
 
-os.environ['HUMFREY_CONFIG_FILE'] = os.path.join(os.path.dirname(__file__), '..', 'tests', 'data', 'config.ini')
+os.environ['HUMFREY_CONFIG_FILE'] = os.path.join(os.path.dirname(__file__), 'data', 'config.ini')
 
 from humfrey.settings.common import *
 
