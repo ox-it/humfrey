@@ -181,7 +181,12 @@ class SparqlView(RDFView, ResultSetView):
     class ConcurrentQueryException(SparqlViewException):
         pass
     class ExcessiveQueryException(SparqlViewException):
-        pass
+        def __init__(self, intensity):
+            self.intensity = intensity
+    
+    _THROTTLE_THRESHOLD = 10
+    _DENY_THRESHOLD = 20
+    _INTENSITY_DECAY = 0.05
 
     def perform_query(self, request, query, common_prefixes):
         client = redis.client.Redis(**settings.REDIS_PARAMS)
@@ -191,20 +196,21 @@ class SparqlView(RDFView, ResultSetView):
         try:
             intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
             last = float(client.get('sparql:last:%s' % addr) or 0)
-            intensity = max(0, intensity - (time.time() - last) / 20)
-            if intensity > 20:
-                raise self.ExcessiveQueryException
-            elif intensity > 10:
-                time.sleep(intensity - 10)
+            intensity = max(0, intensity - (time.time() - last) * self._INTENSITY_DECAY)
+            if intensity > self._DENY_THRESHOLD:
+                raise self.ExcessiveQueryException(intensity)
+            elif intensity > self._THROTTLE_THRESHOLD:
+                time.sleep(intensity - self._THROTTLE_THRESHOLD)
 
             start = time.time()
             results = self.endpoint.query(query, common_prefixes=common_prefixes)
             end = time.time()
-
-            client.set('sparql:intensity:%s' % addr, intensity + end - start)
+            
+            new_intensity = intensity + end - start
+            client.set('sparql:intensity:%s' % addr, new_intensity)
             client.set('sparql:last:%s' % addr, end)
 
-            return results
+            return results, new_intensity
         finally:
             client.delete('sparql:lock:%s' % addr)
     
@@ -219,11 +225,19 @@ class SparqlView(RDFView, ResultSetView):
             'form': form,
         }
         
+        additional_headers = context['additional_headers'] = {
+            'X-Humfrey-SPARQL-Throttle-Threshold': self._THROTTLE_THRESHOLD,
+            'X-Humfrey-SPARQL-Deny-Threshold': self._DENY_THRESHOLD,
+            'X-Humfrey-SPARQL-Intensity-Decay': self._INTENSITY_DECAY,
+        }
+
         if not form.is_valid():
             return context
 
         try:        
-            results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
+            results, intensity = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
+            additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
+            
         except urllib2.HTTPError, e:
             context['error'] = e.read() #parse(e).find('.//pre').text
             context['status_code'] = e.code
@@ -235,6 +249,7 @@ class SparqlView(RDFView, ResultSetView):
         except self.ExcessiveQueryException, e:
             context['error'] = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
             context['status_code'] = 403
+            additional_headers['X-Humfrey-SPARQL-Intensity'] = e.intensity
             return context
         except etree.XMLSyntaxError, e:
             context['error'] = "Your query could not be returned in the time allotted it.\nPlease try a simpler query or using LIMIT to reduce the number of returned results."
@@ -256,7 +271,10 @@ class SparqlView(RDFView, ResultSetView):
         return context
     
     def handle_GET(self, request, context):
-        return self.render(request, context, 'sparql')
+        response = self.render(request, context, 'sparql')
+        for key, value in context.pop('additional_headers').items():
+            response[key] = value
+        return response
     handle_POST = handle_GET
         
 #class GraphView(BaseView):
