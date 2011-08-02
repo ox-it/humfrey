@@ -67,7 +67,7 @@ setup(
     packages=packages,
     scripts=['humfrey/pingback/bin/pingback.py'],
     license='BSD',
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
     classifiers=['Development Status :: 4 - Beta',
                  'Framework :: Django',
                  'Intended Audience :: Developers',
