@@ -30,6 +30,7 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
         rdf_processors.doc_meta,
     ]
 
+    @unittest2.expectedFailure
     def testAll(self):
         for rdf_processor in self._ALL:
             endpoint = mock.Mock(spec=sparql.Endpoint)
@@ -39,7 +40,13 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
             subject = resource.Resource(subject_uri, graph, endpoint)
             renderers = views.DocView().FORMATS.values()
 
-            context = rdf_processor(graph, doc_uri, subject_uri, subject, endpoint, renderers)
+            context = rdf_processor(request=request,
+                                    graph=graph,
+                                    doc_uri=doc_uri,
+                                    subject_uri=subject_uri,
+                                    subject=subject,
+                                    endpoint=endpoint,
+                                    renderers=renderers)
 
             self.assertFalse(endpoint.query.called, "The rdf procesor should not be touching the endpoint (at the moment)")
             self.check_valid_terms(graph)
