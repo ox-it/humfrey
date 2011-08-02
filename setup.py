@@ -67,6 +67,7 @@ setup(
     packages=packages,
     scripts=['humfrey/pingback/bin/pingback.py'],
     license='BSD',
+    url='https://github.com/oucs/humfrey',
     long_description=open('README.rst').read(),
     classifiers=['Development Status :: 4 - Beta',
                  'Framework :: Django',
