@@ -131,7 +131,8 @@ class DocView(RDFView):
             raise Http404
 
         for doc_rdf_processor in self._doc_rdf_processors:
-            additional_context = doc_rdf_processor(graph=graph,
+            additional_context = doc_rdf_processor(request=request,
+                                                   graph=graph,
                                                    doc_uri=doc_uri,
                                                    subject_uri=subject_uri,
                                                    subject=subject,

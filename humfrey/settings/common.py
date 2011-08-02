@@ -110,11 +110,6 @@ TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
 
-# Load pingback functionality if specified in the config.
-if config.get('pingback:enabled') == 'true':
-    MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback',)
-
 # Pull e-mail configuration from config file.
 EMAIL_HOST = config.get('email:host')
 EMAIL_PORT = int(config.get('email:port') or 0) or None
@@ -170,6 +165,12 @@ DOC_RDF_PROCESSORS = (
     'humfrey.desc.rdf_processors.doc_meta',
     'humfrey.desc.rdf_processors.formats',
 )
+
+# Load pingback functionality if specified in the config.
+if config.get('pingback:enabled') == 'true':
+    MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
+    INSTALLED_APPS += ('humfrey.pingback',)
+    DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
