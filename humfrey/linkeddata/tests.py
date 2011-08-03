@@ -132,7 +132,7 @@ class SRJRendererTestCase(unittest2.TestCase):
 
         # Rename bnodes in the order they appear. Otherwise we're comparing
         # arbitrary strings that actually mean the same thing.
-        for results in (data['results'], target_data['results']):
+        for results in (data['results']['bindings'], target_data['results']['bindings']):
             i, mapping = 0, {}
             for result in results:
                 result = sorted(result.iteritems())
