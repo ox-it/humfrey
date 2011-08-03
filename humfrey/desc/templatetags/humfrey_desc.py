@@ -19,10 +19,10 @@ def node(obj):
     else:
         return obj
 
-def get_list(r):
-    while r and r.rdf_first:
-        yield r.rdf_first
-        r = r.rdf_rest
+def get_list(resource):
+    while resource and resource.rdf_first:
+        yield resource.rdf_first
+        resource = resource.rdf_rest
 
 @register.filter
 def node2(obj):

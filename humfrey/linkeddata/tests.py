@@ -10,11 +10,8 @@ import unittest2
 import rdflib
 import simplejson
 
-from django.conf import settings
-from django.core.handlers.base import BaseHandler
-
 from humfrey.linkeddata import views
-from humfrey.linkeddata.uri import doc_forward, doc_backward
+from humfrey.linkeddata.uri import doc_forward
 from humfrey.tests.stubs import stub_reverse_crossdomain
 from humfrey.utils import sparql, namespaces
 
@@ -55,7 +52,7 @@ class URITestCase(unittest2.TestCase):
         uri = rdflib.URIRef('http://random.example.org/id/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc:random/foo')
-    
+
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
         doc_root = 'http://data.example.org/doc/'
@@ -122,8 +119,8 @@ class SRJRendererTestCase(unittest2.TestCase):
         data = ''.join(data)
 
         target_data_filename = os.path.join(imp.find_module('humfrey')[1], 'tests', 'data', 'linkeddata', 'srj_resultset.json')
-        with open(target_data_filename, 'rb') as f:
-            target_data = simplejson.load(f)
+        with open(target_data_filename, 'rb') as json_file:
+            target_data = simplejson.load(json_file)
 
         try:
             data = simplejson.loads(data)
@@ -136,12 +133,12 @@ class SRJRendererTestCase(unittest2.TestCase):
             i, mapping = 0, {}
             for result in results:
                 result = sorted(result.iteritems())
-                for k, v in result:
-                    if v['type'] == 'bnode':
-                        if v['value'] in mapping:
-                            v['value'] = mapping[v['value']]
-                        else: 
-                            v['value'] = mapping[v['value']] = i
+                for key, value in result:
+                    if value['type'] == 'bnode':
+                        if value['value'] in mapping:
+                            value['value'] = mapping[value['value']]
+                        else:
+                            value['value'] = mapping[value['value']] = i
                             i += 1
 
         self.assertEqual(data['head']['vars'], target_data['head']['vars'])

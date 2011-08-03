@@ -1,17 +1,14 @@
-import collections
 import itertools
-
 
 import mock
 import rdflib, rdflib.term
-import simplejson
 import unittest2
 
 from django.test.client import Client
 from django.http import HttpResponseNotFound
 
 from humfrey.desc import rdf_processors, views
-from humfrey.utils import sparql, resource, namespaces
+from humfrey.utils import sparql, resource
 from humfrey.tests.stubs import stub_reverse_crossdomain
 
 class GraphTestMixin(object):
