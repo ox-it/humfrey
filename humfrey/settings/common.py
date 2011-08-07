@@ -179,6 +179,7 @@ if config.get('pingback:enabled') == 'true':
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
                                'humfrey.longliving.longliving.downloader.Downloader',
+                               'humfrey.update.longliving.updater.Updater',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
 
