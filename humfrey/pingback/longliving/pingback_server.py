@@ -96,7 +96,7 @@ class RetrievedPingbackHandler(LonglivingThread):
     
     def process_one(self, client, ping_hash, download_item, item):
         self.process_two(client, ping_hash, download_item, item)
-        client.set('pingback:item:%s' % ping_hash, item)
+        client.set('pingback:item:%s' % ping_hash, self.pack(item))
         
         filename = download_item.get('filename')
         if filename and os.path.exists(filename):
