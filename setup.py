@@ -65,7 +65,6 @@ setup(
     author_email='opendata@oucs.ox.ac.uk',
     version='0.1',
     packages=packages,
-    scripts=['humfrey/pingback/bin/pingback.py'],
     license='BSD',
     url='https://github.com/oucs/humfrey',
     long_description=open('README.rst').read(),
