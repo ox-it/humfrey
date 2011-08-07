@@ -122,10 +122,11 @@ class RetrievedPingbackHandler(LonglivingThread):
             graph.namespace_manager.bind(prefix, NS[prefix])
             graph_metadata.namespace_manager.bind(prefix, NS[prefix])
         
+        base_url = download_item['final_url']
         if content_type in ('application/xhtml+xml', 'text/html'):
-            self.process_html(source, target, download_item['filename'], graph)
+            self.process_html(base_url, source, target, download_item['filename'], graph)
         elif content_type in self.RDF_MEDIA_TYPES:
-            self.process_rdf(source, target, download_item['filename'], graph, self.RDF_MEDIA_TYPES[content_type])
+            self.process_rdf(base_url, source, target, download_item['filename'], graph, self.RDF_MEDIA_TYPES[content_type])
         else:
             logger.warning('Unexpected media type for %r: %r' % (item['source'], content_type))
             item['state'] = 'invalid'
@@ -161,12 +162,12 @@ class RetrievedPingbackHandler(LonglivingThread):
             item['state'] = 'pending'
 
 
-    def process_html(self, source, target, filename, graph):
+    def process_html(self, base_url, source, target, filename, graph):
         with open(filename, 'r+b') as f:
             html = etree.parse(f, parser=etree.HTMLParser())
         
         for anchor in html.xpath(".//a"):
-            if anchor.get('href') == str(target):
+            if urlparse.urljoin(base_url, anchor.get('href')) == str(target):
                 break
         else:
             return
