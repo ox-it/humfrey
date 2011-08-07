@@ -107,6 +107,8 @@ INSTALLED_APPS = (
 
 TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 
+LONGLIVING_CLASSES = set()
+
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
 
@@ -137,6 +139,10 @@ if RESIZED_IMAGE_CACHE_DIR:
     RESIZED_IMAGE_CACHE_DIR = relative_path(RESIZED_IMAGE_CACHE_DIR)
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
+DOWNLOADER_DEFAULT_DIR = config.get('downloader:default_dir')
+if DOWNLOADER_DEFAULT_DIR:
+    DOWNLOADER_DEFAULT_DIR = relative_path(DOWNLOADER_DEFAULT_DIR)
+
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
     v = config.get('logging:%s' % k, None)
@@ -149,7 +155,7 @@ if config.get('main:log_to_stderr') == 'true':
     import logging, sys
     log_level = config.get('main:log_level') or 'WARNING'
     if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
-        raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
+        raise RuntimeError('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
     logging.basicConfig(stream=sys.stderr,
                         level=getattr(logging, log_level))
 
@@ -171,6 +177,10 @@ if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
     INSTALLED_APPS += ('humfrey.pingback',)
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
+    LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
+                               'humfrey.longliving.longliving.downloader.Downloader',
+                               ])
+    PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
@@ -178,3 +188,5 @@ CACHE_TIMES = {
     'page': 1800,
 }
 CACHE_TIMES.update(dict((k[6:], int(v)) for k, v in config.iteritems() if k.startswith('cache:')))
+
+GRAPH_BASE = config.get('main:graph_base') or 'http://localhost/graph/'

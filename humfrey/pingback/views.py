@@ -5,20 +5,18 @@ from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 
 import redis
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from humfrey.utils.views import BaseView
 from humfrey.utils.http import HttpResponseSeeOther
+from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, RetrievedPingbackHandler
 
 def get_redis_client():
-    return redis.Redis(host=getattr(settings, 'REDIS_HOST', 'localhost'),
-                       port=getattr(settings, 'REDIS_PORT', 6379))
+    return redis.client.Redis(**settings.REDIS_PARAMS)
 
 class PingbackView(BaseView):
-    _QUEUE_KEY = 'pingback.new'
-
     class PingbackError(Exception): pass
     class AlreadyRegisteredError(PingbackError): pass
 
@@ -36,10 +34,10 @@ class PingbackView(BaseView):
             'date': datetime.datetime.now(),
             'state': 'new',
         }))
-        
-        stored = client.setnx('pingback.data:%s' % ping_hash, data)
+        print "PING", data
+        stored = client.setnx('pingback:item:%s' % ping_hash, data)
         if stored:
-            client.rpush(self._QUEUE_KEY, ping_hash)
+            client.rpush(NewPingbackHandler.QUEUE_NAME, ping_hash)
         else:
             raise self.AlreadyRegisteredError()
 
@@ -57,7 +55,7 @@ class XMLRPCPingbackView(PingbackView):
 
     def handle_POST(self, request, context):
         dispatcher = SimpleXMLRPCDispatcher(allow_none=False, encoding=None)
-        dispatcher.register_function(partial(self.ping, request), 'pingback.ping')
+        dispatcher.register_function(partial(self.ping, request), 'pingback:ping')
 
         response = HttpResponse(mimetype="application/xml")
         response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
@@ -70,7 +68,7 @@ class XMLRPCPingbackView(PingbackView):
             return self._RESPONSE_CODES['ALREADY_REGISTERED']
         except self.PingbackError:
             return self._RESPONSE_CODES['GENERIC_FAULT']
-        except Exception, e:
+        except Exception:
             raise
         else:
             return "OK"
@@ -79,7 +77,7 @@ class RESTfulPingbackView(PingbackView):
     def handle_POST(self, request, context):
         try:
             self.ping(request, request.POST['source'], request.POST['target'])
-        except Exception, e:
+        except Exception:
             return HttpResponseBadRequest()
         else:
             response = HttpResponse()
@@ -89,7 +87,7 @@ class RESTfulPingbackView(PingbackView):
 class ModerationView(BaseView):
     def initial_context(self, request):
         client = get_redis_client()
-        pingback_hashes = ['pingback.data:%s' % s for s in client.smembers('pingback.pending')]
+        pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.PENDING_QUEUE_NAME)]
         if pingback_hashes:
             pingbacks = client.mget(pingback_hashes)
             pingbacks = [pickle.loads(base64.b64decode(p)) for p in pingbacks]
@@ -108,13 +106,13 @@ class ModerationView(BaseView):
         client = context['client']
         for k in request.POST:
             ping_hash, action = k.split(':')[-1], request.POST[k]
-            key_name = 'pingback.data:%s' % ping_hash
+            key_name = 'pingback:item:%s' % ping_hash
             if action in ('accept', 'reject') and not (k.startswith('action:') and client.srem('pingback.pending', ping_hash)):
                 continue
             data = pickle.loads(base64.b64decode(client.get(key_name)))
             if action == 'accept':
                 data['state'] = 'accepted'
-                client.rpush('pingback.accepted', ping_hash)
+                client.rpush('pingback:accepted', ping_hash)
             else:
                 data['state'] = 'rejected'
             client.set(key_name, base64.b64encode(pickle.dumps(data)))
