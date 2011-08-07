@@ -13,6 +13,7 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
+relative_path = lambda *args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
 
 config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
@@ -109,11 +110,6 @@ TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
 
-# Load pingback functionality if specified in the config.
-if config.get('pingback:enabled') == 'true':
-    MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback',)
-
 # Pull e-mail configuration from config file.
 EMAIL_HOST = config.get('email:host')
 EMAIL_PORT = int(config.get('email:port') or 0) or None
@@ -137,13 +133,15 @@ SERVED_DOMAINS = ()
 ID_MAPPING = ()
 
 RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
+if RESIZED_IMAGE_CACHE_DIR:
+    RESIZED_IMAGE_CACHE_DIR = relative_path(RESIZED_IMAGE_CACHE_DIR)
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
     v = config.get('logging:%s' % k, None)
     if v:
-        v = os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), v))
+        v = relative_path(v)
     LOG_FILENAMES[k] = v
 del k, v
 
@@ -167,6 +165,12 @@ DOC_RDF_PROCESSORS = (
     'humfrey.desc.rdf_processors.doc_meta',
     'humfrey.desc.rdf_processors.formats',
 )
+
+# Load pingback functionality if specified in the config.
+if config.get('pingback:enabled') == 'true':
+    MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
+    INSTALLED_APPS += ('humfrey.pingback',)
+    DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 

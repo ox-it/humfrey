@@ -66,7 +66,7 @@ class DescView(EndpointView):
             raise Http404
 
 class DocView(RDFView):
-    
+
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None
         super(DocView, self).__init__(*args, **kwargs)
@@ -107,8 +107,8 @@ class DocView(RDFView):
         types = context['types']
 
         queries, graph = [], rdflib.ConjunctiveGraph()
-        for prefix, ns in NS.iteritems():
-            graph.namespace_manager.bind(prefix, ns)
+        for prefix, namespace_uri in NS.iteritems():
+            graph.namespace_manager.bind(prefix, namespace_uri)
 
         graph += ((subject_uri, NS.rdf.type, t) for t in types)
         subject = Resource(subject_uri, graph, self.endpoint)
@@ -122,16 +122,17 @@ class DocView(RDFView):
             graph.add((doc_uri, NS['dcterms'].source, graph_name))
             licenses.update(graph.objects(graph_name, NS['dcterms'].license))
             datasets.update(graph.objects(graph_name, NS['void'].inDataset))
-            
+
         if len(licenses) == 1:
-            for license in licenses:
-                graph.add((doc_uri, NS['dcterms'].license, license))
+            for license_uri in licenses:
+                graph.add((doc_uri, NS['dcterms'].license, license_uri))
 
         if not graph:
             raise Http404
 
         for doc_rdf_processor in self._doc_rdf_processors:
-            additional_context = doc_rdf_processor(graph=graph,
+            additional_context = doc_rdf_processor(request=request,
+                                                   graph=graph,
                                                    doc_uri=doc_uri,
                                                    subject_uri=subject_uri,
                                                    subject=subject,
@@ -139,7 +140,7 @@ class DocView(RDFView):
                                                    renderers=self.FORMATS.values())
             if additional_context:
                 context.update(additional_context)
-        
+
         context.update({
             'graph': graph,
             'subject': subject,
@@ -181,7 +182,12 @@ class SparqlView(RDFView, ResultSetView):
     class ConcurrentQueryException(SparqlViewException):
         pass
     class ExcessiveQueryException(SparqlViewException):
-        pass
+        def __init__(self, intensity):
+            self.intensity = intensity
+
+    _THROTTLE_THRESHOLD = 10
+    _DENY_THRESHOLD = 20
+    _INTENSITY_DECAY = 0.05
 
     def perform_query(self, request, query, common_prefixes):
         client = redis.client.Redis(**settings.REDIS_PARAMS)
@@ -191,23 +197,24 @@ class SparqlView(RDFView, ResultSetView):
         try:
             intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
             last = float(client.get('sparql:last:%s' % addr) or 0)
-            intensity = max(0, intensity - (time.time() - last) / 20)
-            if intensity > 20:
-                raise self.ExcessiveQueryException
-            elif intensity > 10:
-                time.sleep(intensity - 10)
+            intensity = max(0, intensity - (time.time() - last) * self._INTENSITY_DECAY)
+            if intensity > self._DENY_THRESHOLD:
+                raise self.ExcessiveQueryException(intensity)
+            elif intensity > self._THROTTLE_THRESHOLD:
+                time.sleep(intensity - self._THROTTLE_THRESHOLD)
 
             start = time.time()
             results = self.endpoint.query(query, common_prefixes=common_prefixes)
             end = time.time()
 
-            client.set('sparql:intensity:%s' % addr, intensity + end - start)
+            new_intensity = intensity + end - start
+            client.set('sparql:intensity:%s' % addr, new_intensity)
             client.set('sparql:last:%s' % addr, end)
 
-            return results
+            return results, new_intensity
         finally:
             client.delete('sparql:lock:%s' % addr)
-    
+
     def initial_context(self, request):
         query = request.REQUEST.get('query')
         data = dict(request.REQUEST.items())
@@ -218,12 +225,20 @@ class SparqlView(RDFView, ResultSetView):
             'namespaces': NS,
             'form': form,
         }
-        
+
+        additional_headers = context['additional_headers'] = {
+            'X-Humfrey-SPARQL-Throttle-Threshold': self._THROTTLE_THRESHOLD,
+            'X-Humfrey-SPARQL-Deny-Threshold': self._DENY_THRESHOLD,
+            'X-Humfrey-SPARQL-Intensity-Decay': self._INTENSITY_DECAY,
+        }
+
         if not form.is_valid():
             return context
 
-        try:        
-            results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
+        try:
+            results, intensity = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
+            additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
+
         except urllib2.HTTPError, e:
             context['error'] = e.read() #parse(e).find('.//pre').text
             context['status_code'] = e.code
@@ -235,13 +250,14 @@ class SparqlView(RDFView, ResultSetView):
         except self.ExcessiveQueryException, e:
             context['error'] = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
             context['status_code'] = 403
+            additional_headers['X-Humfrey-SPARQL-Intensity'] = e.intensity
             return context
         except etree.XMLSyntaxError, e:
-            context['error'] = "Your query could not be returned in the time allotted it.\nPlease try a simpler query or using LIMIT to reduce the number of returned results."
+            context['error'] = "Your query could not be returned in the time allotted it.\n" \
+                             + "Please try a simpler query or using LIMIT to reduce the number of returned results."
             context['status_code'] = 403
             return context
 
-        
         if isinstance(results, list):
             context['results'] = results
         elif isinstance(results, bool):
@@ -252,13 +268,16 @@ class SparqlView(RDFView, ResultSetView):
 
         context['queries'] = [results.query]
         context['duration'] = results.duration
-        
+
         return context
-    
+
     def handle_GET(self, request, context):
-        return self.render(request, context, 'sparql')
+        response = self.render(request, context, 'sparql')
+        for key, value in context.pop('additional_headers').items():
+            response[key] = value
+        return response
     handle_POST = handle_GET
-        
+
 #class GraphView(BaseView):
 #    def handle_GET(self, request, context):
 #        req = urllib2.Request(settings.GRAPH_URL + '?' + urllib.urlencode({'graph': request.build_absolute_uri()}))

@@ -1,7 +1,0 @@
-redis
-Django==1.2
-simplejson
-lxml
-python-memcached
-mock
-django_hosts

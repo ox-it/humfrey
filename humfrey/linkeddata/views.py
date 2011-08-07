@@ -131,15 +131,16 @@ class ResultSetView(EndpointView):
         yield '  "head": {\n'
         yield '    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields)
         yield '  },\n'
-        yield '  "results": [\n'
+        yield '  "results": {\n'
+        yield '    "bindings": [\n'
         for i, result in enumerate(results):
-            yield '    {' if i == 0 else ',\n    {'
+            yield '      {' if i == 0 else ',\n      {'
             j = 0
             for name, value in result._asdict().iteritems():
                 if value is None:
                     continue
                 yield ',\n' if j > 0 else '\n'
-                yield '      %s: { "type": ' % dumps(name.encode('utf8'))
+                yield '        %s: { "type": ' % dumps(name.encode('utf8'))
                 if isinstance(value, rdflib.URIRef):
                     yield dumps('uri')
                 elif isinstance(value, rdflib.BNode):
@@ -152,8 +153,9 @@ class ResultSetView(EndpointView):
                     yield dumps('literal')
                 yield ', "value": %s }' % dumps(value.encode('utf8'))
                 j += 1
-            yield '\n    }'
-        yield '\n  ]\n'
+            yield '\n      }'
+        yield '\n    ]\n'
+        yield '  }\n'
         yield '}\n'
 
     def _spool_csv_boolean(self, result):

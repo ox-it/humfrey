@@ -1,6 +1,18 @@
-import pickle, base64, urllib, urllib2, sys, threading, logging, time, rdflib, urlparse, socket
+from __future__ import pingback
+
+import base64
 from collections import defaultdict
 from functools import wraps
+import logging
+import pickle
+import rdflib
+import socket
+import sys
+import threading
+import time
+import urllib
+import urllib2
+import urlparse
 
 from django.conf import settings
 
@@ -9,7 +21,7 @@ from lxml import etree
 
 WORKER_COUNT = 8
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="%(asctime)s %(levelname)s %(lineno)s %(message)s")
 logger = logging.getLogger('pingback')
 
 RDF_MEDIA_TYPES = {
@@ -47,7 +59,7 @@ def set_expiry(client, ping_hash):
     client.expire('pingback.data:%s' % ping_hash, 3600 * 24 * 7)
 
 def redis_queue(client, key, bail):
-    while not bail.is_set():
+    while not bail.isSet():
         item = client.blpop(key, 30)
         if item is None:
             continue
@@ -184,13 +196,13 @@ def worker(client_locks, host_locks, bail):
         source_domain = source_url.netloc.split(':')[0].lower()
         
         target_url = urlparse.urlparse(data['target'])
-        target_domain = source_url.netloc.split(':')[0].lower()
+        target_domain = target_url.netloc.split(':')[0].lower()
         
         data['source_domain'] = source_domain
         data['target_domain'] = target_domain
         
         if target_domain not in TARGET_DOMAINS:
-            logging.warning('Pingback for non-targetable host: %r' % data['target'])
+            logging.warning('Pingback for non-targetable host: %r (%r)' % (target_domain, data['target']))
             continue
         if source_url.scheme not in ('http', 'https', 'ftp'):
             logging.warning('Unsupported scheme for pingback')
@@ -200,7 +212,7 @@ def worker(client_locks, host_locks, bail):
         client_lock = client_locks[data['remote_addr']]
         host_lock = host_locks[source_domain]
         
-        with client_lock, host_lock:
+        with contextlib.nested(client_lock, host_lock):
             print id(data)
             process(client, data)
             set_data(client, ping_hash, data)
@@ -266,7 +278,7 @@ def run():
     accepted_manager_thread.start()
 
     try:
-        while True: time.sleep(100)
+        while not bail.isSet(): time.sleep(10)
     except KeyboardInterrupt:
         bail.set()
     

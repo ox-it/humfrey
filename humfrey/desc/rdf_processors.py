@@ -3,7 +3,7 @@ import rdflib
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.uri import doc_forwards
 
-def formats(graph, doc_uri, subject_uri, subject, endpoint, renderers):
+def formats(request, graph, doc_uri, subject_uri, subject, endpoint, renderers):
     format_urls = doc_forwards(subject_uri, renderers, described=True)
     formats_for_context = []
     for renderer in renderers:
@@ -24,7 +24,7 @@ def formats(graph, doc_uri, subject_uri, subject, endpoint, renderers):
         'formats': formats_for_context,
     }
 
-def doc_meta(graph, doc_uri, subject_uri, subject, endpoint, renderers):
+def doc_meta(request, graph, doc_uri, subject_uri, subject, endpoint, renderers):
     graph += [
         (doc_uri, NS['foaf'].primaryTopic, subject_uri),
         (doc_uri, NS['rdf'].type, NS['foaf'].Document),

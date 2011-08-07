@@ -10,11 +10,8 @@ import unittest2
 import rdflib
 import simplejson
 
-from django.conf import settings
-from django.core.handlers.base import BaseHandler
-
 from humfrey.linkeddata import views
-from humfrey.linkeddata.uri import doc_forward, doc_backward
+from humfrey.linkeddata.uri import doc_forward
 from humfrey.tests.stubs import stub_reverse_crossdomain
 from humfrey.utils import sparql, namespaces
 
@@ -55,14 +52,14 @@ class URITestCase(unittest2.TestCase):
         uri = rdflib.URIRef('http://random.example.org/id/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc:random/foo')
-    
+
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
         doc_root = 'http://data.example.org/doc/'
         desc_root = 'http://data.example.org/desc/'
         qs_with_format = '?uri=http%3A%2F%2Fremote.example.org%2Ffoo&format=nt'
         qs_without_format = '?uri=http%3A%2F%2Fremote.example.org%2Ffoo'
-        
+
         # With no indication as to whether we know about it
         self.assertEqual(doc_forward(uri),
                          desc_root + qs_without_format)
@@ -97,56 +94,56 @@ class URITestCase(unittest2.TestCase):
         request = mock.Mock()
         request.META = mock.MagicMock()
         request.META.__getitem__.return_value = 'application/rdf+xml'
-        
+
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri, request=request),
                          'http://data.example.org/doc/foo.rdf')
 
         request.META.__getitem__.assert_called_once_with('HTTP_ACCEPT')
-        
+
     def testDocLocalNegotiateMissing(self):
         request = mock.Mock()
         request.META = mock.MagicMock()
         request.META.__getitem__.return_value = 'unknown/imt'
-        
+
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri, request=request),
                          'http://data.example.org/doc/foo')
 
         request.META.__getitem__.assert_called_once_with('HTTP_ACCEPT')
-        
+
 class SRJRendererTestCase(unittest2.TestCase):
 
     def testValidSRJResultSet(self):
         data = views.ResultSetView()._spool_srj_resultset(TEST_RESULTSET)
         data = ''.join(data)
-        
+
         target_data_filename = os.path.join(imp.find_module('humfrey')[1], 'tests', 'data', 'linkeddata', 'srj_resultset.json')
-        with open(target_data_filename, 'rb') as f:
-            target_data = simplejson.load(f)
+        with open(target_data_filename, 'rb') as json_file:
+            target_data = simplejson.load(json_file)
 
         try:
             data = simplejson.loads(data)
         except Exception, e:
-        	raise AssertionError(e)
-        
+            raise AssertionError(e)
+
         # Rename bnodes in the order they appear. Otherwise we're comparing
         # arbitrary strings that actually mean the same thing.
-        for results in (data['results'], target_data['results']):
+        for results in (data['results']['bindings'], target_data['results']['bindings']):
             i, mapping = 0, {}
             for result in results:
                 result = sorted(result.iteritems())
-                for k, v in result:
-                    if v['type'] == 'bnode':
-                        if v['value'] in mapping:
-                            v['value'] = mapping[v['value']]
-                        else: 
-                            v['value'] = mapping[v['value']] = i
+                for key, value in result:
+                    if value['type'] == 'bnode':
+                        if value['value'] in mapping:
+                            value['value'] = mapping[value['value']]
+                        else:
+                            value['value'] = mapping[value['value']] = i
                             i += 1
 
         self.assertEqual(data['head']['vars'], target_data['head']['vars'])
         self.assertEqual(data['results'], target_data['results'])
-    
+
     def testValidSRJBoolean(self):
         for value in (True, False):
             data = views.ResultSetView()._spool_srj_boolean(value)
@@ -156,18 +153,18 @@ class SRJRendererTestCase(unittest2.TestCase):
             except Exception, e:
                 raise AssertionError(e)
             self.assertEqual(data, {'head': {}, 'boolean': value})
-        	    
+
 
 class CSVRendererTestCase(unittest2.TestCase):
     def testValidCSVResultSet(self):
         data = views.ResultSetView()._spool_csv_resultset(TEST_RESULTSET)
         data = ''.join(data)
-        
+
         try:
             data = csv.reader(StringIO.StringIO(data))
         except Exception, e:
             raise AssertionError(e)
-        
+
         for result, target_result in zip(data, TEST_RESULTSET):
             for term, target_term in zip(result, target_result):
                 term = term.decode('utf-8')
@@ -175,7 +172,7 @@ class CSVRendererTestCase(unittest2.TestCase):
                     self.assertEqual(term, '')
                 else:
                     self.assertEqual(term, unicode(target_term))
-    
+
     def testValidCSVBoolean(self):
         for value in (True, False):
             data = views.ResultSetView()._spool_csv_boolean(value)
@@ -194,9 +191,5 @@ class DescViewTestCase(unittest2.TestCase):
 class DocViewTestCase(unittest2.TestCase):
     pass
 
-
-
-
-        
 if __name__ == '__main__':
     unittest2.main()

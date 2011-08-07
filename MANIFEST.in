@@ -3,4 +3,6 @@ recursive-include humfrey/analytics/templates *
 recursive-include humfrey/pingback/templates *
 recursive-include humfrey/base/templates *
 recursive-include humfrey/desc/templates *
+include requirements.txt
+include README.rst
 

@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
 
-from views import IndexView, IdView, DocView
+from views import IdView, DocView
 
 urlpatterns = patterns('',
     (r'^id/.*$', IdView(), {}, 'id'),
