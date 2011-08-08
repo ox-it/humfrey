@@ -190,30 +190,33 @@ class SparqlView(RDFView, ResultSetView):
     _INTENSITY_DECAY = 0.05
 
     def perform_query(self, request, query, common_prefixes):
-        client = redis.client.Redis(**settings.REDIS_PARAMS)
-        addr = request.META['REMOTE_ADDR']
-        if not client.setnx('sparql:lock:%s' % addr, 1):
-            raise self.ConcurrentQueryException
-        try:
-            intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
-            last = float(client.get('sparql:last:%s' % addr) or 0)
-            intensity = max(0, intensity - (time.time() - last) * self._INTENSITY_DECAY)
-            if intensity > self._DENY_THRESHOLD:
-                raise self.ExcessiveQueryException(intensity)
-            elif intensity > self._THROTTLE_THRESHOLD:
-                time.sleep(intensity - self._THROTTLE_THRESHOLD)
+        if settings.REDIS_PARAMS:
+            client = redis.client.Redis(**settings.REDIS_PARAMS)
+            addr = request.META['REMOTE_ADDR']
+            if not client.setnx('sparql:lock:%s' % addr, 1):
+                raise self.ConcurrentQueryException
+            try:
+                intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
+                last = float(client.get('sparql:last:%s' % addr) or 0)
+                intensity = max(0, intensity - (time.time() - last) * self._INTENSITY_DECAY)
+                if intensity > self._DENY_THRESHOLD:
+                    raise self.ExcessiveQueryException(intensity)
+                elif intensity > self._THROTTLE_THRESHOLD:
+                    time.sleep(intensity - self._THROTTLE_THRESHOLD)
 
-            start = time.time()
-            results = self.endpoint.query(query, common_prefixes=common_prefixes)
-            end = time.time()
+                start = time.time()
+                results = self.endpoint.query(query, common_prefixes=common_prefixes)
+                end = time.time()
 
-            new_intensity = intensity + end - start
-            client.set('sparql:intensity:%s' % addr, new_intensity)
-            client.set('sparql:last:%s' % addr, end)
+                new_intensity = intensity + end - start
+                client.set('sparql:intensity:%s' % addr, new_intensity)
+                client.set('sparql:last:%s' % addr, end)
 
-            return results, new_intensity
-        finally:
-            client.delete('sparql:lock:%s' % addr)
+                return results, new_intensity
+            finally:
+                client.delete('sparql:lock:%s' % addr)
+        else:
+            return self.endpoint.query(query, common_prefixes=common_prefixes), 0
 
     def initial_context(self, request):
         query = request.REQUEST.get('query')
