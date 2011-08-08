@@ -152,7 +152,7 @@ if config.get('main:log_to_stderr') == 'true':
     import logging, sys
     log_level = config.get('main:log_level') or 'WARNING'
     if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
-        raise RuntimeException('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
+        raise RuntimeError('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
     logging.basicConfig(stream=sys.stderr,
                         level=getattr(logging, log_level))
 
