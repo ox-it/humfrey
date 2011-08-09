@@ -254,7 +254,7 @@ Supported ranges are:
     # We don't want to depend on YAML. If it's there offer it as a renderer, otherwise ignore it.
     try:
         __import__('yaml') # Try importing, but don't stick the result in locals.
-        @renderer(format="yaml", mimetypes=('application/x-yaml',), priority=-1, name='YAML')
+        #@renderer(format="yaml", mimetypes=('application/x-yaml',), priority=-1, name='YAML')
         def render_yaml(self, request, context, template_name):
             import yaml
             context = simplify_value(context)
