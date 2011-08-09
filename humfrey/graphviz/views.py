@@ -44,7 +44,7 @@ class GraphVizView(RDFView):
             subj, obj = '?entity', root.n3()
             relation_pattern = '?entity ?relation ?parent'
         else:
-            subj, obj = '?entity', root.n3()
+            subj, obj = root.n3(), '?entity'
             relation_pattern = '?parent ?relation ?entity'
         
         types = self.get_types(root)
