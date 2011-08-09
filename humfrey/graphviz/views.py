@@ -10,26 +10,30 @@ from django.shortcuts import render_to_response
 from humfrey.linkeddata.views import RDFView
 from humfrey.utils.resource import Resource
 from humfrey.utils.views import renderer
-from humfrey.utils.namespaces import expand
+from humfrey.utils.namespaces import expand, NS
 
 class GraphVizView(RDFView):
     _QUERY = """
       CONSTRUCT {
-        ?entity a ?type ;
-          dc:title ?title ;
-          ?relation ?child .
+        %(page_uri)s foaf:topic ?entity .
+        ?entity a ?type %(propertyTriples)s .
+          %(relationPattern)s .
       } WHERE {
-        { SELECT DISTINCT ?entity WHERE { %(subject)s (%(relationAlternation)s)* %(object)s } } .
-        ?entity a ?type ;
-          ?relation ?child .
-        OPTIONAL { ?entity dc:title ?title } .
+        { SELECT DISTINCT ?entity WHERE { %(subject)s (%(relationAlternation)s){0,%(depth)d} %(object)s } } .
+        ?entity a ?type .
+        OPTIONAL { %(relationPattern)s } .
+        %(propertyPatterns)s
+        OPTIONAL { ?entity rdfs:label ?title } .
         FILTER (?relation in (%(relationList)s)) .
+        %(excludeTypesFilter)s
       }
     """
     
-    def handle_GET(self, request, context, root=None, relations=None, template='graphviz/graphviz', depth=3, max_depth=5):
-        root = rdflib.URIRef(root or request.GET.get('root', ''))
+    def handle_GET(self, request, context, root=None, relations=None, template='graphviz/graphviz', depth=4, max_depth=5, exclude_types=None, properties=None):
+        root = expand(root or request.GET.get('root', ''))
         relations = relations or [expand(relation) for relation in request.GET.getlist('relation')]
+        exclude_types = exclude_types or [expand(t) for t in request.GET.getlist('exclude_type')]
+        properties = properties or [expand(p) for p in request.GET.getlist('property')]
         try:
             depth = min(int(request.GET.get('depth', depth)), max_depth)
         except (TypeError, ValueError):
@@ -38,38 +42,49 @@ class GraphVizView(RDFView):
         inverted = request.GET.get('inverted') == 'true'
         if inverted:
             subj, obj = '?entity', root.n3()
+            relation_pattern = '?entity ?relation ?parent'
         else:
-            subj, obj =  root.n3(), '?entity'
+            subj, obj = '?entity', root.n3()
+            relation_pattern = '?parent ?relation ?entity'
         
         types = self.get_types(root)
         if not types or not relations:
             raise Http404
-        try:
-            depth = max(0, min(int(request.GET.get('depth')), 3))
-        except (TypeError, ValueError):
-            depth = 2 
+        
+        page_uri = rdflib.URIRef(request.build_absolute_uri())
         
         query = self._QUERY % {'subject': subj,
                                'object': obj,
                                'depth': depth,
                                'relationList': ', '.join(r.n3() for r in relations),
-                               'relationAlternation': '|'.join(r.n3() for r in relations)}
+                               'excludeTypesFilter': ('FILTER (?type not in (%s)) .' % ', '.join(t.n3() for t in exclude_types)) if exclude_types else '',
+                               'relationAlternation': '|'.join(r.n3() for r in relations),
+                               'relationPattern': relation_pattern,
+                               'page_uri': page_uri.n3(),
+                               'propertyPatterns': '\n        '.join('OPTIONAL { ?entity %s ?p%s } .' % (p.n3(), i) for i, p in enumerate(properties)),
+                               'propertyTriples': ''.join(';\n          %s ?p%s' % (p.n3(), i) for i, p in enumerate(properties))
+                               }
+        print query
         graph = self.endpoint.query(query)
         
         context.update({
             'graph': graph,
             'queries': [graph.query],
-            'subjects': [Resource(s, graph, self.endpoint) for s in set(graph.subjects())],
+            'subjects': [Resource(s, graph, self.endpoint) for s in set(graph.objects(page_uri, NS['foaf'].topic))],
             'subject': Resource(root, graph, self.endpoint),
             'inverted': inverted,
             'relations': relations,
         })
         
         for subject in context['subjects']:
+
             if not inverted:
                 subject.children = set(Resource(s, graph, self.endpoint) for relation in relations for s in graph.objects(subject._identifier, relation))
             else:
                 subject.children = set(Resource(s, graph, self.endpoint) for relation in relations for s in graph.subjects(relation, subject._identifier))
+            for child in subject.children:
+                if (page_uri, NS['foaf'].topic, child._identifier) in graph:
+                    child.display = True
        
         return self.render(request, context, template)
 

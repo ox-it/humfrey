@@ -2,6 +2,6 @@ digraph default {
   graph [outputOrder=edgesfirst, rankdir=LR];
   node [style=filled, label="\N", shape=box, fontsize=9, fillcolor=white, margin="0.04,0.01"];
   edge [color=darkgray, arrowType="empty"];{% for subject in subjects %}
-  a_{{ subject.hexhash }} [label="{{ subject.label|truncatewords:5 }}", tooltip="{{ subject.label }}" href="{{ subject.doc_url }}"{% if subject.dcterms_published %}, date="{{ subject.dcterms_published }}"{% endif %}];{% for child in subject.children %}
-  a_{{ subject.hexhash }} -> a_{{ child.hexhash }} ;{% endfor %}{% endfor %}
+  a_{{ subject.hexhash }} [label="{{ subject.label|truncatewords:5 }}", tooltip="{{ subject.label }}" href="{{ subject.doc_url }}"{% if subject.dcterms_published %}, date="{{ subject.dcterms_published }}"{% endif %}];{% for child in subject.children %}{% if child.display %}
+  a_{{ subject.hexhash }} -> a_{{ child.hexhash }} ;{% endif %}{% endfor %}{% endfor %}
 }
