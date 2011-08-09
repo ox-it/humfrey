@@ -50,8 +50,8 @@ def register(k, v):
 	NS[k] = Namespace(v)
 
 def expand(qname):
-    if ':' in qname:
+    try:
         prefix, local = qname.split(':', 1)
         return NS[prefix][local]
-    else:
+    except KeyError:
         return URIRef(qname)
