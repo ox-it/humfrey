@@ -64,7 +64,6 @@ class GraphVizView(RDFView):
                                'propertyPatterns': '\n        '.join('OPTIONAL { ?entity %s ?p%s } .' % (p.n3(), i) for i, p in enumerate(properties)),
                                'propertyTriples': ''.join(';\n          %s ?p%s' % (p.n3(), i) for i, p in enumerate(properties))
                                }
-        print query
         graph = self.endpoint.query(query)
         
         context.update({
