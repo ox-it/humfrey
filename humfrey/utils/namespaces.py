@@ -1,4 +1,4 @@
-from rdflib import Namespace
+from rdflib import Namespace, URIRef
 
 from django.conf import settings
 
@@ -50,5 +50,8 @@ def register(k, v):
 	NS[k] = Namespace(v)
 
 def expand(qname):
-    prefix, local = qname.split(':', 1)
-    return NS[prefix][local]
+    try:
+        prefix, local = qname.split(':', 1)
+        return NS[prefix][local]
+    except KeyError:
+        return URIRef(qname)
