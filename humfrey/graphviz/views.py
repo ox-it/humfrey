@@ -29,7 +29,7 @@ class GraphVizView(RDFView):
       }
     """
     
-    def handle_GET(self, request, context, root=None, relations=None, template='graphviz/graphviz', depth=4, max_depth=5, exclude_types=None, properties=None, inverted=None):
+    def handle_GET(self, request, context, root=None, relations=None, template='graphviz/graphviz', depth=4, max_depth=5, exclude_types=None, properties=None, inverted=None, minimal=None):
         root = expand(root or request.GET.get('root', ''))
         relations = relations or [expand(relation) for relation in request.GET.getlist('relation')]
         exclude_types = exclude_types or [expand(t) for t in request.GET.getlist('exclude_type')]
@@ -40,6 +40,8 @@ class GraphVizView(RDFView):
             return HttpResponseBadRequest()
         
         inverted = inverted if (inverted is not None) else request.GET.get('inverted') == 'true'
+        minimal = minimal if (minimal is not None) else request.GET.get('minimal') == 'true'
+
         if inverted:
             subj, obj = '?entity', root.n3()
             relation_pattern = '?entity ?relation ?parent'
@@ -73,6 +75,7 @@ class GraphVizView(RDFView):
             'subject': Resource(root, graph, self.endpoint),
             'inverted': inverted,
             'relations': relations,
+            'minimal': minimal,
         })
         
         for subject in context['subjects']:

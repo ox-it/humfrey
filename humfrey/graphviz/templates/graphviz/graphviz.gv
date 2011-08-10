@@ -1,7 +1,7 @@
-digraph default {
-  graph [outputOrder=edgesfirst, rankdir=LR];
-  node [style=filled, label="\N", shape=box, fontsize=9, fillcolor=white, margin="0.04,0.01"];
-  edge [color=darkgray, arrowType="empty"];{% for subject in subjects %}
-  a_{{ subject.hexhash }} [label="{{ subject.label|truncatewords:5 }}", tooltip="{{ subject.label }}" href="{{ subject.doc_url }}"{% if subject.dcterms_published %}, date="{{ subject.dcterms_published }}"{% endif %}];{% for child in subject.children %}{% if child.display %}
+{% load humfrey_graphviz %}digraph default {
+  graph [outputOrder=edgesfirst, rankdir=LR, scale={% if minimal %}2{% else %}1{% endif %}];
+  node [style=filled, label="\N", shape={% if minimal %}circle{% else %}box{% endif %}, fontsize=9, fillcolor=white, margin="{% if minimal %}0,0{% else %}0.04,0.01{% endif %}"];
+  edge [color=gray, arrowType="empty", arrowsize={% if minimal %}0.5{% else %}1{% endif %}];{% for subject in subjects %}
+  a_{{ subject.hexhash }} [{% if minimal %}fizedsize=true, width=0.05, height=0.05, {% endif %}label="{% if  minimal %}•{% else %}{{ subject.label|truncatewords:5|escape_dot|safe }}{% endif %}", tooltip="{{ subject.label|escape_dot }}" href="{{ subject.doc_url }}"{% if subject.dcterms_published %}, date="{{ subject.dcterms_published }}"{% endif %}];{% for child in subject.children %}{% if child.display %}
   a_{{ subject.hexhash }} -> a_{{ child.hexhash }} ;{% endif %}{% endfor %}{% endfor %}
 }
