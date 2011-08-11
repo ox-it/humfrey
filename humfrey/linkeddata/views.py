@@ -12,11 +12,13 @@ from django.core.cache import cache
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
+from django_conneg.views import ContentNegotiatedView
+
 from humfrey.utils.views import BaseView, BaseViewMetaclass, renderer
 from humfrey.utils import sparql
 from humfrey.utils.resource import Resource
 
-class EndpointView(BaseView):
+class EndpointView(ContentNegotiatedView):
     endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
 
     def get_types(self, uri):
@@ -61,6 +63,7 @@ class RDFView(EndpointView):
         ('n3', 'text/n3', 'n3', 'Notation3'),
     )
 
+class KMLView(EndpointView):
     @renderer(format='kml', mimetypes=('application/vnd.google-earth.kml+xml',), name='KML')
     def render_kml(self, request, context, template_name):
         if not isinstance(context.get('graph'), rdflib.ConjunctiveGraph):

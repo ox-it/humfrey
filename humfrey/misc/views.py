@@ -2,8 +2,9 @@ import datetime
 
 from django.conf import settings
 
-from humfrey.utils.views import BaseView
-from humfrey.utils.cache import cached_view
+from django_conneg.views import HTMLView
+
+from humfrey.utils.views import CachedView
 
 # Only create FeedView class if feedparser and pytz are importable.
 # This will make feedparser and pytz optional dependencies if one
@@ -14,7 +15,7 @@ try:
 except ImportError, e:
     pass
 else:
-    class FeedView(BaseView):
+    class FeedView(HTMLView, CachedView):
         def initial_context(self, request, rss_url, template='index'):
             try:
                 feed = feedparser.parse(rss_url)
@@ -27,8 +28,9 @@ else:
                 'feed': feed,
             }
     
-        @cached_view
-        def handle_GET(self, request, context, rss_url, template='index'):
+        def get(self, request, rss_url, template='index'):
+            context = self.initial_context(request, rss_url, template)
+
             # So we match the syntax for other views taking a template
             # parameter.
             if template.endswith('.html'):
@@ -36,13 +38,10 @@ else:
             return self.render(request, context, 'index')
 
 
-class SimpleView(BaseView):
-    def __init__(self, template_name, context=None):
-        self._context = context or {}
-        self._template_name = template_name
-        super(SimpleView, self).__init__()
-    def initial_context(self, request):
-        return self._context
-    def handle_GET(self, request, context):
-        return self.render(request, context, self._template_name)
+class SimpleView(HTMLView, CachedView):
+    context = None
+    template_name = None
+    
+    def get(self, request):
+        return self.render(request, self.context, self.template_name)
         

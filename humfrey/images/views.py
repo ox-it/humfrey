@@ -13,15 +13,15 @@ from humfrey.utils.namespaces import expand
 
 class ResizedImageView(EndpointView):
     _image_types = set(map(expand, settings.IMAGE_TYPES))
-    def initial_context(self, request):
-    	try:
+    def get(self, request):
+        try:
             url = rdflib.URIRef(request.GET['url'])
             width = int(request.GET['width'])
             if width not in settings.THUMBNAIL_WIDTHS:
                 raise Http404
             types = self.get_types(url)
             if not (types & self._image_types):
-            	raise TypeError
+                raise TypeError
         except Exception:
             raise
             raise Http404
@@ -31,17 +31,17 @@ class ResizedImageView(EndpointView):
         filename = os.path.abspath(os.path.join(settings.RESIZED_IMAGE_CACHE_DIR, *filename))
 
         if not os.path.exists(os.path.dirname(filename)):
-        	os.makedirs(os.path.dirname(filename))
+            os.makedirs(os.path.dirname(filename))
         
         if not os.path.exists(filename):
             open(filename, 'w').close()
             if re.match(r"http://www\.mae\.u-paris10\.fr/limc-france/images/.*\.JPG", url):
-            	url = url[:-4] + '.jpg'
+                url = url[:-4] + '.jpg'
             temporary_filename, _ = urllib.urlretrieve(url)
             try:
                 try:
                     im = Image.open(temporary_filename)
-                except Exception, e:
+                except Exception:
                     raise Http404
                 size = im.size
                 ratio = size[1] / size[0]
@@ -51,20 +51,12 @@ class ResizedImageView(EndpointView):
                 else:
                     resized = im.resize((width, int(round(width*ratio))), Image.ANTIALIAS)
                 resized.save(filename, format='jpeg')
-            except Exception, e:
+            except Exception:
                 os.unlink(filename)
                 raise
             finally:
                 os.unlink(temporary_filename)
 
-        return {
-            'filename': filename,
-            'url': url,
-	        'width': width,
-	    }
-    
-    def handle_GET(self, request, context):
-        filename = context.pop('filename')
         if settings.DEBUG:
             return HttpResponse(open(filename), mimetype='image/jpeg')
         else:
