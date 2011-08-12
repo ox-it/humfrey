@@ -13,8 +13,8 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 from django_conneg.views import ContentNegotiatedView
+from django_conneg.decorators import renderer
 
-from humfrey.utils.views import BaseView, BaseViewMetaclass, renderer
 from humfrey.utils import sparql
 from humfrey.utils.resource import Resource
 
@@ -33,7 +33,7 @@ class EndpointView(ContentNegotiatedView):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
-class _RDFViewMetaclass(BaseViewMetaclass):
+class _RDFViewMetaclass(type):
     @classmethod
     def get_rdf_renderer(mcs, format, mimetype, method, name):
         @renderer(format=format, mimetypes=(mimetype,), name=name)

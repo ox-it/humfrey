@@ -13,8 +13,6 @@ from django.core.urlresolvers import reverse, resolve
 
 from django_hosts.reverse import get_host, reverse_crossdomain
 
-from humfrey.utils.http import MediaType
-
 def get_doc_view():
     # Don't ask
     urlconf = get_host('data').urlconf

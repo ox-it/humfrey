@@ -12,12 +12,12 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
 from django_conneg.views import HTMLView
+from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 
 from humfrey.linkeddata.views import EndpointView, RDFView, ResultSetView
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.utils.views import CachedView
-from humfrey.utils.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
