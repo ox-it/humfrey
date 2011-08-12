@@ -9,11 +9,18 @@ except ImportError:
 import rdflib
 
 from django.conf import settings
+from django.core.urlresolvers import reverse, resolve
 
-from django_hosts.reverse import reverse_crossdomain
+from django_hosts.reverse import get_host, reverse_crossdomain
 
-from humfrey.utils.http import MediaType
-
+def get_doc_view():
+    # Don't ask
+    urlconf = get_host('data').urlconf
+    doc_view = resolve(reverse('doc-generic', urlconf=urlconf), urlconf=urlconf)[0]
+    doc_view = doc_view.func_closure[1].cell_contents(**doc_view.func_closure[0].cell_contents)
+    
+    return doc_view
+    
 def doc_forwards(uri, renderers, graph=None, described=None):
     """
     Determines all doc URLs for a URI.
@@ -53,23 +60,15 @@ def doc_forwards(uri, renderers, graph=None, described=None):
 
 
 def get_format(request):
-    from humfrey.desc.views import DocView
-    try:
-        accepts = DocView.parse_accept_header(request.META['HTTP_ACCEPT'])
-    except KeyError:
-        # What are they playing at, not sending an Accept header?
-        return None
-    else:
-        renderers = MediaType.resolve(accepts, tuple(DocView.FORMATS_BY_MIMETYPE.iteritems()))
-        if renderers:
-            return getattr(DocView, renderers[0]).format
+    renderers = get_doc_view().get_renderers(request)
+    if renderers:
+        return renderers[0].format
 
 def doc_forward(uri, request=None, graph=None, described=None, format=None):
-    from humfrey.desc.views import DocView
     if request and not format:
         format = get_format(request)
 
-    return doc_forwards(uri, DocView().FORMATS.values(), graph, described)[format]
+    return doc_forwards(uri, get_doc_view()._renderers_by_format.values(), graph, described)[format]
 
 def doc_backward(url, request=None):
     from humfrey.desc.views import DocView
@@ -81,7 +80,7 @@ def doc_backward(url, request=None):
     query = parse_qs(parsed_url.query)
     if url.split(':', 1)[-1].split('?')[0] == reverse_crossdomain('data', 'doc-generic'):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
-    if url.rsplit('.', 1)[-1] in DocView.FORMATS:
+    if url.rsplit('.', 1)[-1] in get_doc_view()._renderers_by_format:
         url, format = url.rsplit('.', 1)
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
         if url.startswith(doc_prefix):
