@@ -7,4 +7,4 @@ PIL
 django_hosts
 python-memcached
 PyYAML
-django-conneg
+django-conneg>=1.1.2
