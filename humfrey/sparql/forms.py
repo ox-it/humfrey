@@ -3,7 +3,7 @@ from django.conf import settings
 
 def SparqlQueryForm(*args, **kwargs):
     formats = kwargs.pop('formats')
-    formats = sorted([(format, f.name) for (format, f) in formats.iteritems()])
+    formats = sorted([(f.format, f.name) for f in formats])
 
     class _SparqlQueryForm(forms.Form):
         query = forms.CharField(widget=forms.Textarea(), initial="PREFIX owl: <http://www.w3.org/2002/07/owl#>\n\nSELECT DISTINCT ?type WHERE {\n  ?type a owl:Class\n} LIMIT 50")

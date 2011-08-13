@@ -59,7 +59,7 @@ class SparqlView(RDFView, ResultSetView, HTMLView):
         data = dict(request.REQUEST.items())
         if not 'format' in data:
             data['format'] = 'html'
-        form = SparqlQueryForm(data if query else None, formats=self._renderers_by_format)
+        form = SparqlQueryForm(data if query else None, formats=self._renderers)
         context = {
             'namespaces': NS,
             'form': form,

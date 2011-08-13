@@ -1,20 +1,16 @@
-import time
-import urllib2
 from urlparse import urlparse
 
-from lxml import etree
 import rdflib
-import redis
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponsePermanentRedirect
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
 from django_conneg.views import HTMLView
 from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 
-from humfrey.linkeddata.views import EndpointView, RDFView, ResultSetView
+from humfrey.linkeddata.views import EndpointView, RDFView
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.utils.views import CachedView
@@ -122,7 +118,7 @@ class DocView(RDFView, HTMLView, CachedView):
                                                    subject_uri=subject_uri,
                                                    subject=subject,
                                                    endpoint=self.endpoint,
-                                                   renderers=self._renderers_by_format.values())
+                                                   renderers=self._renderers)
             if additional_context:
                 context.update(additional_context)
 
