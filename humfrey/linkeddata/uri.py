@@ -32,7 +32,7 @@ def doc_forwards(uri, renderers, graph=None, described=None):
     format_names = set(renderer.format for renderer in renderers)
 
     urls = {}
-    for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
+    for id_prefix, doc_prefix, _ in settings.ID_MAPPING:
         if uri.startswith(id_prefix):
             urls[None] = doc_prefix + uri[len(id_prefix):]
             for format in format_names:
@@ -71,7 +71,6 @@ def doc_forward(uri, request=None, graph=None, described=None, format=None):
     return doc_forwards(uri, get_doc_view()._renderers_by_format.values(), graph, described)[format]
 
 def doc_backward(url, request=None):
-    from humfrey.desc.views import DocView
     if request:
         format = get_format(request)
     else:
