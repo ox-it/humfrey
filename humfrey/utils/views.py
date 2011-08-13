@@ -27,19 +27,3 @@ class CachedView(ContentNegotiatedView):
             pickled_response = base64.b64encode(pickle.dumps(response))
             cache.set(key, pickled_response, settings.CACHE_TIMES['page'])
             return response
-
-def ReverseView(request):
-    try:
-        name = request.GET['name']
-        args = request.GET.getlist('arg')
-        
-        path = reverse(name, args=args)
-        view, view_args, view_kwargs = resolve(path)
-        return HttpResponse("http://%s%s" % (
-            request.META['HTTP_HOST'],
-            path,
-        ), mimetype='text/plain')
-    except NoReverseMatch:
-        raise Http404
-    except KeyError:
-        return HttpResponseBadRequest()
