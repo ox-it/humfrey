@@ -1,0 +1,33 @@
+{% load humfrey_desc %}<html>
+  <head>
+    <style type="text/css">
+      th { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <table>
+      <caption>Results</caption>
+{% for result in results %}
+      <thead>
+        <tr>
+{% for field in results.fields %}
+          <th>{{ field }}</th>
+{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+{% for result in results %}
+        <tr class="row-{% cycle "odd" "even" %}">
+{% for cell in result %}
+          <td>{{ cell|node_as_plain_text|default_if_none:"" }}</td>
+{% endfor %}
+        </tr>
+{% empty %}
+        <tr>
+          <td colspan="{{ results.fields|length }}">No results found</td>
+        </tr>
+{% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
