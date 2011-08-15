@@ -84,13 +84,23 @@ class SparqlView(EndpointView, HTMLView):
                 client.delete('sparql:lock:%s' % addr)
         else:
             return self.endpoint.query(query, common_prefixes=common_prefixes), 0
+    
+    def get_format_choices(self):
+        return (
+            ('Graph (DESCRIBE, CONSTRUCT)',
+             tuple((r.format, r.name) for r in sorted(self._graph_view._renderers, key=lambda r:r.name))),
+            ('Resultset (SELECT)',
+             tuple((r.format, r.name) for r in sorted(self._resultset_view._renderers, key=lambda r:r.name))),
+            ('Boolean (ASK)',
+             tuple((r.format, r.name) for r in sorted(self._boolean_view._renderers, key=lambda r:r.name))),
+        )
 
     def get(self, request):
         query = request.REQUEST.get('query')
         data = dict(request.REQUEST.items())
         if not 'format' in data:
             data['format'] = 'html'
-        form = SparqlQueryForm(data if query else None, formats=self._renderers)
+        form = SparqlQueryForm(formats=self.get_format_choices())
         context = {
             'namespaces': NS,
             'form': form,
