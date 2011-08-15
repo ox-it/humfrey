@@ -1,0 +1,11 @@
+{% extends "sparql/base.html" %}
+
+{% block sparql_results %}
+<section>
+  <h2>Results</h2>
+  
+  <p>Query took {{ duration|floatformat:2 }} seconds to complete.</p>
+  
+  {% block sparql_results_detail %}{% endblock %}
+</section>
+{% endblock %}

@@ -6,13 +6,39 @@ import rdflib
 import redis
 
 from django.conf import settings
-from django_conneg.views import HTMLView
+from django_conneg.views import HTMLView, TextView
 
-from humfrey.linkeddata.views import RDFView, ResultSetView
+from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.sparql.forms import SparqlQueryForm
+from humfrey.utils.views import EndpointView
 from humfrey.utils.namespaces import NS
 
-class SparqlView(RDFView, ResultSetView, HTMLView):
+class SparqlGraphView(RDFView, HTMLView):
+    def get(self, request, context):
+        return self.render(request, context, ('sparql/graph', 'results/graph'))
+    post = get
+
+class SparqlResultSetView(ResultSetView, HTMLView):
+    def get(self, request, context):
+        return self.render(request, context, ('sparql/resultset', 'results/resultset'))
+    post = get
+
+class SparqlBooleanView(ResultSetView, HTMLView):
+    def get(self, request, context):
+        return self.render(request, context, ('sparql/boolean', 'results/boolean'))
+    post = get
+
+class SparqlErrorView(HTMLView, TextView):
+    _default_format = 'txt'
+    _force_fallback_format = 'txt'
+
+    def get(self, request, context):
+        return self.render(request, context, 'sparql/error')
+    post = get
+    
+    
+
+class SparqlView(EndpointView, HTMLView):
     class SparqlViewException(Exception):
         pass
     class ConcurrentQueryException(SparqlViewException):
@@ -24,6 +50,11 @@ class SparqlView(RDFView, ResultSetView, HTMLView):
     _THROTTLE_THRESHOLD = 10
     _DENY_THRESHOLD = 20
     _INTENSITY_DECAY = 0.05
+    
+    _graph_view = staticmethod(SparqlGraphView.as_view())
+    _resultset_view = staticmethod(SparqlResultSetView.as_view())
+    _boolean_view = staticmethod(SparqlBooleanView.as_view())
+    _error_view = staticmethod(SparqlErrorView.as_view())
 
     def perform_query(self, request, query, common_prefixes):
         if settings.REDIS_PARAMS:
@@ -91,16 +122,23 @@ class SparqlView(RDFView, ResultSetView, HTMLView):
                                  + "Please try a simpler query or using LIMIT to reduce the number of returned results."
                 context['status_code'] = 403
             else:
-                if isinstance(results, list):
-                    context['results'] = results
-                elif isinstance(results, bool):
-                    context['result'] = results
-                elif isinstance(results, rdflib.ConjunctiveGraph):
-                    context['graph'] = results
-                    context['subjects'] = results.subjects()
-
                 context['queries'] = [results.query]
                 context['duration'] = results.duration
 
-        return self.render(request, context, 'sparql')
+                if isinstance(results, list):
+                    context['results'] = results
+                    return self._resultset_view(request, context)
+                elif isinstance(results, bool):
+                    context['result'] = results
+                    return self._boolean_view(request, context)
+                elif isinstance(results, rdflib.ConjunctiveGraph):
+                    context['graph'] = results
+                    context['subjects'] = results.subjects()
+                    return self._graph_view(request, context)
+
+        if 'error' in context:
+            return self._error_view.dispatch(request, context)
+        else:
+            return self.render(request, context, 'sparql/index')
+
     post = get

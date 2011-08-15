@@ -1,37 +1,16 @@
-import base64
-import hashlib
-import pickle
 from xml.sax.saxutils import escape
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 import rdflib
-import simplejson
 
-from django.conf import settings
 from django.http import HttpResponse
-from django.core.cache import cache
-from django.shortcuts import render_to_response
-from django.template import RequestContext
 
-from django_conneg.views import ContentNegotiatedView
 from django_conneg.decorators import renderer
 
-from humfrey.utils import sparql
-from humfrey.utils.resource import Resource
-
-class EndpointView(ContentNegotiatedView):
-    endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
-
-    def get_types(self, uri):
-        if ' ' in uri:
-            return set()
-        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
-        types = cache.get(key_name)
-        if types:
-            types = pickle.loads(base64.b64decode(types))
-        else:
-            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { GRAPH ?g { %s a ?type } }' % uri.n3()))
-            cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
-        return types
+from humfrey.utils.views import EndpointView
 
 class _RDFViewMetaclass(type):
     @classmethod
@@ -62,25 +41,6 @@ class RDFView(EndpointView):
         ('ttl', 'text/turtle', 'turtle', 'Turtle'),
         ('n3', 'text/n3', 'n3', 'Notation3'),
     )
-
-class KMLView(EndpointView):
-    @renderer(format='kml', mimetypes=('application/vnd.google-earth.kml+xml',), name='KML')
-    def render_kml(self, request, context, template_name):
-        if not isinstance(context.get('graph'), rdflib.ConjunctiveGraph):
-            raise NotImplementedError
-        graph = context['graph']
-        subjects = set()
-        for subject in set(graph.subjects()):
-            subject = Resource(subject, graph, self.endpoint)
-            if subject.geo_lat and subject.geo_long and isinstance(subject, rdflib.URIRef):
-                subjects.add(subject)
-        context['subjects'] = subjects
-        context['hostname'] = request.META['HTTP_HOST']
-
-        return render_to_response('render.kml',
-                                  context, context_instance=RequestContext(request),
-                                  mimetype='application/vnd.google-earth.kml+xml')
-
 
 class ResultSetView(EndpointView):
     def _spool_srx_boolean(self, result):
@@ -129,7 +89,7 @@ class ResultSetView(EndpointView):
         yield '}\n'
 
     def _spool_srj_resultset(self, results):
-        dumps = simplejson.dumps
+        dumps = json.dumps
         yield '{\n'
         yield '  "head": {\n'
         yield '    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields)
@@ -205,4 +165,3 @@ class ResultSetView(EndpointView):
                                      self._spool_csv_boolean,
                                      self._spool_csv_resultset,
                                      'text/csv;charset=UTF-8')
-

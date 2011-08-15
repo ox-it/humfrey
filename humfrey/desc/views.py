@@ -10,10 +10,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django_conneg.views import HTMLView
 from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 
-from humfrey.linkeddata.views import EndpointView, RDFView
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
-from humfrey.utils.views import CachedView
+from humfrey.results.views.standard import RDFView
+from humfrey.utils.views import CachedView, EndpointView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
@@ -25,11 +25,11 @@ class IdView(EndpointView, CachedView):
         if not self.get_types(uri):
             raise Http404
 
-        description_url = doc_forward(uri, request, described=True)
+        description_url = doc_forward(uri, described=True)
 
         return HttpResponseSeeOther(description_url)
 
-class DescView(EndpointView, CachedView):
+class DescView(EndpointView):#, CachedView):
     """
     Will redirect to DocView if described by endpoint, otherwise to the URI given.
 
@@ -43,8 +43,8 @@ class DescView(EndpointView, CachedView):
             raise Http404
         if not IRI.match(uri):
             return HttpResponseTemporaryRedirect(unicode(uri))
-        if self.get_types(uri):
-            return HttpResponsePermanentRedirect(doc_forward(uri, request, described=True))
+        elif self.get_types(uri):
+            return HttpResponsePermanentRedirect(doc_forward(uri, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
             return HttpResponseTemporaryRedirect(unicode(uri))
         else:

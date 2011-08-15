@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load humfrey_desc %}
+
+{% block title %}SPARQL{% endblock %}
+
+{% block body %}
+  <article>
+    <h1>SPARQL</h1>
+    
+    {% block sparql_results %}{% endblock %}
+
+    <h2>Query</h2>
+
+    <form method="get" action="{% url sparql %}">
+      <table>
+        <tbody>
+          {{ form }}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="2" style="text-align:center; padding:1em">
+            <input type="submit" value="Query"/>
+          </tr></td>
+        </tfoot>
+      </table>
+    </form>
+    
+    {% include "queries.html" %}
+  
+  </article>
+{% endblock %}
