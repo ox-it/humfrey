@@ -100,7 +100,7 @@ class SparqlView(EndpointView, HTMLView):
         data = dict(request.REQUEST.items())
         if not 'format' in data:
             data['format'] = 'html'
-        form = SparqlQueryForm(formats=self.get_format_choices())
+        form = SparqlQueryForm(request.REQUEST, formats=self.get_format_choices())
         context = {
             'namespaces': NS,
             'form': form,
