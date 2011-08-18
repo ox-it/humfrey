@@ -9,18 +9,21 @@ from django.conf import settings
 from django_conneg.views import HTMLView, TextView
 
 from humfrey.results.views.standard import RDFView, ResultSetView
+from humfrey.results.views.feed import FeedView
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.utils.views import EndpointView
 from humfrey.utils.namespaces import NS
 
-class SparqlGraphView(RDFView, HTMLView):
+class SparqlGraphView(RDFView, HTMLView, FeedView):
     def get(self, request, context):
-        return self.render(request, context, ('sparql/graph', 'results/graph'))
+        x = self.render(request, context, ('sparql/graph', 'results/graph'))
+        return x
     post = get
 
 class SparqlResultSetView(ResultSetView, HTMLView):
     def get(self, request, context):
-        return self.render(request, context, ('sparql/resultset', 'results/resultset'))
+        x = self.render(request, context, ('sparql/resultset', 'results/resultset'))
+        return x
     post = get
 
 class SparqlBooleanView(ResultSetView, HTMLView):
@@ -86,6 +89,7 @@ class SparqlView(EndpointView, HTMLView):
             return self.endpoint.query(query, common_prefixes=common_prefixes), 0
     
     def get_format_choices(self):
+        print "getting format choices"
         return (
             ('Graph (DESCRIBE, CONSTRUCT)',
              tuple((r.format, r.name) for r in sorted(self._graph_view._renderers, key=lambda r:r.name))),
@@ -144,9 +148,11 @@ class SparqlView(EndpointView, HTMLView):
                 elif isinstance(results, rdflib.ConjunctiveGraph):
                     context['graph'] = results
                     context['subjects'] = results.subjects()
+                    print context
                     return self._graph_view(request, context)
 
         if 'error' in context:
+            print self._error_view.__dict__
             return self._error_view.dispatch(request, context)
         else:
             return self.render(request, context, 'sparql/index')
