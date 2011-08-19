@@ -23,7 +23,6 @@ def extractFeedDetails(request):
     title = "debug empty title"
     desc = "debug empty description"
     link = "http://www.debug.com/example/link"
-    print request
     if 'feedtitle' in request.GET:
         title = request.GET['feedtitle']
     if 'feeddescription' in request.GET:
@@ -80,7 +79,6 @@ class FeedView(EndpointView):
                     subjectDict['link'] = "http://www.no.link.found"
                 if  ('title' in subjectDict):
                     rssItems.append(subjectDict)
-        print rssItems
         feed.add_root_elements = add_root_elements
         setattr(feed, add_root_elements.__name__, types.MethodType(add_root_elements, feed))
         for item in rssItems:
