@@ -1,28 +1,14 @@
-import collections
-import csv
-import imp
-import itertools
-import os
-import StringIO
-
 import mock
 import unittest2
 import rdflib
-import simplejson
 
-from humfrey.linkeddata import views
 from humfrey.linkeddata.uri import doc_forward
 from humfrey.tests.stubs import stub_reverse_crossdomain
-from humfrey.utils import sparql, namespaces
 
 TEST_ID_MAPPING = (
     ('http://random.example.org/id/', 'http://data.example.org/doc:random/', False),
     ('http://id.example.org/', 'http://data.example.org/doc/', True)
 )
-
-
-
-
 
 @mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING)
 @mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
