@@ -1,6 +1,7 @@
 import rdflib
 from rdflib import URIRef
 import types
+from datetime import datetime
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -20,9 +21,10 @@ _DESCRIPTION_PROPERTIES = [ NS['dcterms'] + "description", "http://purl.org/open
 _LINK_PROPERTIES = [ NS['rdfs'] + "seeAlso"]
 
 def extractFeedDetails(request):
-    title = "debug empty title"
-    desc = "debug empty description"
+    title = "Empty title - use a \"&feedtitle=\" GET parameter to set the title."
+    desc = "Use a \"&feeddescription=\" GET parameter to set the description."
     link = "http://www.debug.com/example/link"
+    print request
     if 'feedtitle' in request.GET:
         title = request.GET['feedtitle']
     if 'feeddescription' in request.GET:
@@ -65,7 +67,8 @@ class FeedView(EndpointView):
                     predicate = unicode(predicate)
                     object = unicode(object)
                     if predicate in _DATE_PROPERTIES:
-                        subjectDict['date'] = object
+
+                        subjectDict['date'] = datetime.strptime(object, '%Y-%m-%d').date()
                     if predicate in _TITLE_PROPERTIES:
                         subjectDict['title'] = object
                     if predicate in _DESCRIPTION_PROPERTIES:
@@ -79,10 +82,11 @@ class FeedView(EndpointView):
                     subjectDict['link'] = "http://www.no.link.found"
                 if  ('title' in subjectDict):
                     rssItems.append(subjectDict)
+        print rssItems
         feed.add_root_elements = add_root_elements
         setattr(feed, add_root_elements.__name__, types.MethodType(add_root_elements, feed))
         for item in rssItems:
-            feed.add_item(item['title'], item['link'], item['description'])
+            feed.add_item(item['title'], item['link'], item['description'], pubdate=item['date'])
         return HttpResponse(feed.writeString('utf-8'))
         
         
