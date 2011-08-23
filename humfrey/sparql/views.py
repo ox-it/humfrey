@@ -152,7 +152,7 @@ class SparqlView(EndpointView, HTMLView):
                     return self._graph_view(request, context)
 
         if 'error' in context:
-            return self._error_view.dispatch(request, context)
+            return self._error_view(request, context)
         else:
             return self.render(request, context, 'sparql/index')
 
