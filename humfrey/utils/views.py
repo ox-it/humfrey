@@ -17,7 +17,6 @@ class CachedView(ContentNegotiatedView):
     def dispatch(self, request, *args, **kwargs):
         renderers = self.get_renderers(request)
         uri = request.build_absolute_uri()
-        
         for renderer in renderers:
             key = hashlib.sha1('pickled-response:%s:%s' % (renderer.format, uri)).hexdigest()
             pickled_response = cache.get(key)
@@ -27,10 +26,16 @@ class CachedView(ContentNegotiatedView):
                 except Exception:
                     pass
             
-            response = super(CachedView, self).dispatch(request, *args, **kwargs)
-            pickled_response = base64.b64encode(pickle.dumps(response))
-            cache.set(key, pickled_response, settings.CACHE_TIMES['page'])
-            return response
+        response = super(CachedView, self).dispatch(request, *args, **kwargs)
+        if response.renderer:
+            key = hashlib.sha1('pickled-response:%s:%s' % (response.renderer.format, uri)).hexdigest()
+            try:
+                pickled_response = base64.b64encode(pickle.dumps(response))
+            except Exception:
+                pass
+            else:
+                cache.set(key, pickled_response, settings.CACHE_TIMES['page'])
+        return response
 
 class EndpointView(ContentNegotiatedView):
     endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
