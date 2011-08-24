@@ -105,7 +105,8 @@ class SparqlView(EndpointView, HTMLView):
         data = dict(request.REQUEST.items())
         if not 'format' in data:
             data['format'] = 'html'
-        form = SparqlQueryForm(request.REQUEST, formats=self.get_format_choices())
+        form = SparqlQueryForm(request.REQUEST or None,
+                               formats=self.get_format_choices())
         namespaces = NS.copy().items()
         namespaces.sort()
         context = {
@@ -151,11 +152,10 @@ class SparqlView(EndpointView, HTMLView):
                 elif isinstance(results, rdflib.ConjunctiveGraph):
                     context['graph'] = results
                     context['subjects'] = results.subjects()
-                    print context
                     return self._graph_view(request, context)
 
         if 'error' in context:
-            return self._error_view.dispatch(request, context)
+            return self._error_view(request, context)
         else:
             return self.render(request, context, 'sparql/index')
 
