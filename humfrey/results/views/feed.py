@@ -1,16 +1,12 @@
 import rdflib
-from rdflib import URIRef
 import types
 from datetime import datetime
 
-from django.shortcuts import render_to_response
-from django.template import RequestContext
 from django_conneg.decorators import renderer
 from django.utils.feedgenerator import RssUserland091Feed, Rss201rev2Feed, Atom1Feed, rfc2822_date
 from django.http import HttpResponse
 
 from humfrey.utils.views import EndpointView
-from humfrey.utils.resource import Resource
 from humfrey.utils.namespaces import NS
 
 
