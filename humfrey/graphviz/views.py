@@ -7,9 +7,10 @@ from django.template import RequestContext, loader
 from django.template.defaultfilters import slugify
 from django.shortcuts import render_to_response
 
-from humfrey.linkeddata.views import RDFView
+from django_conneg.decorators import renderer
+
+from humfrey.results.views.standard import RDFView
 from humfrey.utils.resource import Resource
-from humfrey.utils.views import renderer
 from humfrey.utils.namespaces import expand, NS
 
 class GraphVizView(RDFView):
@@ -29,7 +30,7 @@ class GraphVizView(RDFView):
       }
     """
     
-    def handle_GET(self, request, context, root=None, relations=None, template='graphviz/graphviz', depth=4, max_depth=5, exclude_types=None, properties=None, inverted=None, minimal=None):
+    def get(self, request, root=None, relations=None, template='graphviz/graphviz', depth=4, max_depth=5, exclude_types=None, properties=None, inverted=None, minimal=None):
         root = expand(root or request.GET.get('root', ''))
         relations = relations or [expand(relation) for relation in request.GET.getlist('relation')]
         exclude_types = exclude_types or [expand(t) for t in request.GET.getlist('exclude_type')]
@@ -68,7 +69,7 @@ class GraphVizView(RDFView):
                                }
         graph = self.endpoint.query(query)
         
-        context.update({
+        context = {
             'graph': graph,
             'queries': [graph.query],
             'subjects': [Resource(s, graph, self.endpoint) for s in set(graph.objects(page_uri, NS['foaf'].topic))],
@@ -76,7 +77,7 @@ class GraphVizView(RDFView):
             'inverted': inverted,
             'relations': relations,
             'minimal': minimal,
-        })
+        }
         
         for subject in context['subjects']:
 

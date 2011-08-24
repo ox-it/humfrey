@@ -8,15 +8,18 @@ import redis
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.views.generic import View
 
-from humfrey.utils.views import BaseView
-from humfrey.utils.http import HttpResponseSeeOther
 from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, RetrievedPingbackHandler
+from django_conneg.views import HTMLView, JSONPView
+from django_conneg.http import HttpResponseSeeOther
 
 def get_redis_client():
     return redis.client.Redis(**settings.REDIS_PARAMS)
 
-class PingbackView(BaseView):
+class PingbackView(View):
+    _QUEUE_KEY = 'pingback.new'
+
     class PingbackError(Exception): pass
     class AlreadyRegisteredError(PingbackError): pass
 
@@ -53,7 +56,7 @@ class XMLRPCPingbackView(PingbackView):
         'BAD_GATEWAY': 0x32,
     }
 
-    def handle_POST(self, request, context):
+    def post(self, request):
         dispatcher = SimpleXMLRPCDispatcher(allow_none=False, encoding=None)
         dispatcher.register_function(partial(self.ping, request), 'pingback:ping')
 
@@ -74,7 +77,7 @@ class XMLRPCPingbackView(PingbackView):
             return "OK"
 
 class RESTfulPingbackView(PingbackView):
-    def handle_POST(self, request, context):
+    def post(self, request):
         try:
             self.ping(request, request.POST['source'], request.POST['target'])
         except Exception:
@@ -84,7 +87,7 @@ class RESTfulPingbackView(PingbackView):
             response.status_code = 202
             return response
 
-class ModerationView(BaseView):
+class ModerationView(HTMLView, JSONPView):
     def initial_context(self, request):
         client = get_redis_client()
         pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.PENDING_QUEUE_NAME)]
