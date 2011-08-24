@@ -1,10 +1,8 @@
 from collections import defaultdict
 import urllib2, base64, re, hashlib, random, itertools, logging
-from urlparse import urlparse
 from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode
-from rdflib.term import Identifier
 
 from django.core.cache import cache
 from django.conf import settings

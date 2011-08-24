@@ -56,7 +56,7 @@ class SRJRendererTestCase(unittest2.TestCase):
             i, mapping = 0, {}
             for result in results:
                 result = sorted(result.iteritems())
-                for key, value in result:
+                for _, value in result:
                     if value['type'] == 'bnode':
                         if value['value'] in mapping:
                             value['value'] = mapping[value['value']]
