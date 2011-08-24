@@ -17,7 +17,7 @@ from humfrey.utils.views import CachedView, EndpointView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
-class IdView(EndpointView, CachedView):
+class IdView(EndpointView):
     def get(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
         if not IRI.match(uri):
@@ -29,7 +29,7 @@ class IdView(EndpointView, CachedView):
 
         return HttpResponseSeeOther(description_url)
 
-class DescView(EndpointView):#, CachedView):
+class DescView(EndpointView):
     """
     Will redirect to DocView if described by endpoint, otherwise to the URI given.
 
