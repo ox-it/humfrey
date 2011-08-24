@@ -66,11 +66,7 @@ def doc_forward(uri, view=None, request=None, graph=None, described=None, format
 
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z]+))?$')
 
-def doc_backward(url, view=None, request=None):
-    if view and request:
-        format = get_format(request)
-    else:
-        format = None
+def doc_backward(url):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
     if url.split(':', 1)[-1].split('?')[0] == reverse_crossdomain('data', 'doc-generic'):
