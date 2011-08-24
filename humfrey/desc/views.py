@@ -57,12 +57,12 @@ class DocView(RDFView, HTMLView, CachedView):
         super(DocView, self).__init__(*args, **kwargs)
 
     def get(self, request):
+        additional_headers = {}
         doc_url = request.build_absolute_uri()
 
-        uri, format, is_local = doc_backward(doc_url, request)
+        uri, format, is_local = doc_backward(doc_url, view=self, request=request)
         if not uri:
             raise Http404
-        format = format or 'html'
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
 
@@ -73,6 +73,16 @@ class DocView(RDFView, HTMLView, CachedView):
         if expected_doc_url != doc_url:
             return HttpResponsePermanentRedirect(expected_doc_url)
 
+        # If no format was given explicitly (i.e. format parameter or
+        # extension) we inspect the Content-Type header.
+        if not format:
+            renderers = self.get_renderers(request)
+            if renderers:
+                format = renderers[0].format
+                expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        if expected_doc_url != doc_url:
+            additional_headers['Content-Location'] = expected_doc_url
+
         doc_uri = rdflib.URIRef(doc_forward(uri, request, format=None, described=True))
 
         context = {
@@ -82,6 +92,7 @@ class DocView(RDFView, HTMLView, CachedView):
             'types': types,
             'show_follow_link': not is_local,
             'no_index': not is_local,
+            'additional_headers': additional_headers,
         }
 
         subject_uri, doc_uri = context['subject_uri'], context['doc_uri']
