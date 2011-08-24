@@ -59,13 +59,12 @@ def get_format(view, request):
         return renderers[0].format
 
 def doc_forward(uri, view=None, request=None, graph=None, described=None, format=None):
-
     if view and request and not format:
         format = get_format(view, request)
 
     return doc_forwards(uri, graph, described)[format]
 
-BACKWARD_FORMAT_RE = re.compile(r'(?P<url>.*?)(?:\.(?P<format>[a-z]+))?')
+BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z]+))?$')
 
 def doc_backward(url, view=None, request=None):
     if view and request:
