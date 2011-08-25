@@ -431,18 +431,21 @@ class License(object):
 register(License, 'cc:License')
 
 class Ontology(object):
-    _template_name = 'doc/ontology'
+    template_name = 'doc/ontology'
 
-    @cache_per_identifier
-    def _augment(self):
-        return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())
+    @classmethod
+    def _describe_patterns(cls):
+        return [
+            '%(term)s rdfs:isDefinedBy %(uri)s',
+        ]
+
     #@cache_per_identifier
     def defined_classes(self):
         classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
-        return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+        return [c for c in classes if (c._identifier, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
     #@cache_per_identifier
     def defined_properties(self):
         properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
-        return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+        return [p for p in properties if (p._identifier, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
 
 register(Ontology, 'owl:Ontology')
