@@ -36,17 +36,11 @@
 			<td>
 			<code>
 				<table >
-					<td>
+					<tr><td>
 						{% for prefix, URI in namespaces %}
-							PREFIX {{prefix}}:<br/>
+								<span style="float:left; width:140px;">PREFIX {{prefix}}:</span> &lt;{{URI}}&gt;<br/>
 						{% endfor %}
-					</td>
-					<td>
-						{% for prefix, URI in namespaces %}
-							&lt;{{URI}}&gt;<br/>
-						{% endfor %}
-					</td></tr>
-					
+					</td></tr>	
 				</table>
 			</code>
 			</td></tr>
