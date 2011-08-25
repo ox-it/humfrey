@@ -1,0 +1,5 @@
+{% extends "sparql/results.html" %}
+
+{% block sparql_results_detail %}
+<p>{{ result|yesno:"True,False" }}</p>
+{% endblock %}

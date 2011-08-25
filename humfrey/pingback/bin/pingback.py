@@ -213,10 +213,8 @@ def worker(client_locks, host_locks, bail):
         host_lock = host_locks[source_domain]
         
         with contextlib.nested(client_lock, host_lock):
-            print id(data)
             process(client, data)
             set_data(client, ping_hash, data)
-            print id(data)
             logging.info('Data with state %r' % data['state'])
             if data['state'] in ('invalid', 'rejected'):
                 set_expiry(client, ping_hash)

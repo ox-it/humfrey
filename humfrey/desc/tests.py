@@ -1,7 +1,7 @@
 import itertools
 
 import mock
-import rdflib, rdflib.term
+import rdflib.term
 import unittest2
 
 from django.test.client import Client

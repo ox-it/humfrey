@@ -1,27 +1,23 @@
-import time
-import urllib2
 from urlparse import urlparse
 
-from lxml import etree
 import rdflib
-import redis
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponsePermanentRedirect
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
 from django_conneg.views import HTMLView
 from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
 
-from humfrey.linkeddata.views import EndpointView, RDFView, ResultSetView
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
-from humfrey.utils.views import CachedView
+from humfrey.results.views.standard import RDFView
+from humfrey.utils.views import CachedView, EndpointView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
-class IdView(EndpointView, CachedView):
+class IdView(EndpointView):
     def get(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
         if not IRI.match(uri):
@@ -29,11 +25,11 @@ class IdView(EndpointView, CachedView):
         if not self.get_types(uri):
             raise Http404
 
-        description_url = doc_forward(uri, request, described=True)
+        description_url = doc_forward(uri, described=True)
 
         return HttpResponseSeeOther(description_url)
 
-class DescView(EndpointView, CachedView):
+class DescView(EndpointView):
     """
     Will redirect to DocView if described by endpoint, otherwise to the URI given.
 
@@ -47,8 +43,8 @@ class DescView(EndpointView, CachedView):
             raise Http404
         if not IRI.match(uri):
             return HttpResponseTemporaryRedirect(unicode(uri))
-        if self.get_types(uri):
-            return HttpResponsePermanentRedirect(doc_forward(uri, request, described=True))
+        elif self.get_types(uri):
+            return HttpResponsePermanentRedirect(doc_forward(uri, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
             return HttpResponseTemporaryRedirect(unicode(uri))
         else:
@@ -61,12 +57,12 @@ class DocView(RDFView, HTMLView, CachedView):
         super(DocView, self).__init__(*args, **kwargs)
 
     def get(self, request):
+        additional_headers = {}
         doc_url = request.build_absolute_uri()
 
-        uri, format, is_local = doc_backward(doc_url, request)
+        uri, format, is_local = doc_backward(doc_url)
         if not uri:
             raise Http404
-        format = format or 'html'
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
 
@@ -77,6 +73,16 @@ class DocView(RDFView, HTMLView, CachedView):
         if expected_doc_url != doc_url:
             return HttpResponsePermanentRedirect(expected_doc_url)
 
+        # If no format was given explicitly (i.e. format parameter or
+        # extension) we inspect the Content-Type header.
+        if not format:
+            renderers = self.get_renderers(request)
+            if renderers:
+                format = renderers[0].format
+                expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        if expected_doc_url != doc_url:
+            additional_headers['Content-Location'] = expected_doc_url
+
         doc_uri = rdflib.URIRef(doc_forward(uri, request, format=None, described=True))
 
         context = {
@@ -86,6 +92,7 @@ class DocView(RDFView, HTMLView, CachedView):
             'types': types,
             'show_follow_link': not is_local,
             'no_index': not is_local,
+            'additional_headers': additional_headers,
         }
 
         subject_uri, doc_uri = context['subject_uri'], context['doc_uri']
@@ -122,7 +129,7 @@ class DocView(RDFView, HTMLView, CachedView):
                                                    subject_uri=subject_uri,
                                                    subject=subject,
                                                    endpoint=self.endpoint,
-                                                   renderers=self._renderers_by_format.values())
+                                                   renderers=self._renderers)
             if additional_context:
                 context.update(additional_context)
 

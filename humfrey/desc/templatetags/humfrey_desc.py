@@ -19,6 +19,15 @@ def node(obj):
     else:
         return obj
 
+@register.filter
+def node_as_plain_text(obj):
+    if isinstance(obj, BaseResource):
+        return unicode(obj.label)
+    if isinstance(obj, Literal):
+        return unicode(obj.toPython())
+    else:
+        return unicode(obj)
+
 def get_list(resource):
     while resource and resource.rdf_first:
         yield resource.rdf_first

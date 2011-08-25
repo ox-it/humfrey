@@ -47,7 +47,7 @@ class _NS(dict):
 NS = _NS((k,Namespace(v)) for k,v in NS.iteritems())
 
 def register(k, v):
-	NS[k] = Namespace(v)
+    NS[k] = Namespace(v)
 
 def expand(qname):
     try:
