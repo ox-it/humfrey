@@ -91,7 +91,6 @@ class SparqlView(EndpointView, HTMLView):
             return self.endpoint.query(query, common_prefixes=common_prefixes), 0
     
     def get_format_choices(self):
-        print "getting format choices"
         return (
             ('Graph (DESCRIBE, CONSTRUCT)',
              tuple((r.format, r.name) for r in sorted(self._graph_view._renderers, key=lambda r:r.name))),
