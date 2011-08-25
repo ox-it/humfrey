@@ -3,6 +3,20 @@
 {% block title %}SPARQL{% endblock %}
 
 {% block body %}
+    <script type="text/javascript">
+  	function changePrefixes()
+		{
+		if (document.getElementById('showprefixes').innerHTML != 'hide')
+		{
+			document.getElementById('prefixes').style.display = '';
+			document.getElementById('showprefixes').innerHTML = 'hide';
+		}else{
+			document.getElementById('prefixes').style.display = 'none';
+			document.getElementById('showprefixes').innerHTML = 'show';	
+		}
+		}
+	
+	</script>
   <article>
     <h1>SPARQL</h1>
     
@@ -13,7 +27,29 @@
     <form method="get" action="{% url sparql %}">
       <table>
         <tbody>
-          {{ form }}
+			<tr><th>{{ form.query.label_tag }}:</th><td>{{ form.query.errors }}{{ form.query }}</td></tr>
+			<tr><th>{{ form.format.label_tag }}:</th><td> {{ form.format.errors }}{{ form.format }}</td></tr>
+			<tr><th>{{ form.common_prefixes.label_tag }}:</th>
+			<td>{{ form.common_prefixes.errors }}{{ form.common_prefixes }} {{ form.common_prefixes.help_text }} 
+				(<a id="showprefixes" onclick="changePrefixes(); return false;" href="">show</a>) </td></tr>
+			<tr id="prefixes" style="display:none"><th>Common prefixes:</th>
+			<td>
+			<code>
+				<table >
+					<td>
+						{% for prefix, URI in namespaces %}
+							PREFIX {{prefix}}:<br/>
+						{% endfor %}
+					</td>
+					<td>
+						{% for prefix, URI in namespaces %}
+							&lt;{{URI}}&gt;<br/>
+						{% endfor %}
+					</td></tr>
+					
+				</table>
+			</code>
+			</td></tr>
         </tbody>
         <tfoot>
           <tr><td colspan="2" style="text-align:center; padding:1em">
