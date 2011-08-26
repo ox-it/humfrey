@@ -1,0 +1,21 @@
+{% extends "update/base.html" %}
+
+{% block title %}Updater status{% endblock %}
+
+{% block body %}
+<article>
+  <h1>Update status</h1>
+  
+  <h2>Upload queue</h2>
+  
+  {% if upload_queue %}
+  <ul>
+  {% for item in upload_queue %}
+    <li>{{ item.graph_name }}; queued for {{ item.queued_at|timesince }}</li>
+  {% endfor %}
+  </ul>
+  {% else %}
+  <p>The upload queue is empty.</p>
+  {% endif %}
+</article>
+{% endblock %}

@@ -180,13 +180,14 @@ DOC_RDF_PROCESSORS = (
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback',)
+    INSTALLED_APPS += ('humfrey.pingback', 'humfrey.longliving')
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
                                'humfrey.longliving.longliving.downloader.Downloader',
-                               'humfrey.update.longliving.updater.Updater',
+                               'humfrey.update.longliving.uploader.Uploader',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
+    
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 

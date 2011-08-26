@@ -13,9 +13,9 @@ class SpreadsheetToTEI(Transform):
     class Sheet(object): pass
     class Row(object): pass
     
-    def execute(self, file_manager, input):
-        with open(file_manager('xml'), 'w') as output:
-            file_manager.start(self, [input], [output])
+    def execute(self, transform_manager, input):
+        with open(transform_manager('xml'), 'w') as output:
+            transform_manager.start(self, [input], [output.name])
             generator = XMLGenerator(output, encoding='utf-8')
             generator.startDocument()
             generator.startElement('TEI', {'xmlns':'http://www.tei-c.org/ns/1.0'})
@@ -41,7 +41,7 @@ class SpreadsheetToTEI(Transform):
             generator.endElement('text')
             generator.endElement('TEI')
 
-            file_manager.end()
+            transform_manager.end()
             return output.name
 
 class GnumericToTEI(SpreadsheetToTEI):

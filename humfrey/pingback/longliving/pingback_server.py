@@ -11,7 +11,7 @@ from django.conf import settings
 
 from humfrey.longliving.base import LonglivingThread
 from humfrey.longliving.longliving.downloader import Downloader
-from humfrey.update.longliving.updater import Updater
+from humfrey.update.longliving.uploader import Uploader
 from humfrey.utils.namespaces import NS
 
 
@@ -193,4 +193,4 @@ class AcceptedPingbackHandler(LonglivingThread):
                 'modified': datetime.datetime.now(),
             }
             
-            client.rpush(Updater.QUEUE_NAME, self.pack(update_item))
+            client.rpush(Uploader.QUEUE_NAME, self.pack(update_item))

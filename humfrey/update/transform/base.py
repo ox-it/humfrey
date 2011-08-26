@@ -1,8 +1,9 @@
 import datetime
 import os
 
-class FileManager(object):
-    def __init__(self, output_directory):
+class TransformManager(object):
+    def __init__(self, config_directory, output_directory):
+        self.config_directory = config_directory
         self.output_directory = output_directory
         self.counter = 0
         self.transforms = []
@@ -30,11 +31,11 @@ class Transform(object):
         
         return Chain(self, other)
     
-    def __call__(self, output_directory):
-        file_manager = FileManager(output_directory)
-        return self.execute(file_manager)
+    def __call__(self, config_directory, output_directory):
+        transform_manager = TransformManager(config_directory, output_directory)
+        return self.execute(transform_manager)
     
-    def execute(self, file_manager):
+    def execute(self, update_manager):
         raise NotImplementedError
         
 
@@ -42,6 +43,6 @@ class Chain(Transform):
     def __init__(self, first, second):
         self._first, self._second = first, second
     
-    def execute(self, file_manager, *args):
-        return self._second.execute(file_manager,
-                                    self._first.execute(file_manager, *args))
+    def execute(self, transform_manager, *args):
+        return self._second.execute(transform_manager,
+                                    self._first.execute(transform_manager, *args))
