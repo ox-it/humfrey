@@ -187,7 +187,21 @@ if config.get('pingback:enabled') == 'true':
                                'humfrey.update.longliving.uploader.Uploader',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
-    
+
+if True or config.get('update:enabled') == 'true':
+    LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater',
+                               'humfrey.update.longliving.definitions.Definitions'])
+    UPDATE_DEFINITION_DIRECTORIES = ()
+    UPDATE_TRANSFORMS = (
+        'humfrey.update.transform.html.HTMLToXML',
+        'humfrey.update.transform.local_file.LocalFile',
+        'humfrey.update.transform.retrieve.Retrieve',
+        'humfrey.update.transform.spreadsheet.GnumericToTEI',
+        'humfrey.update.transform.spreadsheet.ODSToTEI',
+        'humfrey.update.transform.union.Union',
+        'humfrey.update.transform.upload.Upload',
+        'humfrey.update.transform.xslt.XSLT',
+    )
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 

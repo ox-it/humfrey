@@ -2,20 +2,88 @@
 
 {% block title %}Updater status{% endblock %}
 
+{% block extrahead %}{{ block.super }}
+<style type="text/css">
+ul.update-definitions {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+ul.update-definitions li {
+  margin:2px 1em 1em 2px;
+  padding:5px;
+  border:1px solid #006699;
+  width:300px;
+  float:left;
+}
+
+ul.update-definitions li h3 {
+  margin: 0;
+  font-size:1em;
+}
+
+ul.update-definitions li p {
+  margin:4px 0 4px 0;
+}
+
+</style>
+{% endblock %}
+
 {% block body %}
 <article>
   <h1>Update status</h1>
   
-  <h2>Upload queue</h2>
+  <section>
+    <h2>Update definitions</h2>
+    
+    {% if update_definitions %}
+    <ul class="update-definitions">
+    {% for definition in update_definitions %}
+      <li>
+        <h3>{{ definition.name }}</h3>
+        <p><small>Last updated: <em>{{ definition.last_updated|default:"Never" }}</em>; <em>{{ definition.state }}</em></small></p>
+        {% if definition.description %}<p>{{ definition.description }}</p>{% endif %}
+        <form method="post" action="{% url update-trigger %}">
+          <input type="hidden" name="id" value="{{ definition.id }}"/>
+          <input type="submit" value="Queue for update"/>
+        </form>
+      </li>
+    {% endfor %}
+    </ul>
+    
+    <div style="clear:both;"/>
+    {% endif %}
+  </section>
   
-  {% if upload_queue %}
-  <ul>
-  {% for item in upload_queue %}
-    <li>{{ item.graph_name }}; queued for {{ item.queued_at|timesince }}</li>
-  {% endfor %}
-  </ul>
-  {% else %}
-  <p>The upload queue is empty.</p>
-  {% endif %}
+  <section>
+    <h2>Update queue</h2>
+  
+    {% if update_queue %}
+    <ul>
+    {% for item in update_queue %}
+      <li>{{ item.name }}; queued for {{ item.queued_at|timesince }}; {{ item.trigger }}</li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>The update queue is empty.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Upload queue</h2>
+  
+    {% if upload_queue %}
+    <ul>
+    {% for item in upload_queue %}
+      <li>{{ item.graph_name }}; queued for {{ item.queued_at|timesince }}</li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>The upload queue is empty.</p>
+    {% endif %}
+    </section>
+
+
 </article>
 {% endblock %}

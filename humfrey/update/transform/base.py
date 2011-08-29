@@ -11,18 +11,26 @@ class TransformManager(object):
         filename = os.path.join(self.output_directory, '%s.%s' % (self.counter, extension))
         self.counter += 1
         return filename
-    def start(self, transform, inputs, outputs, type='generic'):
+    def start(self, transform, inputs, type='generic'):
         self.current = {'transform': transform,
                         'inputs': inputs,
-                        'outputs': outputs,
                         'start': datetime.datetime.now(),
                         'type': type}
-    def end(self):
+    def end(self, outputs):
         self.current['end'] = datetime.datetime.now()
+        self.current['outputs'] = outputs
         self.transforms.append(self.current)
         del self.current
 
 class Transform(object):
+    # A mapping from file extensions to rdflib formats.
+    rdf_formats = {
+        'rdf': 'xml',
+        'n3': 'n3',
+        'ttl': 'n3',
+        'nt': 'nt',
+    }
+    
     def __or__(self, other):
         if isinstance(other, type) and issubclass(other, Transform):
             other = other()

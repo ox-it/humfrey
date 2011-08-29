@@ -1,44 +1,31 @@
+import base64
+import datetime
 import os
-import tempfile
+import pickle
 
-import redis
 from lxml import etree
+import redis
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured 
-from django.utils.importlib import import_module
 
-from humfrey.update.transform.html import HTMLToXML
-from humfrey.update.transform.local_file import LocalFile
-from humfrey.update.transform.retrieve import Retrieve
-from humfrey.update.transform.spreadsheet import GnumericToTEI, ODSToTEI
-from humfrey.update.transform.upload import Upload
-from humfrey.update.transform.xslt import XSLT
-
+from humfrey.update.longliving.updater import Updater
 
 class Command(BaseCommand):
-    transforms = (HTMLToXML, LocalFile, Retrieve, GnumericToTEI, ODSToTEI,
-                  Upload, XSLT)
-    transforms = dict((t.__name__, t) for t in transforms)
-    transforms['__builtins__'] = {}
-    
     def handle(self, *args, **options):
-        config_file = etree.parse(args[0])
+        config_filename = os.path.abspath(args[0])
         
-        if config_file.getroot().tag != 'update-definition':
-            raise ValueError("This isn't an update definition")
+        with open(config_filename, 'r') as f:
+            config_file = etree.parse(f)
         
-        config_directory = os.path.abspath(os.path.dirname(args[0]))
+        dataset_name = config_file.xpath('meta/name')[0].text
         
-        for pipeline in config_file.xpath('pipeline'):
-            output_directory = tempfile.mkdtemp()
-            
-            pipeline = eval('(%s)' % pipeline.text.strip(), self.transforms)
-            
-            pipeline(config_directory, output_directory)
-            
-            
-            print pipeline
+        client = redis.client.Redis(**settings.REDIS_PARAMS)
         
+        client.rpush(Updater.QUEUE_NAME, base64.b64encode(pickle.dumps({
+            'config_filename': config_filename,
+            'name': dataset_name,
+            'trigger': 'manual',
+            'queued_at': datetime.datetime.now(),
+        })))
 

@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import base64
 import datetime
+import logging
 import pickle
 
 import rdflib
@@ -13,6 +14,8 @@ from humfrey.update.transform.base import Transform
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.utils import sparql
 from humfrey.utils.namespaces import NS
+
+logger = logging.getLogger(__name__)
 
 class Upload(Transform):
     formats = {
@@ -34,7 +37,9 @@ class Upload(Transform):
         self.graph_name = rdflib.URIRef(graph_name)
         self.method = method
 
-    def execute(self, file_manager, input):
+    def execute(self, transform_manager, input):
+        transform_manager.start(self, [input])
+
         client = redis.client.Redis(**settings.REDIS_PARAMS)
         
         extension = input.rsplit('.', 1)[-1]
@@ -64,12 +69,13 @@ class Upload(Transform):
             (self.graph_name, NS['dcterms'].created, created),
         )
         
-        output = file_manager('nt')
+        output = transform_manager('nt')
         with open(output, 'w') as f:
             graph.serialize(f, 'nt')
 
         pubsub = client.pubsub()
         pubsub.subscribe(Uploader.UPLOADED_PUBSUB)
+
         
         client.rpush(Uploader.QUEUE_NAME,
                      base64.b64encode(pickle.dumps({
@@ -79,10 +85,15 @@ class Upload(Transform):
             'queued_at': datetime.datetime.now(),
         })))
         
+        logger.info("Queued %r for upload", output)
+        
         for message in pubsub.listen():
             message = pickle.loads(base64.b64decode(message['data']))
             if message['filename'] == output:
                 break
+
+        logger.info("%r accepted for upload", output)
         
         pubsub.unsubscribe(Uploader.UPLOADED_PUBSUB)
 
+        transform_manager.end([self.graph_name])

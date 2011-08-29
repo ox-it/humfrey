@@ -1,3 +1,7 @@
+import ctypes
+import inspect
+import logging
+import os
 import sys
 import threading
 import time
@@ -9,7 +13,11 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured 
 from django.utils.importlib import import_module
 
+logger = logging.getLogger(__name__)
+
 class Command(NoArgsCommand):
+    LOCK_NAME = 'longliving:lock'
+
     def get_threads(self, bail):
         try:
             longliving_classes = settings.LONGLIVING_CLASSES
@@ -29,34 +37,54 @@ class Command(NoArgsCommand):
                 raise ImproperlyConfigured("Module %r has no attribute %r" % (module_name, class_name))
             if not issubclass(cls, threading.Thread):
                 raise ImproperlyConfigured("%r must be a subclass of threading.Thread" % class_path)
-            threads.append(cls(bail))
+            thread = cls(bail)
+            thread.name = class_path
+            threads.append(thread)
         return threads
     
     def handle_noargs(self, **options):
         redis_client = redis.client.Redis(**settings.REDIS_PARAMS)
         
-        if not redis_client.setnx('longliving:lock', 1):
-            sys.stderr.write("Already running\n")
-            sys.exit(1)
-        
+        existing_pid = redis_client.get(self.LOCK_NAME)
+        if not redis_client.setnx(self.LOCK_NAME, os.getpid()):
+            existing_pid = int(redis_client.get(self.LOCK_NAME))
+            try:
+                os.kill(existing_pid, 0)
+            except OSError:
+                redis_client.set(self.LOCK_NAME, os.getpid())
+            else:
+                logger.warning("Not starting as another instance detected.")
+                sys.stderr.write("Already running\n")
+                sys.exit(1)
+        logger.info("Starting longliving process")
+
         try:
             bail = threading.Event()
             threads = self.get_threads(bail)
-        
+
             for thread in threads:
                 thread.start()
-        
+
+            logger.info("Longliving threads started")
+
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
+                logger.info("Caught KeyboardInterrupt; shutting down.")
                 bail.set()
-            
-            for thread in threads:
-                thread.join()
-        finally:
-            redis_client.delete('longliving:lock')
-        
-        
-        
 
+            for i in range(5):
+                for thread in threads[:]:
+                    thread.join(5)
+                    if thread.isAlive():
+                        logger.warning("Couldn't join thread %r on attempt %i/5", thread.name, i+1)
+                    else:
+                        threads.remove(thread)
+
+            if threads:
+                logger.error("Couldn't join all threads.")
+            else:
+                logger.info("All threads finished; stopping.")
+        finally:
+            redis_client.delete(self.LOCK_NAME)

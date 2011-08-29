@@ -12,7 +12,7 @@ class LocalFile(Transform):
         if os.sep in self.filename:
             raise ValueError('Filename cannot include directory traversals')
         output = transform_manager(self.filename.rsplit('.', 1)[-1])
-        transform_manager.start(self, [], [output])
+        transform_manager.start(self, [])
         shutil.copy(os.path.join(transform_manager.config_directory, self.filename), output)
-        transform_manager.end()
+        transform_manager.end([output])
         return output

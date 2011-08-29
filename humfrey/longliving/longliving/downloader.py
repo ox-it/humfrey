@@ -1,6 +1,5 @@
 import hashlib
 import logging
-import os
 import tempfile
 import urllib2
 

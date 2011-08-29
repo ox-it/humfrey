@@ -1,12 +1,10 @@
-import urllib2, urllib, rdflib, itertools, re, simplejson, logging, time, sys
-from datetime import datetime
+import urllib2, urllib, rdflib, re, simplejson, logging, time, sys
 from lxml import etree
 try:
     from collections import namedtuple
 except ImportError:
     from namedtuple import namedtuple
 from collections import defaultdict
-from django.conf import settings
 
 from .namespaces import NS
 from .resource import Resource
@@ -17,7 +15,7 @@ def is_qname(uri):
 class ResultList(list):
     pass
 
-logger = logging.getLogger('humfrey.sparql.queries')
+logger = logging.getLogger(__name__)
 
 def trim_indentation(s):
     """Taken from PEP-0257"""
@@ -96,13 +94,13 @@ class Endpoint(object):
             result.query = query
             result.duration = time.time() - start_time
             return result
-        except Exception, e:
-            logging.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
+        except Exception:
+            logger.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
             raise
         finally:
             try:
-                logging.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
-            except UnboundLocalError, e:
+                logger.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
+            except UnboundLocalError:
                 pass
 
     def update(self, query):
@@ -113,7 +111,7 @@ class Endpoint(object):
 
         try:
             response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError:
             pass
 
     def insert_data(self, triples, graph=None):
@@ -155,7 +153,7 @@ class Endpoint(object):
         return Resource(self, uri)
     
     def quote(self, uri):
-        if isinstance(uri, rdflib.Node.Node):
+        if isinstance(uri, rdflib.term.Node):
             return uri.n3()
         elif not uri:
             return uri

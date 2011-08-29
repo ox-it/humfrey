@@ -1,11 +1,13 @@
 from __future__ import with_statement
 
+import logging
 import mimetypes
 import os
 import urllib2
 
 from humfrey.update.transform.base import Transform
 
+logger = logging.getLogger(__name__)
 
 class Retrieve(Transform):
     mimetype_overrides = {
@@ -16,7 +18,9 @@ class Retrieve(Transform):
         self.url = url
 
     def execute(self, transform_manager):
+        logger.info("Attempting to retrieve %r" % self.url)
         response = urllib2.urlopen(self.url)
+        logger.info("Response received for %r" % self.url)
         
         content_type = response.headers.get('Content-Type', 'unknown/unknown')
         content_type = content_type.split(';')[0].strip()
@@ -24,14 +28,18 @@ class Retrieve(Transform):
                  or (mimetypes.guess_extension(content_type) or '').lstrip('.') \
                  or (mimetypes.guess_extension(content_type, strict=False) or '').lstrip('.') \
                  or 'unknown'
+        
+        logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
             
         with open(transform_manager(extension), 'w') as output:
-            transform_manager.start(self, [input], [output], type='identity')
+            transform_manager.start(self, [input], type='identity')
             block_size = os.statvfs(output.name).f_bsize
             while True:
                 chunk = response.read(block_size)
                 if not chunk:
                     break
                 output.write(chunk)
-            transform_manager.end()
+            transform_manager.end([output.name])
+            
+            logger.info("File from %r saved to %r" % (self.url, output.name))
             return output.name

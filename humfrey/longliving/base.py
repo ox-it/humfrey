@@ -25,6 +25,5 @@ class LonglivingThread(threading.Thread):
             if unpack:
                 item = self.unpack(item)
                 
-            print "ITEM", item
             yield key, item
                 

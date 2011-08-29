@@ -40,11 +40,9 @@ class NewPingbackHandler(LonglivingThread):
 
     ACCEPT_HEADER = 'application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9; text/html;q=0.8'
     def run(self):
-        print "STARTING"
         client = self.get_redis_client()
         
         for _, ping_hash in self.watch_queue(client, self.QUEUE_NAME):
-            print "HERE"
             item = self.unpack(client.get('pingback:item:%s' % ping_hash))
             self.process_item(client, ping_hash, item)
              
