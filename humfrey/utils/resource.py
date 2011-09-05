@@ -159,19 +159,13 @@ class BaseResource(object):
         values.sort(key=lambda r: (r.label if is_resource(r) else r))
         return values
 
-    def properties(self):
-        data, objects = defaultdict(set), set()
+    def _additional_queries(self):
+        objects = set()
         for p, o in self._graph.predicate_objects(self._identifier):
             objects.add(p)
-            if isinstance(o, (URIRef, BNode)):
-                o = Resource(o, self._graph, self._endpoint)
             if isinstance(o, URIRef):
                 objects.add(o)
-            data[p].add(o)
-        for p in data:
-            data[p] = self.localised(data[p])
-
-        self._graph += self._endpoint.query("""
+        return ["""
             CONSTRUCT {
               ?s rdfs:label ?label
             } WHERE {
@@ -179,7 +173,16 @@ class BaseResource(object):
               FILTER ( %s ) .
               FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title )
             }
-        """ % ' || '.join('?s = %s' % o.n3() for o in objects if IRI.match(o)))
+        """ % ' || '.join('?s = %s' % o.n3() for o in objects if IRI.match(o))]
+
+    def properties(self):
+        data = defaultdict(set)
+        for p, o in self._graph.predicate_objects(self._identifier):
+            if isinstance(o, (URIRef, BNode)):
+                o = Resource(o, self._graph, self._endpoint)
+            data[p].add(o)
+        for p in data:
+            data[p] = self.localised(data[p])
 
         return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
 
@@ -242,6 +245,8 @@ class BaseResource(object):
             query = f()
             if query:
                 yield query
+        for query in self._additional_queries():
+            yield query
 
     def get_describe_query(self):
         patterns, vars = set(), SparqlQueryVars(uri=self._identifier)
@@ -429,18 +434,21 @@ class License(object):
 register(License, 'cc:License')
 
 class Ontology(object):
-    _template_name = 'doc/ontology'
+    template_name = 'doc/ontology'
 
-    @cache_per_identifier
-    def _augment(self):
-        return self._endpoint.query("DESCRIBE ?s WHERE { ?s rdfs:isDefinedBy %s }" % self._identifier.n3())
+    @classmethod
+    def _describe_patterns(cls):
+        return [
+            '%(term)s rdfs:isDefinedBy %(uri)s',
+        ]
+
     #@cache_per_identifier
     def defined_classes(self):
         classes = self.sorted_subjects(NS['rdf'].type, (NS['rdfs'].Class, NS['owl'].Class))
-        return [c for c in classes if (c.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+        return [c for c in classes if (c._identifier, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
     #@cache_per_identifier
     def defined_properties(self):
         properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
-        return [p for p in properties if (p.uri, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
+        return [p for p in properties if (p._identifier, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
 
 register(Ontology, 'owl:Ontology')

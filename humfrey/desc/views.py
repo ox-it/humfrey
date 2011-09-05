@@ -139,15 +139,16 @@ class DocView(RDFView, HTMLView, CachedView):
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'queries': queries,
+            'template_name': subject.template_name,
         })
 
         if context['format']:
             try:
-                return self.render_to_format(request, context, context['subject'].template_name, context['format'])
+                return self.render_to_format(request, context, subject.template_name, format)
             except KeyError:
                 raise Http404
         else:
-            return self.render(request, context, context['subject'].template_name)
+            return self.render(request, context, subject.template_name)
 
     @property
     def _doc_rdf_processors(self):

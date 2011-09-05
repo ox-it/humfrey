@@ -18,14 +18,12 @@ from humfrey.utils.namespaces import NS
 
 class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
     def get(self, request, context):
-        x = self.render(request, context, ('sparql/graph', 'results/graph'))
-        return x
+        return self.render(request, context, ('sparql/graph', 'results/graph'))
     post = get
 
-class SparqlResultSetView(ResultSetView, SpreadsheetView, HTMLView ):
+class SparqlResultSetView(ResultSetView, SpreadsheetView, HTMLView):
     def get(self, request, context):
-        x = self.render(request, context, ('sparql/resultset', 'results/resultset'))
-        return x
+        return self.render(request, context, ('sparql/resultset', 'results/resultset'))
     post = get
 
 class SparqlBooleanView(ResultSetView, HTMLView):
@@ -40,8 +38,6 @@ class SparqlErrorView(HTMLView, TextView):
     def get(self, request, context):
         return self.render(request, context, 'sparql/error')
     post = get
-    
-    
 
 class SparqlView(EndpointView, HTMLView):
     class SparqlViewException(Exception):
@@ -55,7 +51,7 @@ class SparqlView(EndpointView, HTMLView):
     _THROTTLE_THRESHOLD = 10
     _DENY_THRESHOLD = 20
     _INTENSITY_DECAY = 0.05
-    
+
     _graph_view = staticmethod(SparqlGraphView.as_view())
     _resultset_view = staticmethod(SparqlResultSetView.as_view())
     _boolean_view = staticmethod(SparqlBooleanView.as_view())
@@ -102,15 +98,11 @@ class SparqlView(EndpointView, HTMLView):
 
     def get(self, request):
         query = request.REQUEST.get('query')
-        data = dict(request.REQUEST.items())
-        if not 'format' in data:
-            data['format'] = 'html'
-        form = SparqlQueryForm(request.REQUEST or None,
+        form = SparqlQueryForm(request.REQUEST if query else None,
                                formats=self.get_format_choices())
-        namespaces = NS.copy().items()
-        namespaces.sort()
+
         context = {
-            'namespaces': namespaces,
+            'namespaces': sorted(NS.items()),
             'form': form,
         }
 
