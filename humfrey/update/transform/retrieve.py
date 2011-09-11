@@ -19,7 +19,9 @@ class Retrieve(Transform):
 
     def execute(self, transform_manager):
         logger.info("Attempting to retrieve %r" % self.url)
-        response = urllib2.urlopen(self.url)
+        request = urllib2.Request(self.url)
+        request.headers['Accept'] = "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8"
+        response = urllib2.urlopen(request)
         logger.info("Response received for %r" % self.url)
         
         content_type = response.headers.get('Content-Type', 'unknown/unknown')
