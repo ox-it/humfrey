@@ -27,7 +27,7 @@ class CachedView(ContentNegotiatedView):
                     pass
             
         response = super(CachedView, self).dispatch(request, *args, **kwargs)
-        if response.renderer:
+        if getattr(response, 'renderer', None):
             key = hashlib.sha1('pickled-response:%s:%s' % (response.renderer.format, uri)).hexdigest()
             try:
                 pickled_response = base64.b64encode(pickle.dumps(response))
