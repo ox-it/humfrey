@@ -95,7 +95,11 @@ class ODSToTEI(SpreadsheetToTEI):
             cells = self.elem.xpath('table:table-cell[@office:value-type]', namespaces=ODSToTEI.NS)
             for cell in cells:
                 value_type = cell.xpath('@office:value-type', namespaces=ODSToTEI.NS)[0]
-                yield cell.xpath('@office:%s-value' % value_type, namespaces=ODSToTEI.NS)[0]
+                print etree.tostring(cell)
+                value = cell.xpath('@office:%s-value' % value_type, namespaces=ODSToTEI.NS) \
+                     or cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)
+                print value
+                yield value[0]
     
     
     def sheets(self, input):
