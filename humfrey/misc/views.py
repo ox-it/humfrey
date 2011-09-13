@@ -16,25 +16,27 @@ except ImportError, e:
     pass
 else:
     class FeedView(HTMLView, CachedView):
-        def initial_context(self, request, rss_url, template='index'):
+        rss_url = None
+        template_name = None
+
+        def get_feed(self):
             try:
-                feed = feedparser.parse(rss_url)
+                feed = feedparser.parse(self.rss_url)
                 for entry in feed.entries:
-                    entry.updated_datetime = datetime.datetime(*entry.updated_parsed[:6]+(pytz.utc,)) \
+                    entry.updated_datetime = datetime.datetime(*entry.updated_parsed[:6]).replace(tzinfo=pytz.utc) \
                                                  .astimezone(pytz.timezone(settings.TIME_ZONE))
             except Exception, e:
                 feed = None
-            return {
-                'feed': feed,
-            }
+            return feed
     
-        def get(self, request, rss_url, template='index'):
-            context = self.initial_context(request, rss_url, template)
+        def get(self, request):
+            context = {'feed': self.get_feed()}
 
             # So we match the syntax for other views taking a template
             # parameter.
-            if template.endswith('.html'):
-                template = template[:-5]
+            template_name = self.template_name
+            if template_name.endswith('.html'):
+                template_name = template_name[:-5]
             return self.render(request, context, 'index')
 
 
