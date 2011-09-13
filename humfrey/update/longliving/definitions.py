@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import logging
 import os
 import time
@@ -7,8 +9,6 @@ from lxml import etree
 from django.conf import settings
 
 from humfrey.longliving.base import LonglivingThread
-
-
 
 logger = logging.getLogger(__name__)
 
