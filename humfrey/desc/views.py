@@ -43,6 +43,8 @@ class DescView(EndpointView):
             raise Http404
         if not IRI.match(uri):
             return HttpResponseTemporaryRedirect(unicode(uri))
+        elif request.GET.get('source') == 'purl':
+            return HttpResponseSeeOther(doc_forward(uri, described=True))
         elif self.get_types(uri):
             return HttpResponsePermanentRedirect(doc_forward(uri, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
