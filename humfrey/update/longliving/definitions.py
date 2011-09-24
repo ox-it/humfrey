@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Definitions(LonglivingThread):
     META_NAME = 'update:definition:meta'
+    UPDATED_CHANNEL = 'update:definition:updated'
 
     def run(self):
         while True:
@@ -27,13 +28,15 @@ class Definitions(LonglivingThread):
         
     def update(self):
         client = self.get_redis_client()
-        filenames = set()
+        filenames, changed = set(), []
         for directory in settings.UPDATE_DEFINITION_DIRECTORIES:
-            self.update_directory(client, directory, filenames)
-            
+            self.update_directory(client, directory, filenames, changed)
+        if changed:
+            client.publish(self.UPDATED_CHANNEL, self.pack(changed))
+
         
     
-    def update_directory(self, client, directory, filenames):
+    def update_directory(self, client, directory, filenames, changed):
         for root, dirs, files in os.walk(directory):
             for file in files:
                 filename = os.path.join(directory, root, file)
@@ -74,8 +77,5 @@ class Definitions(LonglivingThread):
                     'description': description[0].text if description else None,
                 })
                 
-                print item
-                
                 client.hset(self.META_NAME, id, self.pack(item))
-
-                
+                changed.append((id, filename, etree.tostring(xml)))
