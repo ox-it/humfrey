@@ -186,6 +186,7 @@ if config.get('pingback:enabled') == 'true':
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
                                'humfrey.longliving.longliving.downloader.Downloader',
                                'humfrey.update.longliving.uploader.Uploader',
+                               'humfrey.update.longliving.crontab.CrontabMaintainer',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
 
