@@ -7,6 +7,8 @@ import redis
 from django.conf import settings
 
 class LonglivingThread(threading.Thread):
+    BAIL_CHANNEL = 'longliving:bail'
+
     def __init__(self, bail):
         self._bail = bail
         super(LonglivingThread, self).__init__()

@@ -13,6 +13,8 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured 
 from django.utils.importlib import import_module
 
+from humfrey.longliving.base import LonglivingThread
+
 logger = logging.getLogger(__name__)
 
 class Command(NoArgsCommand):
@@ -73,6 +75,7 @@ class Command(NoArgsCommand):
             except KeyboardInterrupt:
                 logger.info("Caught KeyboardInterrupt; shutting down.")
                 bail.set()
+                redis_client.publish(LonglivingThread.BAIL_CHANNEL, '')
 
             for i in range(5):
                 for thread in threads[:]:
