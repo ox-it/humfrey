@@ -17,6 +17,7 @@ class Definitions(LonglivingThread):
     UPDATED_CHANNEL = 'update:definition:updated'
 
     def run(self):
+        time.sleep(5)
         while True:
             self.update()
             # Check every two seconds to make sure we shouldn't
