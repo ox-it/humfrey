@@ -167,7 +167,7 @@ class BaseResource(object):
                 objects.add(o)
         return ["""
             CONSTRUCT {
-              ?s rdfs:label ?label
+              ?s ?p ?label
             } WHERE {
               ?s ?p ?label .
               FILTER ( %s ) .
