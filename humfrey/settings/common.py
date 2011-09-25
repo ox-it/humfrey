@@ -139,6 +139,7 @@ REDIS_PARAMS = {} if config.get('supporting_services:disable_redis_support') == 
 SERVED_DOMAINS = ()
 
 ID_MAPPING = ()
+ADDITIONAL_NAMESPACES = {}
 
 RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
 if RESIZED_IMAGE_CACHE_DIR:
