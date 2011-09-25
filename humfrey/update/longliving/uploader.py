@@ -39,7 +39,7 @@ class Uploader(LonglivingThread):
         except Exception, e:
             item.update({
                 'outcome': 'error',
-                'error': e,
+                'error': repr(e),
             })
             logger.exception("Upload failed. Code %r", getattr(e, 'code', None))
         else:
