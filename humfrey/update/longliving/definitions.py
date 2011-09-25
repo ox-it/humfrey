@@ -45,7 +45,7 @@ class Definitions(LonglivingThread):
                     continue
                 filenames.add(filename)
                 
-                logging.debug("Found update definition %r", filename)
+                logger.debug("Found update definition %r", filename)
                 
                 mtime = os.stat(filename).st_mtime
                 last_mtime = client.hget('update:definition:mtimes', filename)
@@ -53,7 +53,7 @@ class Definitions(LonglivingThread):
                     continue
                 client.hset('update:definition:mtimes', filename, self.pack(mtime))
 
-                logging.info("Parsing update definition %r", filename)
+                logger.info("Parsing update definition %r", filename)
                 
                 with open(filename, 'r') as f:
                     xml = etree.parse(f)
