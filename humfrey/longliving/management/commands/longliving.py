@@ -8,7 +8,7 @@ import redis
 
 from django.core.management.base import NoArgsCommand
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
 from humfrey.longliving.base import LonglivingThread
@@ -41,10 +41,14 @@ class Command(NoArgsCommand):
             thread.name = class_path
             threads.append(thread)
         return threads
-    
+
     def handle_noargs(self, **options):
+        log_level = options.pop('log-level', None)
+        if log_level:
+            logging.basicConfig(stream=sys.stderr, getattr(logging, log_level.upper()))
+
         redis_client = redis.client.Redis(**settings.REDIS_PARAMS)
-        
+
         existing_pid = redis_client.get(self.LOCK_NAME)
         if not redis_client.setnx(self.LOCK_NAME, os.getpid()):
             existing_pid = int(redis_client.get(self.LOCK_NAME))
@@ -79,7 +83,7 @@ class Command(NoArgsCommand):
                 for thread in threads[:]:
                     thread.join(5)
                     if thread.isAlive():
-                        logger.warning("Couldn't join thread %r on attempt %i/5", thread.name, i+1)
+                        logger.warning("Couldn't join thread %r on attempt %i/5", thread.name, i + 1)
                     else:
                         threads.remove(thread)
 
