@@ -5,6 +5,7 @@ import datetime
 import logging
 import pickle
 
+import pytz
 import rdflib
 import redis
 
@@ -33,6 +34,8 @@ class Upload(Transform):
         }
     """
     
+    site_timezone = pytz.timezone(settings.TIME_ZONE)
+
     def __init__(self, graph_name, method='PUT'):
         self.graph_name = rdflib.URIRef(graph_name)
         self.method = method
@@ -41,20 +44,21 @@ class Upload(Transform):
         transform_manager.start(self, [input])
 
         client = redis.client.Redis(**settings.REDIS_PARAMS)
-        
+
         extension = input.rsplit('.', 1)[-1]
         try:
             serializer = self.formats[extension]
         except KeyError:
             raise ValueError("Unrecognized RDF extension: %r" % extension)
-        
+
         graph = rdflib.ConjunctiveGraph()
         graph.parse(open(input, 'r'),
                     format=serializer,
                     publicID=self.graph_name)
-        
+
+        datetime_now = self.site_timezone.localize(datetime.datetime.now().replace(microsecond=0))
         modified = graph.value(self.graph_name, NS['dcterms'].modified,
-                               default=rdflib.Literal(datetime.datetime.now()))
+                               default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
             endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
