@@ -45,7 +45,7 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         log_level = options.pop('log-level', None)
         if log_level:
-            logging.basicConfig(stream=sys.stderr, getattr(logging, log_level.upper()))
+            logging.basicConfig(stream=sys.stderr, level=getattr(logging, log_level.upper()))
 
         redis_client = redis.client.Redis(**settings.REDIS_PARAMS)
 
