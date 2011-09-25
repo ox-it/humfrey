@@ -11,7 +11,7 @@ from django.utils.importlib import import_module
 
 from humfrey.longliving.base import LonglivingThread
 from humfrey.update.longliving.definitions import Definitions
-from humfrey.update.transform.base import Transform
+from humfrey.update.transform.base import Transform, TransformManager
 
 logger = logging.getLogger(__name__)
 
@@ -53,19 +53,21 @@ class Updater(LonglivingThread):
             definition['state'] = 'active'
             client.hset(Definitions.META_NAME, id, self.pack(definition))
         
+        variables = dict((e.attrib['name'], e.text) for e in config_file.xpath('parameters/parameter'))
         
         config_directory = os.path.abspath(os.path.dirname(config_filename))
         
         for pipeline in config_file.xpath('pipeline'):
             output_directory = tempfile.mkdtemp()
-            
+            transform_manager = TransformManager(config_directory, output_directory, variables)
+    
             try:
                 pipeline = eval('(%s)' % pipeline.text.strip(), transforms)
             except SyntaxError:
                 raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
 
             try:
-                pipeline(config_directory, output_directory)
+                pipeline(transform_manager)
             finally:
                 shutil.rmtree(output_directory)
 

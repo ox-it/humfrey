@@ -1,10 +1,16 @@
+import base64
 import datetime
 import os
+import pickle
+
+import redis
+from django.conf import settings
 
 class TransformManager(object):
-    def __init__(self, config_directory, output_directory):
+    def __init__(self, config_directory, output_directory, parameters):
         self.config_directory = config_directory
         self.output_directory = output_directory
+        self.parameters = parameters
         self.counter = 0
         self.transforms = []
     def __call__(self, extension):
@@ -39,8 +45,7 @@ class Transform(object):
         
         return Chain(self, other)
     
-    def __call__(self, config_directory, output_directory):
-        transform_manager = TransformManager(config_directory, output_directory)
+    def __call__(self, transform_manager):
         return self.execute(transform_manager)
     
     def execute(self, update_manager):
