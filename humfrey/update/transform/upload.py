@@ -69,9 +69,9 @@ class Upload(Transform):
             (self.graph_name, NS['dcterms'].created, created),
         )
         
-        output = transform_manager('nt')
+        output = transform_manager('rdf')
         with open(output, 'w') as f:
-            graph.serialize(f, 'nt')
+            graph.serialize(f)
 
         pubsub = client.pubsub()
         pubsub.subscribe(Uploader.UPLOADED_PUBSUB)
@@ -83,6 +83,7 @@ class Upload(Transform):
             'graph_name': self.graph_name,
             'method': self.method,
             'queued_at': datetime.datetime.now(),
+            'mimetype': 'application/rdf+xml',
         })))
         
         logger.info("Queued %r for upload", output)
