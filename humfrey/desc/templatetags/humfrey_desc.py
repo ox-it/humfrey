@@ -1,5 +1,6 @@
 from xml.sax.saxutils import quoteattr, escape
 
+from lxml import etree
 from rdflib import Literal, URIRef
 
 
@@ -7,6 +8,7 @@ from django import template
 from django.utils.safestring import mark_safe
 
 from humfrey.utils.resource import BaseResource
+from humfrey.utils.namespaces import NS
 
 register = template.Library()
 
@@ -14,8 +16,10 @@ register = template.Library()
 def node(obj):
     if isinstance(obj, BaseResource):
         return obj.render()
+    elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
+        return mark_safe(sanitize_html(unicode(obj)))
     elif isinstance(obj, Literal):
-        return obj.toPython()
+        return mark_safe(escape(unicode(obj.toPython())).replace('\n', '<br/>\n'))
     else:
         return obj
 
@@ -54,3 +58,24 @@ def property(obj, value):
     if obj is None:
         return
     return obj.get_one_of(*value.split(','))
+
+
+def sanitize_html(html):
+    good_attribs = 'src href alt title'.split()
+    good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br'.split()
+    remove_tags = 'iframe'.split()
+    block_tags = ''.split()
+
+    def sanitize(elem):
+        for key in list(elem.attrib):
+            if key not in good_attribs:
+                del elem.attrib[key]
+            if key == 'href':
+                elem.attrib['rel'] = 'nofollow'
+        if elem.tag not in good_tags:
+            elem.tag = 'div' if elem.tag in block_tags else 'span'
+        for child in elem:
+            sanitize(child)
+        return elem
+
+    return etree.tostring(sanitize(etree.fromstring(html)))

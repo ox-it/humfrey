@@ -153,8 +153,7 @@
           <th>{{ predicate|node }}</th>
           <td>
             {% for object in objects %}
-              {{ object|node|linebreaksbr }}
-              {% if not forloop.last %}<br/>{% endif %}
+              <div>{{ object|node|truncatewords_html:100 }}</div>
             {% endfor %}
           </td>
         </tr>

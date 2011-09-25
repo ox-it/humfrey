@@ -31,6 +31,7 @@ NS = {
     'v': 'http://www.w3.org/2006/vcard/ns#',
     'void': 'http://rdfs.org/ns/void#',
     'xsd': 'http://www.w3.org/2001/XMLSchema#',
+    'xtypes': 'http://purl.org/xtypes/',
 
 
     # Function namespaces
