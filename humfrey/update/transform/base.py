@@ -29,6 +29,13 @@ class TransformManager(object):
         del self.current
 
 class Transform(object):
+    def get_redis_client(self):
+        return redis.client.Redis(**settings.REDIS_PARAMS)
+    def pack(self, value):
+        return base64.b64encode(pickle.dumps(value))
+    def unpack(self, value):
+        return pickle.loads(base64.b64decode(value))
+
     # A mapping from file extensions to rdflib formats.
     rdf_formats = {
         'rdf': 'xml',
