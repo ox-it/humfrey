@@ -27,22 +27,22 @@ class IndexView(HTMLView, RedisView):
 
     def get(self, request):
         client = self.get_redis_client()
-        
+
         definitions = map(self.unpack, client.hgetall(Definitions.META_NAME).itervalues())
         definitions.sort(key=lambda d:d['name'])
-        
+
         context = {
             'update_definitions': definitions,
             'update_queue': map(self.unpack, client.lrange(Updater.QUEUE_NAME, 0, 100)),
             'upload_queue': map(self.unpack, client.lrange(Uploader.QUEUE_NAME, 0, 100)),
         }
-        
+
         return self.render(request, context, 'update/index')
 
 class TriggerView(JSONView, HTMLView, TextView, RedisView):
     def post(self, request, id=None):
         context = {}
-        
+
         self.perform_update(request, context, id)
 
         renderers = self.get_renderers(request)
@@ -59,10 +59,9 @@ class TriggerView(JSONView, HTMLView, TextView, RedisView):
                 'status_code': 400,
             })
             return
-        
+
         client = self.get_redis_client()
         item = client.hget(Definitions.META_NAME, id)
-        print "IT", id, item
         if item:
             item = self.unpack(item)
             client.rpush(Updater.QUEUE_NAME, self.pack({
@@ -78,4 +77,3 @@ class TriggerView(JSONView, HTMLView, TextView, RedisView):
                 'status_code': 404,
             })
 
- 

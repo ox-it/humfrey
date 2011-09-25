@@ -10,7 +10,7 @@ from django.conf import settings
 
 logger = logging.getLogger('core.requests')
 
-from django_conneg.views import ContentNegotiatedView 
+from django_conneg.views import ContentNegotiatedView
 from humfrey.utils import sparql
 
 class CachedView(ContentNegotiatedView):
@@ -25,9 +25,9 @@ class CachedView(ContentNegotiatedView):
                     return pickle.loads(base64.b64decode(pickled_response))
                 except Exception:
                     pass
-            
+
         response = super(CachedView, self).dispatch(request, *args, **kwargs)
-        if response.renderer:
+        if getattr(response, 'renderer', None):
             key = hashlib.sha1('pickled-response:%s:%s' % (response.renderer.format, uri)).hexdigest()
             try:
                 pickled_response = base64.b64encode(pickle.dumps(response))

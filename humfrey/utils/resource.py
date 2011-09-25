@@ -212,7 +212,7 @@ class BaseResource(object):
             if isinstance(v, (URIRef, BNode)):
                 return -4
             else:
-                return {'en-GB': -3, 'en-US': -2, 'en': -1}.get(v.language, 0)
+                return {'en-GB':-3, 'en-US':-2, 'en':-1}.get(v.language, 0)
         return sorted(values, key=f)
 
     @property
