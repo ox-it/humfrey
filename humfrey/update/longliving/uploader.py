@@ -32,7 +32,7 @@ class Uploader(LonglivingThread):
             data = item['data']
 
         request = urllib2.Request(graph_url, data)
-        request.headers['Content-Type'] = item.get('mimetype', 'text/plain')
+        request.headers['Content-type'] = item.get('mimetype', 'text/plain')
         request.get_method = lambda: item['method']
 
         try:
