@@ -1,10 +1,18 @@
-import urllib2, urllib, rdflib, re, simplejson, logging, time, sys
-from lxml import etree
+from collections import defaultdict
 try:
     from collections import namedtuple
 except ImportError:
     from namedtuple import namedtuple
-from collections import defaultdict
+import logging
+import re
+import sys
+import time
+import urllib
+import urllib2
+
+from lxml import etree
+import rdflib
+import simplejson
 
 from .namespaces import NS
 from .resource import Resource
