@@ -1,4 +1,6 @@
-import unittest, tempfile, os
+import os
+import tempfile
+import unittest
 
 from django.test.simple import DjangoTestSuiteRunner, build_suite, reorder_suite
 from django.test import TestCase as DjangoTestCase
