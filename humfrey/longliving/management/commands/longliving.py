@@ -1,4 +1,5 @@
 import logging
+from optparse import make_option
 import os
 import sys
 import threading
@@ -6,7 +7,7 @@ import time
 
 import redis
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
@@ -15,8 +16,16 @@ from humfrey.longliving.base import LonglivingThread
 
 logger = logging.getLogger(__name__)
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     LOCK_NAME = 'longliving:lock'
+
+    option_list = BaseCommand.option_list + (
+        make_option('--log-level',
+            action='store',
+            dest='level',
+            default=None,
+            help='Log level'),
+        )
 
     def get_threads(self, bail):
         try:
@@ -42,8 +51,8 @@ class Command(NoArgsCommand):
             threads.append(thread)
         return threads
 
-    def handle_noargs(self, **options):
-        log_level = options.pop('log-level', None)
+    def handle_noargs(self, *args, **options):
+        log_level = options.pop('level', None)
         if log_level:
             logging.basicConfig(stream=sys.stderr, level=getattr(logging, log_level.upper()))
 
