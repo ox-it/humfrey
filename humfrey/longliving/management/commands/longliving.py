@@ -51,7 +51,7 @@ class Command(BaseCommand):
             threads.append(thread)
         return threads
 
-    def handle_noargs(self, *args, **options):
+    def handle(self, *args, **options):
         log_level = options.pop('level', None)
         if log_level:
             logging.basicConfig(stream=sys.stderr, level=getattr(logging, log_level.upper()))
