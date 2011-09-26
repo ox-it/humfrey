@@ -1,5 +1,11 @@
+import base64
 from collections import defaultdict
-import urllib2, base64, re, hashlib, random, itertools, logging
+import hashlib
+import itertools
+import logging
+import random
+import re
+import urllib2
 from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode
