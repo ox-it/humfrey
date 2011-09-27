@@ -7,6 +7,8 @@ from django.test import TestCase as DjangoTestCase
 from django.test._doctest import DocTestCase
 from django.db.models import get_app, get_apps
 from django.db import transaction, connections, DEFAULT_DB_ALIAS
+from django.utils.importlib import import_module
+from django.conf import settings
 
 from django_jenkins.runner import CITestSuiteRunner
 
@@ -60,8 +62,9 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
         suite._tests = tests
         
     def build_suite(self, test_labels, extra_tests=None, **kwargs):
-
         suite = super(HumfreyTestSuiteRunner, self).build_suite(test_labels, extra_tests=None, **kwargs)
+        for module_name in getattr(settings, 'EXTRA_TEST_MODULES', ()):
+            suite.addTests(unittest.findTestCases(import_module(module_name)))
         self._filter_suite(suite)
         return suite
     
