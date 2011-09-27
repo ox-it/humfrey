@@ -19,3 +19,6 @@ JENKINS_TASKS = ('django_jenkins.tasks.run_pylint',
                  'django_jenkins.tasks.run_pep8',
                  'django_jenkins.tasks.run_pyflakes')
 PROJECT_APPS = tuple(app for app in INSTALLED_APPS if app.startswith('humfrey.'))
+
+TEST_URI = 'http://data/example.com/id/Foo'
+TEST_DOMAIN = 'data.example.org'
