@@ -108,8 +108,9 @@ class ODSToTEI(SpreadsheetToTEI):
                     yield value[0]
 
     def sheets(self, input):
-        with zipfile.ZipFile(input) as zip:
-            input = etree.parse(zip.open('content.xml'))
+        zip = zipfile.ZipFile(input)
+        try:
+            input = etree.fromstring(zip.read('content.xml'))
             return itertools.imap(self.Sheet, input.xpath('office:body/office:spreadsheet/table:table', namespaces=self.NS))
-            
-        
+        finally:
+            zip.close()
