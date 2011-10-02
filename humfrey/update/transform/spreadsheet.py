@@ -161,8 +161,9 @@ class ODSToTEI(SpreadsheetToTEI):
                     repeated = int(row.xpath('@table:number-rows-repeated', namespaces=ODSToTEI.NS)[0])
                 except (ValueError, IndexError):
                     repeated = 1
-                for n in xrange(repeated):
-                    yield ODSToTEI.Row(row)
+                if row.xpath('((self::table:table-row | following-sibling::table:table-row)/table:table-cell/text:p)[1]', namespaces=ODSToTEI.NS):
+                    for n in xrange(repeated):
+                        yield ODSToTEI.Row(row)
 
     class Row(SpreadsheetToTEI.Row):
         def __init__(self, elem):
@@ -196,8 +197,9 @@ class ODSToTEI(SpreadsheetToTEI):
                     repeated = int(cell.xpath('@table:number-columns-repeated', namespaces=ODSToTEI.NS)[0])
                 except (ValueError, IndexError):
                     repeated = 1
-                for n in xrange(repeated):
-                    yield value
+                if value or cell.xpath('following-sibling::table:table-cell/text:p', namespaces=ODSToTEI.NS):
+                    for n in xrange(repeated):
+                        yield value
 
     def sheets(self, input):
         zip = zipfile.ZipFile(input)
