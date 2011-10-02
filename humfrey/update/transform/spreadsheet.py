@@ -1,5 +1,7 @@
 from __future__ import with_statement
 
+import datetime
+import decimal
 import gzip
 import itertools
 from xml.sax.saxutils import XMLGenerator
@@ -8,6 +10,24 @@ import zipfile
 from lxml import etree
 
 from humfrey.update.transform.base import Transform
+
+class Currency(decimal.Decimal):
+    def __new__(cls, value, currency, rendered):
+        return decimal.Decimal.__new__(cls, value)
+    def __init__(self, value, currency, rendered):
+        super(Currency, self).__init__(value)
+        self.currency, self.rendered = currency, rendered
+    def __repr__(self):
+        return "Currency(%r, %r, %r)" % (decimal.Decimal.__repr__(self), self.currency, self.rendered)
+
+class Percentage(decimal.Decimal):
+    def __new__(cls, value, rendered, dp=None):
+        return decimal.Decimal.__new__(cls, value, dp)
+    def __init__(self, value, rendered, dp=None):
+        super(Percentage, self).__init__(value, dp)
+        self.rendered = rendered
+    def __repr__(self):
+        return "Percentage(%r, %r)" % (decimal.Decimal.__str__(self), self.rendered)
 
 class SpreadsheetToTEI(Transform):
     class Sheet(object): pass
@@ -50,19 +70,70 @@ class GnumericToTEI(SpreadsheetToTEI):
     class Sheet(SpreadsheetToTEI.Sheet):
         def __init__(self, elem):
             self.elem = elem
+            self.style_regions = self.elem.xpath('gnm:Styles/gnm:StyleRegion', namespaces=GnumericToTEI.NS)
+
         @property
         def name(self):
             return self.elem.xpath('gnm:Name', namespaces=GnumericToTEI.NS)[0].text
         @property
         def rows(self):
-            return itertools.imap(GnumericToTEI.Row, itertools.groupby(self.elem.xpath('gnm:Cells/gnm:Cell', namespaces=GnumericToTEI.NS), lambda cell:cell.attrib['Row']))
+            i = 0
+            for group, row in itertools.groupby(self.elem.xpath('gnm:Cells/gnm:Cell', namespaces=GnumericToTEI.NS), lambda cell:cell.attrib['Row']):
+                while int(group) > i:
+                    yield GnumericToTEI.Row([], self)
+                    i += 1
+                yield GnumericToTEI.Row(row, self)
+                i += 1
+
+        def find_style(self, row, col):
+            row, col = int(row), int(col)
+            for sr in self.style_regions:
+                a = dict((k, int(v)) for k, v in sr.attrib.items())
+                if a['startCol'] <= col <= a['endCol'] and a['startRow'] <= row <= a['endRow']:
+                    return sr
+            else:
+                return None
+
+        def parse(self, cell):
+            sr = self.find_style(cell.attrib['Row'], cell.attrib['Col'])
+            if cell.attrib['ValueType'] != '40': # '60' is string, '40' seems to be numeric
+                return cell.text
+            if sr is None:
+                return cell.text
+            format = sr.xpath('gnm:Style/@Format', namespaces=GnumericToTEI.NS)[0]
+            if format.endswith('%'):
+                dp = len(format) - 3 # "0.000%"; len 6, dp 3
+                rendered = ('%%0.%df%%%%' % dp) % (float(cell.text) * 100)
+                return Percentage(cell.text, rendered, dp)
+            elif format in ('dd/mm/yyyy', 'm/d/yy', 'm/d/yyyy', 'yyyy-mm-dd', 'dd/mm/yy'):
+                value = datetime.date(1899, 12, 31) + datetime.timedelta(int(cell.text))
+                # Lotus incorrectly believes that 1900 was a leap year
+                if value > datetime.date(1900, 2, 28):
+                    value -= datetime.timedelta(1)
+                return value
+            elif 'yy' in format:
+                day, fraction = int(float(cell.text)), (float(cell.text) % 1) * 24 * 3600
+                value = datetime.datetime(1899, 12, 31) + datetime.timedelta(int(day), fraction)
+                # Lotus incorrectly believes that 1900 was a leap year
+                if value > datetime.datetime(1900, 2, 28):
+                    value -= datetime.timedelta(1)
+                return value
+            else:
+                return float(cell.text)
+
 
     class Row(SpreadsheetToTEI.Row):
-        def __init__(self, group):
-            self.group = group
+        def __init__(self, row, sheet):
+            self.row, self.sheet = row, sheet
         @property
         def cells(self):
-            return ((cell.text or '') for cell in self.group[1])
+            i = 0
+            for cell in self.row:
+                while int(cell.attrib['Col']) > i:
+                    yield ''
+                    i += 1
+                yield self.sheet.parse(cell)
+                i += 1
 
     def sheets(self, input):
         input = etree.parse(gzip.GzipFile(input, mode='r'))
@@ -85,27 +156,48 @@ class ODSToTEI(SpreadsheetToTEI):
             return self.elem.xpath('@table:name', namespaces=ODSToTEI.NS)[0]
         @property
         def rows(self):
-            return itertools.imap(ODSToTEI.Row, self.elem.xpath('table:table-row[table:table-cell/@office:value-type]', namespaces=ODSToTEI.NS))
+            for row in self.elem.xpath('table:table-row', namespaces=ODSToTEI.NS):
+                try:
+                    repeated = int(row.xpath('@table:number-rows-repeated', namespaces=ODSToTEI.NS)[0])
+                except (ValueError, IndexError):
+                    repeated = 1
+                for n in xrange(repeated):
+                    yield ODSToTEI.Row(row)
 
     class Row(SpreadsheetToTEI.Row):
         def __init__(self, elem):
             self.elem = elem
         @property
         def cells(self):
-            cells = self.elem.xpath('table:table-cell[@office:value-type]', namespaces=ODSToTEI.NS)
+            cells = self.elem.xpath('table:table-cell', namespaces=ODSToTEI.NS)
             for cell in cells:
-                value_type = cell.xpath('@office:value-type', namespaces=ODSToTEI.NS)[0]
-                print etree.tostring(cell)
-                value = cell.xpath('@office:%s-value' % value_type, namespaces=ODSToTEI.NS) \
-                     or cell.xpath('@office:value', namespaces=ODSToTEI.NS) \
-                     or cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)
-                print value
+                attrib = cell.attrib
+                value_type = attrib.get('{%(office)s}value-type' % ODSToTEI.NS)
+                if value_type == 'date':
+                    value = attrib['{%(office)s}date-value' % ODSToTEI.NS]
+                    if len(value) == 10:
+                        value = datetime.date(*map(int, value.split('-')))
+                    else:
+                        value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
+                elif value_type == 'currency':
+                    value = Currency(attrib['{%(office)s}value' % ODSToTEI.NS],
+                                     attrib['{%(office)s}currency' % ODSToTEI.NS],
+                                     cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)[0])
+                elif value_type == 'percentage':
+                    value = Percentage(attrib['{%(office)s}value' % ODSToTEI.NS],
+                                     cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)[0])
+                elif value_type == 'float':
+                    value = float(attrib['{%(office)s}value' % ODSToTEI.NS])
+                elif value_type == 'string':
+                    value = cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)[0]
+                else:
+                    value = ''
                 try:
                     repeated = int(cell.xpath('@table:number-columns-repeated', namespaces=ODSToTEI.NS)[0])
                 except (ValueError, IndexError):
                     repeated = 1
                 for n in xrange(repeated):
-                    yield value[0]
+                    yield value
 
     def sheets(self, input):
         zip = zipfile.ZipFile(input)
