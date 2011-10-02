@@ -1,6 +1,9 @@
 from __future__ import division
 
-import os, hashlib, urllib, re
+import hashlib
+import os
+import re
+import urllib
 
 import rdflib
 from PIL import Image

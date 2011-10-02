@@ -159,7 +159,8 @@ for k in ('access', 'pingback', 'query'):
 del k, v
 
 if config.get('main:log_to_stderr') == 'true':
-    import logging, sys
+    import logging
+    import sys
     log_level = config.get('main:log_level') or 'WARNING'
     if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
         raise RuntimeError('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
