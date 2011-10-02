@@ -12,7 +12,7 @@ from humfrey.update.transform.base import Transform
 class SpreadsheetToTEI(Transform):
     class Sheet(object): pass
     class Row(object): pass
-    
+
     def execute(self, transform_manager, input):
         with open(transform_manager('xml'), 'w') as output:
             transform_manager.start(self, [input])
@@ -21,7 +21,7 @@ class SpreadsheetToTEI(Transform):
             generator.startElement('TEI', {'xmlns':'http://www.tei-c.org/ns/1.0'})
             generator.startElement('text', {})
             generator.startElement('body', {})
-            
+
             for sheet in self.sheets(input):
                 generator.startElement('table', {})
                 generator.startElement('head', {})
@@ -29,9 +29,9 @@ class SpreadsheetToTEI(Transform):
                 generator.endElement('head')
 
                 for i, row in enumerate(sheet.rows):
-                    generator.startElement('row', {'n': unicode(int(i)+1)})
+                    generator.startElement('row', {'n': unicode(int(i) + 1)})
                     for j, cell in enumerate(row.cells):
-                        generator.startElement('cell', {'n': unicode(j+1)})
+                        generator.startElement('cell', {'n': unicode(j + 1)})
                         generator.characters(cell)
                         generator.endElement('cell')
                     generator.endElement('row')
@@ -56,14 +56,14 @@ class GnumericToTEI(SpreadsheetToTEI):
         @property
         def rows(self):
             return itertools.imap(GnumericToTEI.Row, itertools.groupby(self.elem.xpath('gnm:Cells/gnm:Cell', namespaces=GnumericToTEI.NS), lambda cell:cell.attrib['Row']))
-    
+
     class Row(SpreadsheetToTEI.Row):
         def __init__(self, group):
             self.group = group
         @property
         def cells(self):
             return ((cell.text or '') for cell in self.group[1])
-    
+
     def sheets(self, input):
         input = etree.parse(gzip.GzipFile(input, mode='r'))
         return itertools.imap(self.Sheet, input.xpath('gnm:Sheets/gnm:Sheet', namespaces=self.NS))
@@ -86,7 +86,7 @@ class ODSToTEI(SpreadsheetToTEI):
         @property
         def rows(self):
             return itertools.imap(ODSToTEI.Row, self.elem.xpath('table:table-row[table:table-cell/@office:value-type]', namespaces=ODSToTEI.NS))
-    
+
     class Row(SpreadsheetToTEI.Row):
         def __init__(self, elem):
             self.elem = elem
@@ -97,11 +97,16 @@ class ODSToTEI(SpreadsheetToTEI):
                 value_type = cell.xpath('@office:value-type', namespaces=ODSToTEI.NS)[0]
                 print etree.tostring(cell)
                 value = cell.xpath('@office:%s-value' % value_type, namespaces=ODSToTEI.NS) \
+                     or cell.xpath('@office:value', namespaces=ODSToTEI.NS) \
                      or cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)
                 print value
-                yield value[0]
-    
-    
+                try:
+                    repeated = int(cell.xpath('@table:number-columns-repeated', namespaces=ODSToTEI.NS)[0])
+                except (ValueError, IndexError):
+                    repeated = 1
+                for n in xrange(repeated):
+                    yield value[0]
+
     def sheets(self, input):
         with zipfile.ZipFile(input) as zip:
             input = etree.parse(zip.open('content.xml'))
