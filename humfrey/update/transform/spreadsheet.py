@@ -189,6 +189,8 @@ class ODSToTEI(SpreadsheetToTEI):
                                      cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)[0])
                 elif value_type == 'float':
                     value = float(attrib['{%(office)s}value' % ODSToTEI.NS])
+                    if value == int(value):
+                        value = int(value)
                 elif value_type == 'string':
                     value = cell.xpath('text:p/text()', namespaces=ODSToTEI.NS)[0]
                 else:
