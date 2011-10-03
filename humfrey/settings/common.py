@@ -192,7 +192,8 @@ if config.get('pingback:enabled') == 'true':
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
 
-if True or config.get('update:enabled') == 'true':
+if config.get('update:enabled') == 'true':
+    INSTALLED_APPS += ('humfrey.update',)
     LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater',
                                'humfrey.update.longliving.definitions.Definitions'])
     UPDATE_DEFINITION_DIRECTORIES = ()
