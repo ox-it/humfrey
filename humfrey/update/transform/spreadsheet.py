@@ -52,7 +52,7 @@ class SpreadsheetToTEI(Transform):
                     generator.startElement('row', {'n': unicode(int(i) + 1)})
                     for j, cell in enumerate(row.cells):
                         generator.startElement('cell', {'n': unicode(j + 1)})
-                        generator.characters(cell)
+                        generator.characters(unicode(cell))
                         generator.endElement('cell')
                     generator.endElement('row')
                 generator.endElement('table')
