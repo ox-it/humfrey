@@ -43,5 +43,5 @@ class SimpleView(HTMLView, CachedView):
     template_name = None
     
     def get(self, request):
-        return self.render(request, self.context, self.template_name)
+        return self.render(request, self.context.copy(), self.template_name)
         
