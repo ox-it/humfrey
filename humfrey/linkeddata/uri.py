@@ -64,7 +64,7 @@ def doc_forward(uri, view=None, request=None, graph=None, described=None, format
 
     return doc_forwards(uri, graph, described)[format]
 
-BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z]+))?$')
+BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 
 def doc_backward(url):
     parsed_url = urlparse.urlparse(url)
