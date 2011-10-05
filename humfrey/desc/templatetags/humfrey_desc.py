@@ -7,6 +7,7 @@ from rdflib import Literal, URIRef
 from django import template
 from django.utils.safestring import mark_safe
 
+from humfrey.linkeddata.uri import doc_forward
 from humfrey.utils.resource import BaseResource
 from humfrey.utils.namespaces import NS
 
@@ -79,3 +80,7 @@ def sanitize_html(html):
         return elem
 
     return etree.tostring(sanitize(etree.fromstring(html)))
+
+@register.filter
+def doc_url(uri):
+    return doc_forward(uri)
