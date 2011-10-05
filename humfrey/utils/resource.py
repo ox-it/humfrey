@@ -292,7 +292,7 @@ class BaseResource(object):
 
 class Account(object):
     def render(self):
-        if self.foaf_accountServiceHomepage.uri == URIRef('http://www.twitter.com/'):
+        if self.foaf_accountServiceHomepage._identifier == URIRef('http://www.twitter.com/'):
             return mark_safe('<a href="%s"><img class="icon" src="http://twitter-badges.s3.amazonaws.com/t_mini-b.png" alt="%s on Twitter"/> @%s</a>' % tuple(map(escape,
                 (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountName))))
         else:
