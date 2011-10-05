@@ -9,6 +9,7 @@ import sys
 import time
 import urllib
 import urllib2
+import weakref
 
 from lxml import etree
 import rdflib
@@ -51,6 +52,40 @@ def trim_indentation(s):
     # Return a single string:
     return '\n'.join(trimmed)
 
+class SparqlResult(object):
+    pass
+
+def Result(fields, bindings=None):
+    fields = tuple(fields)
+    if fields in Result._memo:
+        cls = Result._memo[fields]
+    else:
+        class cls(SparqlResult, dict):
+            def __init__(self, bindings):
+                if isinstance(bindings, list):
+                    bindings = dict(zip(self._fields, bindings))
+                for field in fields:
+                    if field not in bindings:
+                        bindings[field] = None
+                super(cls, self).__init__(bindings)
+            def __iter__(self):
+                return (self[field] for field in self._fields)
+            def __getattr__(self, name):
+                return self[name]
+            @property
+            def fields(self):
+                return self._fields
+            def __reduce__(self):
+                return (Result, (self._fields, self._asdict()))
+            def _asdict(self):
+                return dict(self)
+        cls._fields = fields
+        Result._memo[fields] = cls
+    if bindings:
+        return cls(bindings)
+    else:
+        return cls
+Result._memo = weakref.WeakValueDictionary()
 
 class Endpoint(object):
     def __init__(self, url, update_url=None, namespaces={}):
@@ -177,9 +212,9 @@ class Endpoint(object):
             #raise Exception(map(etree.tostring, xml.xpath('srx:boolean', namespaces=NS)))
             return xml.xpath('srx:boolean', namespaces=NS)[0].text.strip() == 'true'
 
-        fields = [re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', e.attrib['name'])) for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
+        fields = [e.attrib['name'] for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
         empty_results_dict = dict((f, None) for f in fields)
-        Result = namedtuple('Result', fields)
+        ResultClass = Result(fields)
         
         g = rdflib.ConjunctiveGraph()
 
@@ -188,8 +223,8 @@ class Endpoint(object):
         for result_xml in xml.xpath('srx:results/srx:result', namespaces=NS):
             result = empty_results_dict.copy()
             for binding in result_xml.xpath('srx:binding', namespaces=NS):
-                result[re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', binding.attrib['name']))] = self.parse_binding(binding[0], g)
-            results.append(Result(**result))
+                result[binding.attrib['name']] = self.parse_binding(binding[0], g)
+            results.append(ResultClass(result))
 
         return results
 
@@ -217,12 +252,12 @@ class Endpoint(object):
             return json['boolean'] == True
 
         vars_ = json['head']['vars']
-        Result = namedtuple('Result', json['head']['vars'])
+        ResultClass = Result(json['head']['vars'])
         pb = self.parse_json_binding
 
         results = ResultList()
         for binding in json['results']['bindings']:
-            results.append( Result(*[pb(binding.get(v), graph) for v in vars_]) )
+            results.append( ResultClass(*[pb(binding.get(v), graph) for v in vars_]) )
         results.fields = vars_
         return results
 
