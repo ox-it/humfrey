@@ -1,0 +1,1 @@
+<a class="sort-header {% if sort == field %}current-sort{% endif %}" href="?_page={{ page }}&amp;_sort={% if sort == field and not reverse %}-{% endif %}{{ field }}">{{ name }}</a>{% if sort == field %} {% if reverse %}⇧{% else %}⇩{% endif %}{% endif %}
