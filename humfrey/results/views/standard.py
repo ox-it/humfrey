@@ -19,7 +19,7 @@ class _RDFViewMetaclass(type):
         def render(self, request, context, template_name):
             graph = context.get('graph')
             if not isinstance(graph, rdflib.ConjunctiveGraph):
-                raise NotImplementedError
+                return NotImplemented
             return HttpResponse(graph.serialize(format=method), mimetype=mimetype)
         render.__name__ = 'render_%s' % format
         return render
@@ -142,7 +142,7 @@ class ResultSetView(EndpointView):
         elif isinstance(context.get('results'), list):
             spool = spool_resultset(context['results'])
         else:
-            raise NotImplementedError
+            return NotImplemented
         return HttpResponse(spool, mimetype=mimetype)
 
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
