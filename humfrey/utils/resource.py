@@ -171,6 +171,10 @@ class BaseResource(object):
             objects.add(p)
             if isinstance(o, URIRef):
                 objects.add(o)
+        for s in self._graph.subjects(NS.ov.describes):
+            for o in self._graph.objects(s):
+                objects.add(o)
+
         return ["""
             CONSTRUCT {
               ?s ?p ?label
