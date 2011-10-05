@@ -27,9 +27,9 @@ class PingbackView(View):
 
     def ping(self, request, source, target):
         client = get_redis_client()
-        
+
         ping_hash = ''.join('%02x' % (a ^ b) for a, b in zip(*(map(ord, hashlib.sha1(x).digest()) for x in (source, target))))
-                    
+
         data = base64.b64encode(pickle.dumps({
             'hash': ping_hash,
             'source': source,
@@ -65,7 +65,7 @@ class XMLRPCPingbackView(PingbackView):
         response = HttpResponse(mimetype="application/xml")
         response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
         return response
-    
+
     def ping(self, request, sourceURI, targetURI):
         try:
             super(XMLRPCPingbackView, self).ping(request, sourceURI, targetURI)
@@ -103,7 +103,7 @@ class ModerationView(HTMLView, JSONPView):
             'client': client,
             'pingbacks': pingbacks,
         }
-        
+
     def handle_GET(self, request, context):
         return self.render(request, context, 'pingback/moderation')
 
@@ -121,5 +121,5 @@ class ModerationView(HTMLView, JSONPView):
             else:
                 data['state'] = 'rejected'
             client.set(key_name, base64.b64encode(pickle.dumps(data)))
-            client.expire(key_name, 3600*24*7)
-        return HttpResponseSeeOther(reverse('pingback-moderation'))
+            client.expire(key_name, 3600 * 24 * 7)
+        return HttpResponseSeeOther(reverse('pingback:moderation'))

@@ -44,7 +44,7 @@ ul.update-definitions li p {
         <h3>{{ definition.name }}</h3>
         <p><small>Last updated: <em>{{ definition.last_updated|default:"Never" }}</em>; <em>{{ definition.state }}</em></small></p>
         {% if definition.description %}<p>{{ definition.description }}</p>{% endif %}
-        <form method="post" action="{% url update-trigger %}">
+        <form method="post" action="{% url update:trigger %}">
           <input type="hidden" name="id" value="{{ definition.id }}"/>
           <input type="submit" value="Queue for update"/>
         </form>

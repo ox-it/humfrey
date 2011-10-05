@@ -1,8 +1,4 @@
-import base64
 import datetime
-import pickle
-
-import redis
 
 from django.conf import settings
 from django.views.generic.base import View
@@ -11,17 +7,10 @@ from django.core.urlresolvers import reverse
 from django_conneg.views import HTMLView, JSONView, TextView
 from django_conneg.http import HttpResponseSeeOther
 
+from humfrey.utils.views import RedisView
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.update.longliving.updater import Updater
 from humfrey.update.longliving.definitions import Definitions
-
-class RedisView(View):
-    def pack(self, value):
-        return base64.b64encode(pickle.dumps(value))
-    def unpack(self, value):
-        return pickle.loads(base64.b64decode(value))
-    def get_redis_client(self):
-        return redis.client.Redis(**settings.REDIS_PARAMS)
 
 class IndexView(HTMLView, RedisView):
 
@@ -47,7 +36,7 @@ class TriggerView(JSONView, HTMLView, TextView, RedisView):
 
         renderers = self.get_renderers(request)
         if not context.get('status-code') and renderers and renderers[0].format == 'html':
-            return HttpResponseSeeOther(reverse('update-index'))
+            return HttpResponseSeeOther(reverse('update:index'))
         else:
             return self.render(request, context, 'update/trigger')
 
