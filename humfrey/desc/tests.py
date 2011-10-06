@@ -11,7 +11,7 @@ from django.conf import settings
 
 from humfrey.desc import rdf_processors, views
 from humfrey.utils import sparql, resource
-from humfrey.tests.stubs import stub_reverse_crossdomain
+from humfrey.tests.stubs import stub_reverse_full
 
 class GraphTestMixin(object):
     def check_valid_terms(self, graph):
@@ -22,7 +22,7 @@ class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         self.client = Client()
 
-@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
+@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_full)
 class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     _ALL = [
         rdf_processors.formats,

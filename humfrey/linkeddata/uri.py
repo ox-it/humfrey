@@ -10,7 +10,7 @@ import rdflib
 
 from django.conf import settings
 
-from django_hosts.reverse import reverse_crossdomain
+from django_hosts.reverse import reverse_full
 
 class DocURLs(object):
     def __init__(self, base, format_pattern):
@@ -47,8 +47,8 @@ def doc_forwards(uri, graph=None, described=None):
     else:
         view_name = 'desc'
 
-    base = 'http:%s?%s' % (reverse_crossdomain('data', view_name),
-                                 urllib.urlencode((('uri', uri.encode('utf-8')),)))
+    base = 'http:%s?%s' % (reverse_full('data', view_name),
+                           urllib.urlencode((('uri', uri.encode('utf-8')),)))
     
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
@@ -69,7 +69,7 @@ BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 def doc_backward(url):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
-    if url.split(':', 1)[-1].split('?')[0] == reverse_crossdomain('data', 'doc-generic'):
+    if url.split(':', 1)[-1].split('?')[0] == reverse_full('data', 'doc-generic'):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
     
     match = BACKWARD_FORMAT_RE.match(url)
