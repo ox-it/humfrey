@@ -37,7 +37,7 @@ else:
 
 
 class SimpleView(HTMLView, CachedView):
-    context = None
+    context = {}
     template_name = None
 
     def get(self, request):
