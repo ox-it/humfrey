@@ -291,22 +291,6 @@ class BaseResource(object):
     def hexhash(self):
         return hashlib.sha1(self._identifier).hexdigest()[:8]
 
-class Account(object):
-    def render(self):
-        if self.foaf_accountServiceHomepage._identifier == URIRef('http://www.twitter.com/'):
-            return mark_safe('<a href="%s"><img class="icon" src="http://twitter-badges.s3.amazonaws.com/t_mini-b.png" alt="%s on Twitter"/> @%s</a>' % tuple(map(escape,
-                (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountName))))
-        else:
-            return mark_safe('<a href="%s">%s at %s</a>' % tuple(map(escape, (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountServiceHomepage.uri))))
-
-    _WIDGET_TEMPLATES = {
-        URIRef('http://www.twitter.com/'): 'widgets/twitter.html',
-    }
-    def widget_templates(self):
-        return [self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)] + super(Account, self).widget_templates()
-
-register(Account, 'foaf:OnlineAccount')
-
 class Address(object):
     def render(self):
         address = []
