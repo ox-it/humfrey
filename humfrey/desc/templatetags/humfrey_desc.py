@@ -18,7 +18,7 @@ def node(obj):
     if isinstance(obj, BaseResource):
         return obj.render()
     elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
-        return mark_safe(sanitize_html(unicode(obj)))
+        return sanitize_html(unicode(obj))
     elif isinstance(obj, Literal):
         return mark_safe(escape(unicode(obj.toPython())).replace('\n', '<br/>\n'))
     else:
@@ -60,7 +60,7 @@ def property(obj, value):
         return
     return obj.get_one_of(*value.split(','))
 
-
+@register.filter
 def sanitize_html(html):
     good_attribs = 'src href alt title'.split()
     good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br'.split()
@@ -79,7 +79,7 @@ def sanitize_html(html):
             sanitize(child)
         return elem
 
-    return etree.tostring(sanitize(etree.fromstring(html)))
+    return mark_safe(etree.tostring(sanitize(etree.fromstring(html))))
 
 @register.filter
 def doc_url(uri):
