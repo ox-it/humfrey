@@ -12,6 +12,13 @@ from django_conneg.decorators import renderer
 
 from humfrey.utils.views import EndpointView
 
+# Register the RDF/JSON and JSON-LD serializer plugins
+from rdflib import plugin
+from rdflib.serializer import Serializer
+plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
+plugin.register("json-ld", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
+del plugin, Serializer
+
 class _RDFViewMetaclass(type):
     @classmethod
     def get_rdf_renderer(mcs, format, mimetype, method, name):
@@ -40,6 +47,8 @@ class RDFView(EndpointView):
         ('nt', 'text/plain', 'nt', 'N-Triples'),
         ('ttl', 'text/turtle', 'turtle', 'Turtle'),
         ('n3', 'text/n3', 'n3', 'Notation3'),
+        ('rdfjson', 'application/rdf+json', 'rdf-json', 'RDF/JSON'),
+        ('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),
     )
 
 class ResultSetView(EndpointView):

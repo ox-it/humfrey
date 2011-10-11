@@ -12,3 +12,5 @@ rdflib
 redis
 simplejson
 unittest2
+-e hg+https://code.google.com/p/rdfextras/@dd40b6c730c2#egg=rdfextras
+pyparsing
