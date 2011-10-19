@@ -212,6 +212,11 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.xslt.XSLT',
     )
 
+if config.get('ckan:enabled') == 'true':
+    PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
+    CKAN_API_KEY = config.get('ckan:api_key')
+    CKAN_GROUPS = ()
+
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
 CACHE_TIMES = {
