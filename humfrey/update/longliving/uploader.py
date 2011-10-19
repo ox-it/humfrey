@@ -11,8 +11,8 @@ from humfrey.longliving.base import LonglivingThread
 logger = logging.getLogger(__name__)
 
 class Uploader(LonglivingThread):
-    QUEUE_NAME = 'uploader:queue'
-    UPLOADED_PUBSUB = 'uploader:uploaded'
+    QUEUE_NAME = 'humfrey:uploader:queue'
+    UPLOADED_PUBSUB = 'humfrey:uploader:uploaded-channel'
 
     def run(self):
         client = self.get_redis_client()
