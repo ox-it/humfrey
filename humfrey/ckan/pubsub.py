@@ -1,7 +1,7 @@
 from django.conf import settings
 from django_hosts.reverse import reverse_full
+from django_longliving.decorators import pubsub_watcher
 
-from humfrey.longliving.decorators import pubsub_watcher
 from humfrey.update.longliving.updater import Updater
 from humfrey.utils.sparql import Endpoint
 from humfrey.utils.namespaces import NS

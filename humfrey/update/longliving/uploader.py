@@ -6,7 +6,7 @@ import urllib2
 
 from django.conf import settings
 
-from humfrey.longliving.base import LonglivingThread
+from django_longliving.base import LonglivingThread
 
 logger = logging.getLogger(__name__)
 

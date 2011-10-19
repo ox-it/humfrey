@@ -111,7 +111,7 @@ INSTALLED_APPS = (
 TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 
 LONGLIVING_CLASSES = set([
-    'humfrey.longliving.longliving.pubsub.PubSubDispatcherThread',
+    'django_longliving.longliving.pubsub.PubSubDispatcherThread',
 ])
 
 PUBSUB_WATCHERS = ()
@@ -187,10 +187,10 @@ DOC_RDF_PROCESSORS = (
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback', 'humfrey.longliving')
+    INSTALLED_APPS += ('humfrey.pingback', 'django_longliving')
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
-                               'humfrey.longliving.longliving.downloader.Downloader',
+                               'humfrey.update.longliving.downloader.Downloader',
                                'humfrey.update.longliving.uploader.Uploader',
                                'humfrey.update.longliving.crontab.CrontabMaintainer',
                                ])

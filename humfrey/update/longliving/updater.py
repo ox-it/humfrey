@@ -10,7 +10,7 @@ import pytz
 from django.conf import settings
 from django.utils.importlib import import_module
 
-from humfrey.longliving.base import LonglivingThread
+from django_longliving.base import LonglivingThread
 from humfrey.update.longliving.definitions import Definitions
 from humfrey.update.transform.base import Transform, TransformManager
 
