@@ -110,7 +110,11 @@ INSTALLED_APPS = (
 
 TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 
-LONGLIVING_CLASSES = set()
+LONGLIVING_CLASSES = set([
+    'humfrey.longliving.longliving.pubsub.PubSubDispatcherThread',
+])
+
+PUBSUB_WATCHERS = ()
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
