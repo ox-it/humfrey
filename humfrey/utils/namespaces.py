@@ -8,6 +8,7 @@ NS = {
     'aiiso': 'http://purl.org/vocab/aiiso/schema#',
     'cc': 'http://creativecommons.org/ns#',
     'dc':     'http://purl.org/dc/elements/1.1/',
+    'dcat': 'http://www.w3.org/ns/dcat#',
     'dcterms':    'http://purl.org/dc/terms/',
     'doap': 'http://usefulinc.com/ns/doap#',
     'foaf':   'http://xmlns.com/foaf/0.1/',
@@ -39,13 +40,15 @@ NS = {
     'afn': 'http://jena.hpl.hp.com/ARQ/function#',
 }
 
+HUMFREY = Namespace('http://purl.org/NET/humfrey/ns/')
+
 NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
 
 class _NS(dict):
     def __getattr__(self, key):
         return self[key]
 
-NS = _NS((k,Namespace(v)) for k,v in NS.iteritems())
+NS = _NS((k, Namespace(v)) for k, v in NS.iteritems())
 
 def register(k, v):
     NS[k] = Namespace(v)

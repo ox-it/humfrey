@@ -13,9 +13,9 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
-relative_path = lambda *args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
+relative_path = lambda * args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
 
-config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
+config = dict((':'.join([sec, key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
 DEBUG = config.get('main:debug') == 'true'
 TEMPLATE_DEBUG = DEBUG
@@ -114,7 +114,7 @@ LONGLIVING_CLASSES = set([
     'django_longliving.longliving.pubsub.PubSubDispatcherThread',
 ])
 
-PUBSUB_WATCHERS = ()
+LONGLIVING_PUBSUB_WATCHERS = ()
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
@@ -213,9 +213,10 @@ if config.get('update:enabled') == 'true':
     )
 
 if config.get('ckan:enabled') == 'true':
-    PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
+    LONGLIVING_PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
     CKAN_API_KEY = config.get('ckan:api_key')
-    CKAN_GROUPS = ()
+    CKAN_GROUPS = set()
+    CKAN_TAGS = set()
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
