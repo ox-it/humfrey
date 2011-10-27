@@ -31,7 +31,7 @@ class FeedView(EndpointView):
                              
     # obj._DESCRIPTION_PROPERTIES
     # obj._LABEL_PROPERTIES
-
+    
     @renderer(format='rss1', mimetypes=('application/rss+xml',), name='RSS 0.9 Feed')
     def render_rss1(self, request, context, template_name):
         (title, desc, link) = extractFeedDetails(request)
@@ -84,10 +84,10 @@ class FeedView(EndpointView):
         
         
 
-"""This is a nasty workaround for the (known) bug in Django: 
-https://code.djangoproject.com/ticket/14202
-This is the troublesome method with a correction, 
-and must be assigned to the relevant feed class before use!""" 
+# This is a nasty workaround for the (known) bug in Django: 
+# https://code.djangoproject.com/ticket/14202
+# This is the troublesome method with a correction, 
+# and must be assigned to the relevant feed class before use! 
 def add_root_elements(self, handler):
         handler.addQuickElement(u"title", self.feed['title'])
         handler.addQuickElement(u"link", self.feed['link'])

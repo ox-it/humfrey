@@ -25,8 +25,8 @@
   <table class="sparql-results">
     <thead>{% block browse_headers %}
       <tr>{% for field in meta.fields %}
-        <th>{{ field }}</th>{% endfor %}{% endblock %}
-      </tr>
+        <th>{{ field }}</th>{% endfor %}
+      </tr>{% endblock %}
     </thead>
     <tbody>{% for result in result.object_list %}
       <tr class="row-{% cycle "odd" "even" %}">{% block browse_item %}{% endblock %}</tr>{% endfor %}
