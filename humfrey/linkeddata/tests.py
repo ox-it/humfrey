@@ -3,7 +3,7 @@ import unittest2
 import rdflib
 
 from humfrey.linkeddata.uri import doc_forward
-from humfrey.tests.stubs import stub_reverse_crossdomain
+from humfrey.tests.stubs import stub_reverse_full
 
 TEST_ID_MAPPING = (
     ('http://random.example.org/id/', 'http://data.example.org/doc:random/', False),
@@ -11,7 +11,7 @@ TEST_ID_MAPPING = (
 )
 
 @mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING)
-@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
+@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class URITestCase(unittest2.TestCase):
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
