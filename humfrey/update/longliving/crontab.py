@@ -8,7 +8,7 @@ import tempfile
 
 from lxml import etree
 
-from humfrey.longliving.base import LonglivingThread
+from django_longliving.base import LonglivingThread
 from humfrey.update.longliving.definitions import Definitions
 
 logger = logging.getLogger(__name__)
@@ -86,4 +86,3 @@ class CrontabMaintainer(LonglivingThread):
             f.write(''.join(crontab))
             f.flush()
             subprocess.call(['crontab', f.name])
-        

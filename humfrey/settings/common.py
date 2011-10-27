@@ -13,9 +13,9 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
-relative_path = lambda *args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
+relative_path = lambda * args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
 
-config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
+config = dict((':'.join([sec, key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
 DEBUG = config.get('main:debug') == 'true'
 TEMPLATE_DEBUG = DEBUG
@@ -110,7 +110,11 @@ INSTALLED_APPS = (
 
 TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
 
-LONGLIVING_CLASSES = set()
+LONGLIVING_CLASSES = set([
+    'django_longliving.longliving.pubsub.PubSubDispatcherThread',
+])
+
+LONGLIVING_PUBSUB_WATCHERS = ()
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
@@ -183,10 +187,10 @@ DOC_RDF_PROCESSORS = (
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback', 'humfrey.longliving')
+    INSTALLED_APPS += ('humfrey.pingback', 'django_longliving')
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
-                               'humfrey.longliving.longliving.downloader.Downloader',
+                               'humfrey.update.longliving.downloader.Downloader',
                                'humfrey.update.longliving.uploader.Uploader',
                                'humfrey.update.longliving.crontab.CrontabMaintainer',
                                ])
@@ -207,6 +211,12 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.upload.Upload',
         'humfrey.update.transform.xslt.XSLT',
     )
+
+if config.get('ckan:enabled') == 'true':
+    LONGLIVING_PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
+    CKAN_API_KEY = config.get('ckan:api_key')
+    CKAN_GROUPS = set()
+    CKAN_TAGS = set()
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 

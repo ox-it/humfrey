@@ -13,6 +13,7 @@ class TransformManager(object):
         self.parameters = parameters
         self.counter = 0
         self.transforms = []
+        self.graphs_touched = set()
     def __call__(self, extension):
         filename = os.path.join(self.output_directory, '%s.%s' % (self.counter, extension))
         self.counter += 1
@@ -27,6 +28,8 @@ class TransformManager(object):
         self.current['outputs'] = outputs
         self.transforms.append(self.current)
         del self.current
+    def touched_graph(self, graph_name):
+        self.graphs_touched.add(graph_name)
 
 class Transform(object):
     def get_redis_client(self):
@@ -43,26 +46,26 @@ class Transform(object):
         'ttl': 'n3',
         'nt': 'nt',
     }
-    
+
     def __or__(self, other):
         if isinstance(other, type) and issubclass(other, Transform):
             other = other()
         if not isinstance(other, Transform):
             raise AssertionError('%r must be a Transform' % other)
-        
+
         return Chain(self, other)
-    
+
     def __call__(self, transform_manager):
         return self.execute(transform_manager)
-    
+
     def execute(self, update_manager):
         raise NotImplementedError
-        
+
 
 class Chain(Transform):
     def __init__(self, first, second):
         self._first, self._second = first, second
-    
+
     def execute(self, transform_manager, *args):
         return self._second.execute(transform_manager,
                                     self._first.execute(transform_manager, *args))

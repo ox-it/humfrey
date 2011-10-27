@@ -63,7 +63,7 @@ def property(obj, value):
 @register.filter
 def sanitize_html(html):
     good_attribs = 'src href alt title'.split()
-    good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br'.split()
+    good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br a'.split()
     remove_tags = 'iframe'.split()
     block_tags = ''.split()
 
