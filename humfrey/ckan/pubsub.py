@@ -149,7 +149,8 @@ def update_ckan_dataset(channel, data):
         package_entity = client.package_entity_get(package_name)
         logger.debug("Record successfully retrieved")
     except ckanclient.CkanApiNotFoundError:
-        package_entity = {}
+        package_entity = {'name': package_name}
+        client.package_register_post(package_entity)
         logger.debug("No record found; starting from empty")
     original = copy.deepcopy(package_entity)
 
@@ -181,6 +182,6 @@ def update_ckan_dataset(channel, data):
 
     if original != package_entity:
         logger.info("Updating %r at thedatahub.org", package_name)
-        client.package_entity_put(package_entity, package_name)
+        client.package_entity_put(package_entity)
 
 
