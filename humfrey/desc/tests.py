@@ -22,7 +22,7 @@ class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         self.client = Client()
 
-@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_full)
+@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     _ALL = [
         rdf_processors.formats,
@@ -51,7 +51,7 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
             self.check_valid_terms(graph)
             self.assertIsInstance(context, (type(None), dict))
 
-#@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
+#@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class DocViewTestCase(ClientTestCase, GraphTestMixin):
     _TEST_URI = settings.TEST_URI
     _HTTP_HOST = settings.TEST_DOMAIN
