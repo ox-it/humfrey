@@ -24,7 +24,7 @@
 
     <h2>Query</h2>
 
-    <form method="get" action="{% url sparql %}">
+    <form method="get" action="{% url sparql:endpoint %}">
       <table>
         <tbody>
 			<tr><th>{{ form.query.label_tag }}:</th><td>{{ form.query.errors }}{{ form.query }}</td></tr>
