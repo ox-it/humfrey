@@ -89,7 +89,7 @@ class ArchiveSink(object):
 
 @pubsub_watcher(channel=Updater.UPDATED_CHANNEL, priority=90)
 def update_dataset_archive(channel, data):
-    if not hasattr(settings, 'ARCHIVE_PATH'):
+    if not getattr(settings, 'ARCHIVE_PATH', None):
         return
 
     graphs = data['graphs']
