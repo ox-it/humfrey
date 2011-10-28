@@ -12,7 +12,7 @@ from humfrey.results.views.feed import FeedView
 from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
 from humfrey.sparql.forms import SparqlQueryForm
-from humfrey.utils.views import EndpointView
+from humfrey.utils.views import EndpointView, RedisView
 from humfrey.utils.namespaces import NS
 from humfrey.utils.sparql import SparqlResultList, SparqlResultGraph, SparqlResultBool
 
@@ -39,7 +39,9 @@ class SparqlErrorView(HTMLView, TextView):
         return self.render(request, context, 'sparql/error')
     post = get
 
-class SparqlView(EndpointView, HTMLView):
+class SparqlView(EndpointView, RedisView, HTMLView):
+    QUERY_CHANNEL = 'humfrey:sparql:query-channel'
+
     class SparqlViewException(Exception):
         pass
     class ConcurrentQueryException(SparqlViewException):
@@ -59,7 +61,7 @@ class SparqlView(EndpointView, HTMLView):
 
     def perform_query(self, request, query, common_prefixes):
         if settings.REDIS_PARAMS:
-            client = redis.client.Redis(**settings.REDIS_PARAMS)
+            client = self.get_redis_client()
             addr = request.META['REMOTE_ADDR']
             if not client.setnx('sparql:lock:%s' % addr, 1):
                 raise self.ConcurrentQueryException
@@ -79,6 +81,16 @@ class SparqlView(EndpointView, HTMLView):
                 new_intensity = intensity + end - start
                 client.set('sparql:intensity:%s' % addr, new_intensity)
                 client.set('sparql:last:%s' % addr, end)
+
+                client.publish(self.QUERY_CHANNEL,
+                               self.pack({'query': query,
+                                          'common_prefixes': common_prefixes,
+                                          'accept': request.META.get('HTTP_ACCEPT'),
+                                          'user_agent': request.META.get('HTTP_USER_AGENT'),
+                                          'remote_addr': request.META.get('REMOTE_ADDR'),
+                                          'intensity': new_intensity,
+                                          'duration': results.duration,
+                                          'successful': True}))
 
                 return results, new_intensity
             finally:
