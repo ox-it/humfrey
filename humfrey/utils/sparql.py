@@ -1,10 +1,5 @@
 from collections import defaultdict
-try:
-    from collections import namedtuple
-except ImportError:
-    from namedtuple import namedtuple
 import logging
-import re
 import sys
 import time
 import urllib
@@ -94,7 +89,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, common_prefixes = True):
+    def query(self, query, common_prefixes=True):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
@@ -161,7 +156,7 @@ class Endpoint(object):
         triples = ' . '.join(' '.join(map(self.quote, triple)) for triple in triples)
         triples = "GRAPH %s { %s }" % (self.quote(graph), triples) if graph else triples
         return self.update("INSERT DATA { %s }" % triples)
-        
+
     def delete_data(self, triples, graph=None):
         triples = ' . '.join(' '.join(map(self.quote, triple)) for triple in triples)
         triples = "GRAPH %s { %s }" % (self.quote(graph), triples) if graph else triples
@@ -169,7 +164,7 @@ class Endpoint(object):
 
     def clear(self, graph):
         return self.update("CLEAR GRAPH %s" % self.quote(graph))
-        
+
 
     def describe(self, uri):
         return self.query("DESCRIBE <%s>" % uri)
@@ -194,7 +189,7 @@ class Endpoint(object):
 
     def get(self, uri):
         return Resource(self, uri)
-    
+
     def quote(self, uri):
         if isinstance(uri, rdflib.term.Node):
             return uri.n3()
@@ -215,7 +210,7 @@ class Endpoint(object):
         fields = [e.attrib['name'] for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
         empty_results_dict = dict((f, None) for f in fields)
         ResultClass = Result(fields)
-        
+
         g = rdflib.ConjunctiveGraph()
 
         results = ResultList()
@@ -257,7 +252,7 @@ class Endpoint(object):
 
         results = ResultList()
         for binding in json['results']['bindings']:
-            results.append( ResultClass(*[pb(binding.get(v), graph) for v in vars_]) )
+            results.append(ResultClass(*[pb(binding.get(v), graph) for v in vars_]))
         results.fields = vars_
         return results
 
