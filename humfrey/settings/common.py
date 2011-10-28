@@ -114,7 +114,7 @@ LONGLIVING_CLASSES = set([
     'django_longliving.longliving.pubsub.PubSubDispatcherThread',
 ])
 
-LONGLIVING_PUBSUB_WATCHERS = ()
+LONGLIVING_PUBSUB_WATCHERS = ('humfrey.archive.pubsub.update_dataset_archive',)
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
