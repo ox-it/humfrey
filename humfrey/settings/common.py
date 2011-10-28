@@ -13,7 +13,11 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
-relative_path = lambda * args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
+
+def relative_path(*args):
+    # Return None if any of the arguments are None.
+    if all(args):
+        return os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
 
 config = dict((':'.join([sec, key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
