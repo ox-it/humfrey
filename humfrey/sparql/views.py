@@ -2,7 +2,6 @@ import time
 import urllib2
 
 from lxml import etree
-import rdflib
 import redis
 
 from django.conf import settings
@@ -11,10 +10,11 @@ from django_conneg.views import HTMLView, TextView
 from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
 from humfrey.results.views.spreadsheet import SpreadsheetView
-from humfrey.results.views.geospatial import KMLView 
+from humfrey.results.views.geospatial import KMLView
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.utils.views import EndpointView
 from humfrey.utils.namespaces import NS
+from humfrey.utils.sparql import SparqlResultList, SparqlResultGraph, SparqlResultBool
 
 class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
     def get(self, request, context):
@@ -85,7 +85,7 @@ class SparqlView(EndpointView, HTMLView):
                 client.delete('sparql:lock:%s' % addr)
         else:
             return self.endpoint.query(query, common_prefixes=common_prefixes), 0
-    
+
     def get_format_choices(self):
         return (
             ('Graph (DESCRIBE, CONSTRUCT)',
@@ -116,7 +116,7 @@ class SparqlView(EndpointView, HTMLView):
             try:
                 results, intensity = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
                 additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
-    
+
             except urllib2.HTTPError, e:
                 context['error'] = e.read() #parse(e).find('.//pre').text
                 context['status_code'] = e.code
@@ -135,16 +135,18 @@ class SparqlView(EndpointView, HTMLView):
                 context['queries'] = [results.query]
                 context['duration'] = results.duration
 
-                if isinstance(results, list):
+                if isinstance(results, SparqlResultList):
                     context['results'] = results
                     return self._resultset_view(request, context)
-                elif isinstance(results, bool):
+                elif isinstance(results, SparqlResultBool):
                     context['result'] = results
                     return self._boolean_view(request, context)
-                elif isinstance(results, rdflib.ConjunctiveGraph):
+                elif isinstance(results, SparqlResultGraph):
                     context['graph'] = results
                     context['subjects'] = results.subjects()
                     return self._graph_view(request, context)
+                else:
+                    raise AssertionError("Unexpected return type: %r" % type(results))
 
         if 'error' in context:
             return self._error_view(request, context)

@@ -3,9 +3,10 @@ import datetime
 import rdflib
 from django.conf import settings
 
-from django_conneg.views import HTMLView, ContentNegotiatedView
+from django_conneg.views import HTMLView
 
 from humfrey.utils.views import CachedView, EndpointView
+from humfrey.utils.sparql import SparqlResultList, SparqlResultBool, SparqlResultGraph
 
 # Only create FeedView class if feedparser and pytz are importable.
 # This will make feedparser and pytz optional dependencies if one
@@ -59,22 +60,22 @@ class CannedQueryView(CachedView, EndpointView):
         Example return value: ('http://example.com/data', 'http://example.org/data.rss')
         """
         return None, None
-    
+
     def get(self, request, *args, **kwargs):
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
         result = self.endpoint.query(query)
-        if isinstance(result, list):
+        if isinstance(result, SparqlResultList):
             context = {'results': result}
-        elif isinstance(result, bool):
+        elif isinstance(result, SparqlResultBool):
             context = {'result': result}
-        elif isinstance(result, rdflib.ConjunctiveGraph):
+        elif isinstance(result, SparqlResultGraph):
             context = {'graph': result}
-        
+
         if self.content_location:
             context['additional_headers'] = {'Content-location': self.content_location}
-            
+
         if 'format' in kwargs:
             self.render_to_format(request, context, self.template_name, kwargs['format'])
-        else: 
+        else:
             return self.render(request, context, self.template_name)
