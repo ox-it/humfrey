@@ -1,7 +1,9 @@
+import datetime
 import time
 import urllib2
 
 from lxml import etree
+import pytz
 import redis
 
 from django.conf import settings
@@ -87,7 +89,12 @@ class SparqlView(EndpointView, RedisView, HTMLView):
                                           'common_prefixes': common_prefixes,
                                           'accept': request.META.get('HTTP_ACCEPT'),
                                           'user_agent': request.META.get('HTTP_USER_AGENT'),
+                                          'referer': request.META.get('HTTP_REFERER'),
+                                          'origin': request.META.get('HTTP_ORIGIN'),
+                                          'date': pytz.utc.localize(datetime.datetime.utcnow()),
                                           'remote_addr': request.META.get('REMOTE_ADDR'),
+                                          'format_param': request.REQUEST.get('format'),
+                                          'formats': [r.format for r in self.get_renderers(request)],
                                           'intensity': new_intensity,
                                           'duration': results.duration,
                                           'successful': True}))
