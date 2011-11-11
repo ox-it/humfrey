@@ -222,6 +222,9 @@ if config.get('ckan:enabled') == 'true':
     CKAN_GROUPS = set()
     CKAN_TAGS = set()
 
+LONGLIVING_PUBSUB_WATCHERS += ('humfrey.browse.pubsub.update_list',)
+
+
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
 CACHE_TIMES = {
