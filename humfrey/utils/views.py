@@ -2,6 +2,8 @@ import base64
 import hashlib
 import logging
 import pickle
+import urllib
+import urlparse
 
 import rdflib
 import redis
@@ -9,6 +11,8 @@ import redis
 from django.core.cache import cache
 from django.conf import settings
 from django.views.generic import View
+from django.http import HttpResponsePermanentRedirect
+from django_conneg.http import HttpResponseSeeOther
 
 logger = logging.getLogger('core.requests')
 
@@ -64,3 +68,19 @@ class RedisView(View):
     @classmethod
     def get_redis_client(self):
         return redis.client.Redis(**settings.REDIS_PARAMS)
+
+class SecureView(View):
+    def dispatch(self, request, *args, **kwargs):
+        if not (settings.DEBUG or request.is_secure()):
+            url = urlparse.urlparse(request.build_absolute_uri())
+            url = urlparse.urlunparse(('https',) + url[1:])
+            return HttpResponsePermanentRedirect(url)
+        return super(SecureView, self).dispatch(request, *args, **kwargs)
+
+class AuthenticatedView(SecureView):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            url = '%s?%s' % (settings.LOGIN_URL,
+                             urllib.urlencode({'next': request.build_absolute_uri()}))
+            return HttpResponseSeeOther(url)
+        return super(AuthenticatedView, self).dispatch(request, *args, **kwargs)

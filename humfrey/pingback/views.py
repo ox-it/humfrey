@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.views.generic import View
 
+from humfrey.utils.views import AuthenticatedView
 from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, RetrievedPingbackHandler
 from django_conneg.views import HTMLView, JSONPView
 from django_conneg.http import HttpResponseSeeOther
@@ -89,7 +90,7 @@ class RESTfulPingbackView(PingbackView):
             response.status_code = 202
             return response
 
-class ModerationView(HTMLView, JSONPView):
+class ModerationView(HTMLView, JSONPView, AuthenticatedView):
     def initial_context(self, request):
         client = get_redis_client()
         pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.PENDING_QUEUE_NAME)]

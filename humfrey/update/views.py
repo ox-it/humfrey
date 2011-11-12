@@ -7,12 +7,12 @@ from django.core.urlresolvers import reverse
 from django_conneg.views import HTMLView, JSONView, TextView
 from django_conneg.http import HttpResponseSeeOther
 
-from humfrey.utils.views import RedisView
+from humfrey.utils.views import RedisView, AuthenticatedView
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.update.longliving.updater import Updater
 from humfrey.update.longliving.definitions import Definitions
 
-class IndexView(HTMLView, RedisView):
+class IndexView(HTMLView, RedisView, AuthenticatedView):
 
     def get(self, request):
         client = self.get_redis_client()
@@ -28,7 +28,7 @@ class IndexView(HTMLView, RedisView):
 
         return self.render(request, context, 'update/index')
 
-class TriggerView(JSONView, HTMLView, TextView, RedisView):
+class TriggerView(JSONView, HTMLView, TextView, RedisView, AuthenticatedView):
     def post(self, request, id=None):
         context = {}
 
