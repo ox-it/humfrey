@@ -12,22 +12,22 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.views.generic import View
 
-from humfrey.utils.views import AuthenticatedView
+from humfrey.utils.views import AuthenticatedView, RedisView
 from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, RetrievedPingbackHandler
 from django_conneg.views import HTMLView, JSONPView
 from django_conneg.http import HttpResponseSeeOther
 
-def get_redis_client():
-    return redis.client.Redis(**settings.REDIS_PARAMS)
-
-class PingbackView(View):
+class PingbackView(RedisView):
     _QUEUE_KEY = 'pingback.new'
 
     class PingbackError(Exception): pass
     class AlreadyRegisteredError(PingbackError): pass
 
     def ping(self, request, source, target):
-        client = get_redis_client()
+        if source == target:
+            return HttpResponseBadRequest()
+
+        client = self.get_redis_client()
 
         ping_hash = ''.join('%02x' % (a ^ b) for a, b in zip(*(map(ord, hashlib.sha1(x).digest()) for x in (source, target))))
 
@@ -40,7 +40,7 @@ class PingbackView(View):
             'date': datetime.datetime.now(),
             'state': 'new',
         }))
-        print "PING", data
+
         stored = client.setnx('pingback:item:%s' % ping_hash, data)
         if stored:
             client.rpush(NewPingbackHandler.QUEUE_NAME, ping_hash)
@@ -90,9 +90,9 @@ class RESTfulPingbackView(PingbackView):
             response.status_code = 202
             return response
 
-class ModerationView(HTMLView, JSONPView, AuthenticatedView):
-    def initial_context(self, request):
-        client = get_redis_client()
+class ModerationView(HTMLView, JSONPView, AuthenticatedView, RedisView):
+    def common(self, request):
+        client = self.get_redis_client()
         pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.PENDING_QUEUE_NAME)]
         if pingback_hashes:
             pingbacks = client.mget(pingback_hashes)
@@ -105,10 +105,12 @@ class ModerationView(HTMLView, JSONPView, AuthenticatedView):
             'pingbacks': pingbacks,
         }
 
-    def handle_GET(self, request, context):
+    def get(self, request):
+        context = self.common(request)
         return self.render(request, context, 'pingback/moderation')
 
-    def handle_POST(self, request, context):
+    def post(self, request):
+        context = self.common(request)
         client = context['client']
         for k in request.POST:
             ping_hash, action = k.split(':')[-1], request.POST[k]
