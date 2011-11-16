@@ -139,7 +139,8 @@ ENDPOINT_GRAPH = config.get('endpoints:graph')
 CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
-                'port': int(config.get('supporting_services:redis_port') or 6379)}
+                'port': int(config.get('supporting_services:redis_port') or 6379),
+                'db': int(config.get('supporting_services:redis_db') or 0)}
 
 REDIS_PARAMS = {} if config.get('supporting_services:disable_redis_support') == 'true' else REDIS_PARAMS
 

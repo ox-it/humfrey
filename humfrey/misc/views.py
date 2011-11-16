@@ -82,13 +82,3 @@ class CannedQueryView(CachedView, EndpointView):
             self.render_to_format(request, context, self.template_name, kwargs['format'])
         else:
             return self.render(request, context, self.template_name)
-
-class LoginView(SecureView):
-    def get(self, request, *args, **kwargs):
-        return auth_views.login(request, *args, **kwargs)
-    post = get
-
-class LogoutView(SecureView):
-    def get(self, request, *args, **kwargs):
-        return auth_views.logout(request, *args, **kwargs)
-    post = get

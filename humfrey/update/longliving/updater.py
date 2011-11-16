@@ -8,35 +8,25 @@ from lxml import etree
 import pytz
 
 from django.conf import settings
-from django.utils.importlib import import_module
 
 from django_longliving.base import LonglivingThread
 from humfrey.update.longliving.definitions import Definitions
-from humfrey.update.transform.base import Transform, TransformManager
+from humfrey.update.models import UpdateDefinition
+from humfrey.update.transform.base import TransformManager
+from humfrey.update.utils import evaluate_pipeline
 
 logger = logging.getLogger(__name__)
 
 class Updater(LonglivingThread):
-    QUEUE_NAME = 'updater:queue'
-
     UPDATED_CHANNEL = 'humfrey:updater:updated-channel'
 
     time_zone = pytz.timezone(settings.TIME_ZONE)
-
-    def get_transforms(self):
-        transforms = {'__builtins__': {}}
-        for class_path in settings.UPDATE_TRANSFORMS:
-            module_path, class_name = class_path.rsplit('.', 1)
-            transform = getattr(import_module(module_path), class_name)
-            assert issubclass(transform, Transform)
-            transforms[transform.__name__] = transform
-        return transforms
 
     def run(self):
         client = self.get_redis_client()
         transforms = self.get_transforms()
 
-        for _, item in self.watch_queue(client, self.QUEUE_NAME, True):
+        for _, item in self.watch_queue(client, UpdateDefinition.UPDATE_QUEUE, True):
             logger.info("Item received: %r" % item['config_filename'])
             try:
                 self.process_item(client, transforms, item)
@@ -68,7 +58,7 @@ class Updater(LonglivingThread):
             transform_manager = TransformManager(config_directory, output_directory, variables)
 
             try:
-                pipeline = eval('(%s)' % pipeline.text.strip(), transforms)
+                pipeline = evaluate_pipeline(pipeline.text.strip())
             except SyntaxError:
                 raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
 

@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Log in{% endblock %}
+
+{% block body %}
+<article>
+  <h1>Log in</h1>
+  
+  <form method="post" action="">{% csrf_token %}
+  <table class="login-form-table">
+    <tbody>
+      {{ form }}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>
+          <input type="submit" value="Log in"/>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+  </form>
+</article>
+{% endblock %}
