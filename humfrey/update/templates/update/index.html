@@ -1,4 +1,4 @@
-{% extends "update/base.html" %}
+{% extends "update/base.html" %}{% load humfrey_update %}
 
 {% block title %}Updater status{% endblock %}
 
@@ -37,37 +37,91 @@ ul.update-definitions li p {
   <section>
     <h2>Update definitions</h2>
     
-    {% if update_definitions %}
-    <ul class="update-definitions">
+    <table class="update-definitions">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Name</th>
+          <th>Last queued</th>
+          <th>Last started</th>
+          <th>Last completed</th>
+          <th>Description</th>
+          <th>State</th>
+          <th>Edit</th>
+          <th>Execute</th>
+      <tbody>
     {% for definition in update_definitions %}
-      <li>
-        <h3>{{ definition.name }}</h3>
-        <p><small>Last updated: <em>{{ definition.last_updated|default:"Never" }}</em>; <em>{{ definition.state }}</em></small></p>
-        {% if definition.description %}<p>{{ definition.description }}</p>{% endif %}
-        <form method="post" action="{% url update:trigger %}">
-          <input type="hidden" name="id" value="{{ definition.id }}"/>
-          <input type="submit" value="Queue for update"/>
-        </form>
-      </li>
+        <tr>
+          <td>{{ definition.slug }}</td>
+          <td>{{ definition.title }}</td>
+          <td>{{ definition.last_queued|timesince }} ago</td>
+          <td>{{ definition.last_started|timesince }} ago</td>
+          <td>{{ definition.last_completed|timesince }} ago</td>
+          <td>{{ definition.description }}</td>
+          <td>{{ definition.get_status_display }}</td>
+          <td>{% if definition|can_change:user %}
+            <a href="{% url update:definition-detail definition.slug %}">Edit</a>
+          {% endif %}</td>
+          <td>{% if definition|can_execute:user %}{% if definition.status == 'idle' %}
+            <form method="post" action="{% url update:definition-detail definition.slug %}">
+              <input type="hidden" name="action" value="execute"/>
+              <input type="submit" value="Queue for execution"/>
+            </form>
+          {% else %}
+            Already queued
+          {% endif %}{% endif %}</td>
+        </tr>
+    {% empty %}
+        <tr>
+          <td colspan="7">{% if perms.update.view_updatedefinition %}
+            There are not yet any update definitions
+          {% else %}
+            There are not yet any update definitions that you can view
+          {% endif %}</td>
+        </tr>
     {% endfor %}
-    </ul>
+      </tbody>{% if perms.update.add_updatedefinition %}
+      <tfoot>
+        <tr>
+          <td colspan="5"><a href="{% url update:definition-create %}">Create new</a></td>
+        </tr>
+      </tfoot>{% endif %}
+    </table>
+    
     
     <div style="clear:both;"/>
-    {% endif %}
   </section>
   
   <section>
     <h2>Update queue</h2>
   
-    {% if update_queue %}
-    <ul>
-    {% for item in update_queue %}
-      <li>{{ item.name }}; queued for {{ item.queued_at|timesince }}; {{ item.trigger }}</li>
-    {% endfor %}
-    </ul>
-    {% else %}
-    <p>The update queue is empty.</p>
-    {% endif %}
+    <table>
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Name</th>
+          <th>Queued</th>
+          <th>Trigger</th>
+          <th>User</th>
+        </tr>
+      </thead>
+      <tbody>{% for item in update_queue %}
+        <tr>
+          <td>{% if item.update_definition|can_view:user %}
+            <a href="{{ item.update_definition.get_absolute_url }}">{{ item.update_definition.slug }}</a>
+          {% else %}
+            {{ item.update_definition.slug }}
+          {% endif %}</td>
+          <td>{{ item.update_definition.title }}</td>
+          <td>{{ item.queued|timesince }} ago</td>
+          <td>{{ item.trigger }}</td>
+          <td>{{ item.user }}</td>
+        </tr>{% empty %}
+        <tr>
+          <td colspan="5">The update queue is empty.</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
   </section>
 
   <section>

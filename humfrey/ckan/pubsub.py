@@ -88,7 +88,7 @@ def _find(graph, subject, path, datatypes=None, all=False):
 @pubsub_watcher(channel=Updater.UPDATED_CHANNEL, priority=100)
 def update_ckan_dataset(channel, data):
     if not data['graphs']:
-        logger.debug("No graphs updated for %r; aborting", data['id'])
+        logger.debug("No graphs updated for %r; aborting", data['slug'])
         return
 
     client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
@@ -108,7 +108,7 @@ def update_ckan_dataset(channel, data):
 
     package_name = find('skos:notation', HUMFREY.theDataHubDatasetName)
     if not package_name:
-        package_name = patterns.get('name', '%s') % data['id']
+        package_name = patterns.get('name', '%s') % data['slug']
 
     package_title = patterns.get('title', '%s') % dataset.label
 

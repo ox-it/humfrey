@@ -9,5 +9,5 @@ def update_list(client, channel, data):
     browse_lists = getattr(settings, 'BROWSE_LISTS') or ()
 
     for browse_list in browse_lists:
-        if data['id'] in browse_list.get('update_triggered_by', ()):
+        if data['slug'] in browse_list.get('update_triggered_by', ()):
             update.update_list(client, browse_list)

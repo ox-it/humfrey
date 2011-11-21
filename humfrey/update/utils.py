@@ -3,7 +3,7 @@ from django.utils.importlib import import_module
 
 from humfrey.update.transform.base import Transform
 
-def get_transforms(self):
+def get_transforms():
     try:
         return get_transforms._cache
     except AttributeError:
@@ -15,7 +15,7 @@ def get_transforms(self):
         transform = getattr(import_module(module_path), class_name)
         assert issubclass(transform, Transform)
         transforms[transform.__name__] = transform
-        
+
     get_transforms._cache = transforms
     return transforms
 

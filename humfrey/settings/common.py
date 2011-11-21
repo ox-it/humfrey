@@ -138,6 +138,14 @@ ENDPOINT_GRAPH = config.get('endpoints:graph')
 
 CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 
+# Cache directories
+
+CACHE_DIRECTORY = relative_path(config.get('main:cache_directory'))
+IMAGE_CACHE_DIRECTORY = relative_path(config.get('images:cache_directory')) \
+                     or os.path.join(CACHE_DIRECTORY, 'images')
+UPDATE_CACHE_DIRECTORY = relative_path(config.get('update:cache_directory')) \
+                     or os.path.join(CACHE_DIRECTORY, 'update')
+
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
                 'port': int(config.get('supporting_services:redis_port') or 6379),
                 'db': int(config.get('supporting_services:redis_db') or 0)}
@@ -150,9 +158,6 @@ SERVED_DOMAINS = ()
 ID_MAPPING = ()
 ADDITIONAL_NAMESPACES = {}
 
-RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
-if RESIZED_IMAGE_CACHE_DIR:
-    RESIZED_IMAGE_CACHE_DIR = relative_path(RESIZED_IMAGE_CACHE_DIR)
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
 
 DOWNLOADER_DEFAULT_DIR = config.get('downloader:default_dir')
@@ -197,15 +202,12 @@ if config.get('pingback:enabled') == 'true':
     LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
                                'humfrey.update.longliving.downloader.Downloader',
                                'humfrey.update.longliving.uploader.Uploader',
-                               'humfrey.update.longliving.crontab.CrontabMaintainer',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
 
 if config.get('update:enabled') == 'true':
     INSTALLED_APPS += ('humfrey.update',)
-    LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater',
-                               'humfrey.update.longliving.definitions.Definitions'])
-    UPDATE_DEFINITION_DIRECTORIES = ()
+    LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater'])
     UPDATE_TRANSFORMS = (
         'humfrey.update.transform.html.HTMLToXML',
         'humfrey.update.transform.local_file.LocalFile',
@@ -216,6 +218,7 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.upload.Upload',
         'humfrey.update.transform.xslt.XSLT',
     )
+    UPDATE_TRANSFORM_REPOSITORY = config.get('update:transform_repository')
 
 if config.get('ckan:enabled') == 'true':
     LONGLIVING_PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)

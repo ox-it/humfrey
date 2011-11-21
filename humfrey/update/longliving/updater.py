@@ -1,16 +1,17 @@
+import contextlib
 import datetime
 import logging
 import os
 import shutil
 import tempfile
+import urlparse
 
-from lxml import etree
+import dulwich
 import pytz
 
 from django.conf import settings
 
 from django_longliving.base import LonglivingThread
-from humfrey.update.longliving.definitions import Definitions
 from humfrey.update.models import UpdateDefinition
 from humfrey.update.transform.base import TransformManager
 from humfrey.update.utils import evaluate_pipeline
@@ -24,41 +25,50 @@ class Updater(LonglivingThread):
 
     def run(self):
         client = self.get_redis_client()
-        transforms = self.get_transforms()
 
-        for _, item in self.watch_queue(client, UpdateDefinition.UPDATE_QUEUE, True):
-            logger.info("Item received: %r" % item['config_filename'])
+        for _, update_log in self.watch_queue(client, UpdateDefinition.UPDATE_QUEUE, True):
+            logger.info("Item received: %r" % update_log.update_definition.slug)
             try:
-                self.process_item(client, transforms, item)
+                with self.logged(update_log):
+                    self.process_item(client, update_log)
             except Exception:
                 logger.exception("Exception when processing item")
-            logger.info("Item processed: %r" % item['config_filename'])
+            logger.info("Item processed: %r" % update_log.update_definition.slug)
 
-    def process_item(self, client, transforms, item):
-        config_filename = item['config_filename']
-        config_file = etree.parse(config_filename)
+    @contextlib.contextmanager
+    def logged(self, update_log):
+        update_log.started = datetime.datetime.now()
+        update_log.save()
+        UpdateDefinition.objects \
+                        .filter(slug=update_log.update_definition.slug) \
+                        .update(status='active', last_started=update_log.started)
 
-        if config_file.getroot().tag != 'update-definition':
-            raise ValueError("Item specified something that wasn't an update definition")
+        try:
+            yield
+        finally:
+            update_log.completed = datetime.datetime.now()
+            update_log.save()
+            UpdateDefinition.objects \
+                            .filter(slug=update_log.update_definition.slug) \
+                            .update(status='idle', last_completed=update_log.completed)
 
-        id = config_file.getroot().attrib['id']
-        definition = client.hget(Definitions.META_NAME, id)
-        if definition:
-            definition = self.unpack(definition)
-            definition['state'] = 'active'
-            client.hset(Definitions.META_NAME, id, self.pack(definition))
+    def process_item(self, client, update_log):
 
-        variables = dict((e.attrib['name'], e.text) for e in config_file.xpath('parameters/parameter'))
+        update_directory = settings.UPDATE_CACHE_DIRECTORY
+        self._git_pull(settings.UPDATE_TRANSFORM_REPOSITORY, settings.UPDATE_CACHE_DIRECTORY)
 
-        config_directory = os.path.abspath(os.path.dirname(config_filename))
+
         graphs_touched = set()
 
-        for pipeline in config_file.xpath('pipeline'):
+        variables = update_log.update_definition.variables.all()
+        variables = dict((v.name, v.value) for v in variables)
+
+        for pipeline in update_log.update_definition.pipelines.all():
             output_directory = tempfile.mkdtemp()
-            transform_manager = TransformManager(config_directory, output_directory, variables)
+            transform_manager = TransformManager(update_directory, output_directory, variables)
 
             try:
-                pipeline = evaluate_pipeline(pipeline.text.strip())
+                pipeline = evaluate_pipeline(pipeline.value.strip())
             except SyntaxError:
                 raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
 
@@ -72,12 +82,51 @@ class Updater(LonglivingThread):
         updated = self.time_zone.localize(datetime.datetime.now())
 
         client.publish(self.UPDATED_CHANNEL,
-                       self.pack({'id': id,
+                       self.pack({'slug': update_log.update_definition.slug,
                                   'graphs': graphs_touched,
                                   'updated': updated}))
 
-        if definition:
-            definition = self.unpack(client.hget(Definitions.META_NAME, id))
-            definition['state'] = 'inactive'
-            definition['last_updated'] = updated
-            client.hset(Definitions.META_NAME, id, self.pack(definition))
+
+    def _git_pull(self, git_url, target):
+        if not os.path.exists(target):
+            os.makedirs(target)
+        try:
+            repo = dulwich.repo.Repo(target)
+        except dulwich.repo.NotGitRepository:
+            repo = dulwich.repo.Repo.init(target)
+
+        remote_refs = self._git_fetch(git_url, repo)
+        print remote_refs
+        try:
+            repo.refs['HEAD'] = remote_refs['HEAD']
+        except KeyError:
+            raise AssertionError("Update transform repository (%s) is empty." % git_url)
+        self._git_checkout(repo)
+
+    def _git_fetch(self, git_url, repo):
+        client, path = dulwich.client.get_transport_and_path(git_url)
+        remote_refs = client.fetch(path, repo)
+        return remote_refs
+
+    def _git_checkout(self, repo):
+        tree_id = repo['HEAD'].tree
+        paths = set()
+        for entry in repo.object_store.iter_tree_contents(tree_id):
+            path = os.path.join(repo.path, entry.path)
+            paths.add(path)
+            dirname = os.path.dirname(path)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            with open(path, 'w') as f:
+                f.write(repo.get_object(entry.sha).as_raw_string())
+            os.chmod(path, entry.mode)
+
+        for base, dirs, files in os.walk(repo.path, topdown=False):
+            if not base and '.git' in dirs:
+                dirs.remove('.git')
+            for path in list(files):
+                path = os.path.join(base, path)
+                if not path in paths:
+                    os.unlink(path)
+            if not os.listdir(base):
+                os.rmdir(base)
