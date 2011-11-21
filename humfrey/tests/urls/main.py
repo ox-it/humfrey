@@ -16,7 +16,7 @@ urlpatterns = patterns('',
 
     (r'^sparql/$', sparql_views.SparqlView.as_view(), {}, 'sparql'),
 
-    (r'^pingback/', include('humfrey.pingback.urls', 'pingback')),
+    (r'^pingback/', include('humfrey.pingback.urls.public', 'pingback')),
 
     (r'^external-image/$', images_views.ResizedImageView.as_view(), {}, 'resized-image'),
 )
