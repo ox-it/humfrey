@@ -142,9 +142,9 @@ CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 
 CACHE_DIRECTORY = relative_path(config.get('main:cache_directory'))
 IMAGE_CACHE_DIRECTORY = relative_path(config.get('images:cache_directory')) \
-                     or os.path.join(CACHE_DIRECTORY, 'images')
+                     or (CACHE_DIRECTORY and os.path.join(CACHE_DIRECTORY, 'images'))
 UPDATE_CACHE_DIRECTORY = relative_path(config.get('update:cache_directory')) \
-                     or os.path.join(CACHE_DIRECTORY, 'update')
+                     or (CACHE_DIRECTORY and os.path.join(CACHE_DIRECTORY, 'update'))
 
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
                 'port': int(config.get('supporting_services:redis_port') or 6379),
