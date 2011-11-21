@@ -5,7 +5,7 @@ from humfrey.utils.views import AuthenticatedView, SecureView
 class IndexView(HTMLView, AuthenticatedView):
     def get(self, request):
         context = {}
-        return self.render(request, context, 'admin/index')
+        return self.render(request, context, 'manage/index')
     
 class LoginView(SecureView):
     def get(self, request, *args, **kwargs):
