@@ -54,9 +54,9 @@ class Updater(LonglivingThread):
 
     def process_item(self, client, update_log):
 
-        update_directory = settings.UPDATE_CACHE_DIRECTORY
-        self._git_pull(settings.UPDATE_TRANSFORM_REPOSITORY, settings.UPDATE_CACHE_DIRECTORY)
-
+        update_directory = getattr(settings, 'UPDATE_CACHE_DIRECTORY', None)
+        if update_directory:
+            self._git_pull(settings.UPDATE_TRANSFORM_REPOSITORY, settings.UPDATE_CACHE_DIRECTORY)
 
         graphs_touched = set()
 

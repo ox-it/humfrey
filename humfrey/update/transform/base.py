@@ -7,8 +7,8 @@ import redis
 from django.conf import settings
 
 class TransformManager(object):
-    def __init__(self, config_directory, output_directory, parameters):
-        self.config_directory = config_directory
+    def __init__(self, transform_directory, output_directory, parameters):
+        self.transform_directory = transform_directory
         self.output_directory = output_directory
         self.parameters = parameters
         self.counter = 0
