@@ -14,8 +14,8 @@ class Retrieve(Transform):
         'application/xml': 'xml',
     }
 
-    def __init__(self, url):
-        self.url = url
+    def __init__(self, url, extension=None):
+        self.url, self.extension = url, extension
 
     def execute(self, transform_manager):
         logger.info("Attempting to retrieve %r" % self.url)
@@ -26,7 +26,8 @@ class Retrieve(Transform):
         
         content_type = response.headers.get('Content-Type', 'unknown/unknown')
         content_type = content_type.split(';')[0].strip()
-        extension = self.mimetype_overrides.get(content_type) \
+        extension = self.extension \
+                 or self.mimetype_overrides.get(content_type) \
                  or (mimetypes.guess_extension(content_type) or '').lstrip('.') \
                  or (mimetypes.guess_extension(content_type, strict=False) or '').lstrip('.') \
                  or 'unknown'
