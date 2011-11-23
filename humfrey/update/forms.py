@@ -1,6 +1,7 @@
 from django import forms
 from django.forms.models import inlineformset_factory
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 
 from .models import UpdateDefinition, UpdatePipeline
 from .utils import evaluate_pipeline
@@ -12,6 +13,8 @@ class UpdateDefinitionForm(forms.ModelForm):
         slug = self.cleaned_data['slug']
         if self.instance.slug and slug != self.instance.slug:
             raise ValidationError("You cannot change the slug once set")
+        if reverse('update:definition-detail', args=[slug]) == reverse('update:definition-create'):
+            raise ValidationError("'%s' is a reserved name." % slug)
         return slug
 
     class Meta:
