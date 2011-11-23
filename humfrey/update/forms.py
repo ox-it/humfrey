@@ -22,6 +22,7 @@ class UpdateDefinitionForm(forms.ModelForm):
         fields = ['slug', 'title', 'description', 'cron_schedule']
 
 class UpdatePipelineForm(forms.ModelForm):
+    value = forms.CharField(widget=forms.Textarea(attrs={'class': 'pipeline'}))
     def clean_value(self):
         value = self.cleaned_data['value']
         try:
