@@ -4,6 +4,8 @@
 import ConfigParser
 import os
 
+import rdflib
+
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
 
 try:
@@ -204,6 +206,7 @@ if config.get('pingback:enabled') == 'true':
                                'humfrey.update.longliving.uploader.Uploader',
                                ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
+    PINGBACK_DATASET = rdflib.URIRef(config['pingback:dataset'])
 
 if config.get('update:enabled') == 'true':
     INSTALLED_APPS += ('humfrey.update',)
