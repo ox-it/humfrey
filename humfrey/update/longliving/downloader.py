@@ -105,7 +105,7 @@ class Downloader(LonglivingThread):
             if response.headers.get('Last-Modified'):
                 client.hset('downloader:etags', url_hash, response.headers['Last-Modified'])
 
-            client.rpush(target_queue, self.pack(item))
+            client.lpush(target_queue, self.pack(item))
         else:
             item['state'] = 'error'
-            client.rpush(failure_queue, self.pack(item))
+            client.lpush(failure_queue, self.pack(item))
