@@ -27,13 +27,13 @@ class Uploader(LonglivingThread):
         if 'filename' in item:
             data = open(item['filename']).read()
         elif 'graph' in item:
-            data = item['graph'].serialize()
+            data = item['graph'].serialize(format='nt')
         elif 'data' in item:
             data = item['data']
 
         request = urllib2.Request(graph_url, data)
         request.headers['Content-type'] = item.get('mimetype', 'text/plain')
-        request.get_method = lambda: item['method']
+        request.get_method = lambda: item.get('method', 'PUT')
 
         try:
             urllib2.urlopen(request)
