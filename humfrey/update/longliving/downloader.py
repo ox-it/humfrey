@@ -47,7 +47,7 @@ class Downloader(LonglivingThread):
             request.headers[key] = value
 
         target_queue = item['target_queue']
-        failure_queue = item.get('failure_queue', 'downloader:failures')
+        failure_queue = item.get('failure_queue', target_queue)
 
         if item.get('conditional_caching'):
             etag = client.hget('downloader:etag', url_hash)
