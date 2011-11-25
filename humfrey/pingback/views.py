@@ -17,35 +17,33 @@ from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, Retr
 from django_conneg.views import HTMLView, JSONPView
 from django_conneg.http import HttpResponseSeeOther
 
+from .models import InboundPingback
+
 class PingbackView(RedisView):
-    _QUEUE_KEY = 'pingback.new'
 
     class PingbackError(Exception): pass
     class AlreadyRegisteredError(PingbackError): pass
+
+    # The minimum amount of time that must pass before a resubmission is accepted
+    resubmission_period = datetime.timedelta(7)
 
     def ping(self, request, source, target):
         if source == target:
             return HttpResponseBadRequest()
 
-        client = self.get_redis_client()
+        try:
+            pingback = InboundPingback.objects.get(slug=InboundPingback.get_slug(source, target))
+        except InboundPingback.DoesNotExist:
+            pingback = InboundPingback(source=source, target=target)
 
-        ping_hash = ''.join('%02x' % (a ^ b) for a, b in zip(*(map(ord, hashlib.sha1(x).digest()) for x in (source, target))))
-
-        data = base64.b64encode(pickle.dumps({
-            'hash': ping_hash,
-            'source': source,
-            'target': target,
-            'user_agent': request.META.get('HTTP_USER_AGENT'),
-            'remote_addr': request.META.get('REMOTE_ADDR'),
-            'date': datetime.datetime.now(),
-            'state': 'new',
-        }))
-
-        stored = client.setnx('pingback:item:%s' % ping_hash, data)
-        if stored:
-            client.rpush(NewPingbackHandler.QUEUE_NAME, ping_hash)
-        else:
+        if pingback.updated and pingback.updated + self.resubmission_period > datetime.datetime.now():
             raise self.AlreadyRegisteredError()
+
+        pingback.user_agent = request.META.get('HTTP_USER_AGENT')
+        pingback.remote_addr = request.META['REMOTE_ADDR']
+        pingback.user = request.user if request.user.is_authenticated() else None
+
+        pingback.queue()
 
 class XMLRPCPingbackView(PingbackView):
     _RESPONSE_CODES = {
