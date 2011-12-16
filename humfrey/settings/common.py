@@ -161,6 +161,7 @@ ID_MAPPING = ()
 ADDITIONAL_NAMESPACES = {}
 
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
+THUMBNAIL_HEIGHTS = tuple(int(w.strip()) for w in config.get('images:thumbnail_heights', '200').split(','))
 
 DOWNLOADER_DEFAULT_DIR = config.get('downloader:default_dir')
 if DOWNLOADER_DEFAULT_DIR:

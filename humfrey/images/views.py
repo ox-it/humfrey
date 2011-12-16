@@ -41,14 +41,14 @@ class ResizedImageView(EndpointView):
         if not (types & self._image_types):
             raise TypeError
             raise Http404
-            
+
         filename = hashlib.sha1('%s:%s:%s' % (width, height, url)).hexdigest()
         filename = [filename[:2], filename[2:4], filename[4:6], filename[6:]]
-        filename = os.path.abspath(os.path.join(settings.RESIZED_IMAGE_CACHE_DIR, *filename))
+        filename = os.path.abspath(os.path.join(settings.IMAGE_CACHE_DIRECTORY, *filename))
 
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
-        
+
         if not os.path.exists(filename):
             open(filename, 'w').close()
             if re.match(r"http://www\.mae\.u-paris10\.fr/limc-france/images/.*\.JPG", url):
@@ -71,7 +71,7 @@ class ResizedImageView(EndpointView):
                 if factor == 1:
                     resized = im
                 else:
-                    resized = im.resize((int(size[0]*factor), int(size[1]*factor)), Image.ANTIALIAS)
+                    resized = im.resize((int(size[0] * factor), int(size[1] * factor)), Image.ANTIALIAS)
                 resized.save(filename, format='jpeg')
             except Exception:
                 os.unlink(filename)
