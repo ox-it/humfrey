@@ -5,7 +5,7 @@
   <Placemark>
     <name>{{ subject.label }}</name>
     <description>
-      <a href="http://{{ hostname }}{{ subject.doc_url }}">details</a>
+      <a href="{{ subject.doc_url }}">details</a>
     </description>
     <Point>
       <coordinates>{{ subject.geo_long }},{{ subject.geo_lat }},0</coordinates>
