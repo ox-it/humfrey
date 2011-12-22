@@ -39,7 +39,6 @@ class ResizedImageView(EndpointView):
         # Check that we've got an image
         types = self.get_types(url)
         if not (types & self._image_types):
-            raise TypeError
             raise Http404
 
         filename = hashlib.sha1('%s:%s:%s' % (width, height, url)).hexdigest()
