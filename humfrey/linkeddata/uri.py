@@ -49,7 +49,7 @@ def doc_forwards(uri, graph=None, described=None):
 
     base = 'http:%s?%s' % (reverse_full('data', view_name),
                            urllib.urlencode((('uri', uri.encode('utf-8')),)))
-    
+
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
 
@@ -66,14 +66,17 @@ def doc_forward(uri, view=None, request=None, graph=None, described=None, format
 
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 
-def doc_backward(url):
+def doc_backward(url, formats=None):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
     if url.split(':', 1)[-1].split('?')[0] == reverse_full('data', 'doc-generic'):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
-    
+
     match = BACKWARD_FORMAT_RE.match(url)
     url, format = match.group('url'), match.group('format')
+    if format and formats is not None and format not in formats:
+        url, format = '%s.%s' % (url, format), None
+
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
         if url.startswith(doc_prefix):
             url = id_prefix + url[len(doc_prefix):]

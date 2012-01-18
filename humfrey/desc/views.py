@@ -62,7 +62,7 @@ class DocView(RDFView, HTMLView, CachedView):
         additional_headers = {}
         doc_url = request.build_absolute_uri()
 
-        uri, format, is_local = doc_backward(doc_url)
+        uri, format, is_local = doc_backward(doc_url, set(self._renderers_by_format))
         if not uri:
             raise Http404
 
