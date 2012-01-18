@@ -2,12 +2,10 @@
 
 {% block title %}{{ subject.label }}{% endblock %}
 
-{% block extrahead %}{{ block.super }}{% for format in formats %}
+{% block extra_head %}{{ block.super }}{% for format in formats %}
   <link rel="alternate" type="{{ format.mimetypes.0 }}" href="{{ format.url }}" title="{{ format.name }} description of {{ subject.label }}"/>{% endfor %}{% endblock %}
 
-{% block body %}
-  <section>
-
+{% block content %}
     {% block doc_intro %}
     {% if subject.foaf_logo %}
       <img class="logo" src="{{ subject.foaf_logo.uri }}" alt=""/>
@@ -170,5 +168,4 @@
     {% endcomment %}
 
     <div style="clear:both"/>
-  </section>
 {% endblock %}

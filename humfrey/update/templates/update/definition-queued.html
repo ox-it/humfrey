@@ -2,8 +2,7 @@
 
 {% block title %}Queue for update: {{ object.title }}{% endblock %}
 
-{% block body %}
-<article>
+{% block content %}
   <h1>{{ object.title }}: Queue for update</h1>
   
   <p>
@@ -16,5 +15,4 @@
   
   <p>You may wish to <a href="{% url update:index %}">return to the
      dataset updater page</a>.</p>
-</article>
 {% endblock %}

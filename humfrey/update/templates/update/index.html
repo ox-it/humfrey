@@ -2,7 +2,7 @@
 
 {% block title %}Updater status{% endblock %}
 
-{% block extrahead %}{{ block.super }}
+{% block extra_head %}{{ block.super }}
 <style type="text/css">
 ul.update-definitions {
   list-style: none;
@@ -30,8 +30,7 @@ ul.update-definitions li p {
 </style>
 {% endblock %}
 
-{% block body %}
-<article>
+{% block content %}
   <h1>Update status</h1>
   
   <section>
@@ -137,7 +136,4 @@ ul.update-definitions li p {
     <p>The upload queue is empty.</p>
     {% endif %}
     </section>
-
-
-</article>
 {% endblock %}

@@ -2,8 +2,7 @@
 
 {% block title %}Update definition: {{ object.title|default:"Create" }}{% endblock %}
 
-{% block body %}
-<article>
+{% block content %}
   <h1>{{ object.title|default:"Create update definition" }}</h1>
   
   <form method="post" action="">{% csrf_token %}
@@ -47,5 +46,4 @@
   {% endif %}
   
   </form>
-</article>
 {% endblock %}

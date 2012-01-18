@@ -2,8 +2,7 @@
 
 {% block title %}Browse &#187; {{ meta.name }}{% endblock %}
 
-{% block body %}
-<article>
+{% block content %}
   <h1>Browse &#187; {{ meta.name }}</h1>
 
   <aside class="toolbox">
@@ -34,5 +33,4 @@
   </table>
 
   {% include "browse/pagination.html" %}
-</article>
 {% endblock %}

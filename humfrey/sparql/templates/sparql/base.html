@@ -2,7 +2,7 @@
 
 {% block title %}SPARQL{% endblock %}
 
-{% block body %}
+{% block extra_head %}
     <script type="text/javascript">
   	function changePrefixes()
 		{
@@ -17,7 +17,9 @@
 		}
 	
 	</script>
-  <article>
+{% endblock %}
+
+{% block content %}
     <h1>SPARQL</h1>
     
     {% block sparql_results %}{% endblock %}
@@ -54,6 +56,4 @@
     </form>
     
     {% include "queries.html" %}
-  
-  </article>
 {% endblock %}
