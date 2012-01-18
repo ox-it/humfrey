@@ -68,21 +68,3 @@ class RedisView(View):
     @classmethod
     def get_redis_client(self):
         return redis.client.Redis(**settings.REDIS_PARAMS)
-
-class SecureView(View):
-    force_https = getattr(settings, 'FORCE_ADMIN_HTTPS', True)
-
-    def dispatch(self, request, *args, **kwargs):
-        if self.force_https and not (settings.DEBUG or request.is_secure()):
-            url = urlparse.urlparse(request.build_absolute_uri())
-            url = urlparse.urlunparse(('https',) + url[1:])
-            return HttpResponsePermanentRedirect(url)
-        return super(SecureView, self).dispatch(request, *args, **kwargs)
-
-class AuthenticatedView(SecureView):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            url = '%s?%s' % (settings.LOGIN_URL,
-                             urllib.urlencode({'next': request.build_absolute_uri()}))
-            return HttpResponseSeeOther(url)
-        return super(AuthenticatedView, self).dispatch(request, *args, **kwargs)

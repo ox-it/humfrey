@@ -2,11 +2,10 @@ import datetime
 
 import rdflib
 from django.conf import settings
-from django.contrib.auth import views as auth_views
 
 from django_conneg.views import HTMLView
 
-from humfrey.utils.views import CachedView, EndpointView, AuthenticatedView, SecureView
+from humfrey.utils.views import CachedView, EndpointView
 from humfrey.utils.sparql import SparqlResultList, SparqlResultBool, SparqlResultGraph
 
 # Only create FeedView class if feedparser and pytz are importable.
@@ -45,9 +44,6 @@ class SimpleView(HTMLView, CachedView):
 
     def get(self, request):
         return self.render(request, self.context.copy(), self.template_name)
-
-class AuthenticatedSimpleView(AuthenticatedView, SimpleView):
-    pass
 
 class CannedQueryView(CachedView, EndpointView):
     query = None

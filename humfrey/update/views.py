@@ -6,19 +6,21 @@ from django.views.generic.base import View
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 from django_conneg.views import HTMLView, JSONView, TextView
 from django_conneg.http import HttpResponseSeeOther
 
-from humfrey.utils.views import RedisView, AuthenticatedView
+from humfrey.utils.views import RedisView
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.update.longliving.updater import Updater
 
 from humfrey.update.models import UpdateDefinition
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset
 
-class IndexView(HTMLView, RedisView, AuthenticatedView):
-
+class IndexView(HTMLView, RedisView):
+    @method_decorator(login_required)
     def get(self, request):
         client = self.get_redis_client()
 
@@ -33,7 +35,7 @@ class IndexView(HTMLView, RedisView, AuthenticatedView):
 
         return self.render(request, context, 'update/index')
 
-class DefinitionDetailView(HTMLView, AuthenticatedView):
+class DefinitionDetailView(HTMLView):
     def common(self, request, slug=None):
         if slug:
             obj = get_object_or_404(UpdateDefinition, slug=slug)
@@ -49,6 +51,7 @@ class DefinitionDetailView(HTMLView, AuthenticatedView):
             'pipelines': pipelines,
         }
 
+    @method_decorator(login_required)
     def get(self, request, slug=None):
         context = self.common(request, slug)
         if not context['object'].can_view(request.user):
@@ -56,6 +59,7 @@ class DefinitionDetailView(HTMLView, AuthenticatedView):
 
         return self.render(request, context, 'update/definition-detail')
 
+    @method_decorator(login_required)
     def post(self, request, slug=None):
         action = request.POST.get('action', '').lower()
         if action == 'delete':
@@ -86,6 +90,7 @@ class DefinitionDetailView(HTMLView, AuthenticatedView):
 
         return HttpResponseSeeOther(form.instance.get_absolute_url())
 
+    @method_decorator(login_required)
     def delete(self, request, slug=None):
         if not slug:
             raise Http404
