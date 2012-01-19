@@ -1,23 +1,31 @@
 from __future__ import with_statement
 
-import os
-import shutil
+from humfrey.update.transform.base import Transform, TransformException
+from humfrey.update import models
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-
-from humfrey.update.transform.base import Transform
+class NoSuchFile(TransformException):
+    pass
+class PermissionDeniedToLocalFile(TransformException):
+    pass
 
 class LocalFile(Transform):
     def __init__(self, filename):
-        self.filename = os.path.normpath(filename)
-        if '..' in os.path.split(self.filename):
-            raise ValueError('Filename cannot include directory traversals')
+        self.filename = filename
     def execute(self, transform_manager):
-        if not (transform_manager.transform_directory, getattr(settings, 'UPDATE_TRANSFORM_REPOSITORY', None)):
-            raise ImproperlyConfigured("You need to define UPDATE_CACHE_DIRECTORY and UPDATE_TRANSFORM_REPOSITORY settings to use LocalFile.")
         output = transform_manager(self.filename.rsplit('.', 1)[-1])
         transform_manager.start(self, [])
-        shutil.copy(os.path.join(transform_manager.transform_directory, self.filename), output)
+        try:
+            local_file = models.LocalFile.objects.get(name=self.filename)
+        except models.LocalFile.DoesNotExist:
+            raise NoSuchFile("There is no file by the name of '%s'" % self.filename)
+        if not local_file.can_view(transform_manager.owner):
+            raise PermissionDeniedToLocalFile("The owner of this update is not permitted to use the file '%s" % self.filename)
+        content = local_file.content
+        content.open()
+        try:
+            with open(output, 'w') as f:
+                f.write(content.read())
+        finally:
+            content.close()
         transform_manager.end([output])
         return output

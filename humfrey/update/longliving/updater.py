@@ -3,20 +3,57 @@ import datetime
 import logging
 import os
 import shutil
+import StringIO
 import tempfile
 import urlparse
 
-import dulwich
 import pytz
 
 from django.conf import settings
 
 from django_longliving.base import LonglivingThread
 from humfrey.update.models import UpdateDefinition
-from humfrey.update.transform.base import TransformManager
+from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
 
 logger = logging.getLogger(__name__)
+
+class TransformManager(object):
+    def __init__(self, update_log, output_directory, parameters, force=False):
+        self.update_log = update_log
+        self.owner = update_log.update_definition.owner
+        self.output_directory = output_directory
+        self.parameters = parameters
+        self.force = force
+        self.logger = logging.getLogger('%s.%s' % (__name__, update_log.pk))
+        self.log_stream = StringIO.StringIO()
+        self.handler = logging.StreamHandler(self.log_stream)
+        self.logger.addHandler(self.handler)
+
+        self.counter = 0
+        self.transforms = []
+        self.graphs_touched = set()
+
+    def __call__(self, extension):
+        filename = os.path.join(self.output_directory, '%s.%s' % (self.counter, extension))
+        self.counter += 1
+        return filename
+
+    def start(self, transform, inputs, type='generic'):
+        self.current = {'transform': transform,
+                        'inputs': inputs,
+                        'start': datetime.datetime.now(),
+                        'type': type}
+    def end(self, outputs):
+        self.current['end'] = datetime.datetime.now()
+        self.current['outputs'] = outputs
+        self.transforms.append(self.current)
+        del self.current
+    def touched_graph(self, graph_name):
+        self.graphs_touched.add(graph_name)
+    def not_changed(self):
+        if not self.force:
+            raise NotChanged()
 
 class Updater(LonglivingThread):
     UPDATED_CHANNEL = 'humfrey:updater:updated-channel'
@@ -54,79 +91,43 @@ class Updater(LonglivingThread):
 
     def process_item(self, client, update_log):
 
-        update_directory = getattr(settings, 'UPDATE_CACHE_DIRECTORY', None)
-        if update_directory:
-            self._git_pull(settings.UPDATE_TRANSFORM_REPOSITORY, settings.UPDATE_CACHE_DIRECTORY)
-
-        graphs_touched = set()
-
-        variables = update_log.update_definition.variables.all()
-        variables = dict((v.name, v.value) for v in variables)
-
-        for pipeline in update_log.update_definition.pipelines.all():
-            output_directory = tempfile.mkdtemp()
-            transform_manager = TransformManager(update_directory, output_directory, variables)
-
-            try:
-                pipeline = evaluate_pipeline(pipeline.value.strip())
-            except SyntaxError:
-                raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
-
-            try:
-                pipeline(transform_manager)
-            finally:
-                shutil.rmtree(output_directory)
-
-            graphs_touched |= transform_manager.graphs_touched
-
-        updated = self.time_zone.localize(datetime.datetime.now())
-
-        client.publish(self.UPDATED_CHANNEL,
-                       self.pack({'slug': update_log.update_definition.slug,
-                                  'graphs': graphs_touched,
-                                  'updated': updated}))
-
-
-    def _git_pull(self, git_url, target):
-        if not os.path.exists(target):
-            os.makedirs(target)
+        update_directory = tempfile.mkdtemp()
         try:
-            repo = dulwich.repo.Repo(target)
-        except dulwich.repo.NotGitRepository:
-            repo = dulwich.repo.Repo.init(target)
 
-        remote_refs = self._git_fetch(git_url, repo)
-        print remote_refs
-        try:
-            repo.refs['HEAD'] = remote_refs['HEAD']
-        except KeyError:
-            raise AssertionError("Update transform repository (%s) is empty." % git_url)
-        self._git_checkout(repo)
+            graphs_touched = set()
+            log = []
 
-    def _git_fetch(self, git_url, repo):
-        client, path = dulwich.client.get_transport_and_path(git_url)
-        remote_refs = client.fetch(path, repo)
-        return remote_refs
+            variables = update_log.update_definition.variables.all()
+            variables = dict((v.name, v.value) for v in variables)
 
-    def _git_checkout(self, repo):
-        tree_id = repo['HEAD'].tree
-        paths = set()
-        for entry in repo.object_store.iter_tree_contents(tree_id):
-            path = os.path.join(repo.path, entry.path)
-            paths.add(path)
-            dirname = os.path.dirname(path)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-            with open(path, 'w') as f:
-                f.write(repo.get_object(entry.sha).as_raw_string())
-            os.chmod(path, entry.mode)
+            for pipeline in update_log.update_definition.pipelines.all():
+                output_directory = tempfile.mkdtemp()
+                transform_manager = TransformManager(update_log, output_directory, variables, force=update_log.forced)
 
-        for base, dirs, files in os.walk(repo.path, topdown=False):
-            if not base and '.git' in dirs:
-                dirs.remove('.git')
-            for path in list(files):
-                path = os.path.join(base, path)
-                if not path in paths:
-                    os.unlink(path)
-            if not os.listdir(base):
-                os.rmdir(base)
+                try:
+                    pipeline = evaluate_pipeline(pipeline.value.strip())
+                except SyntaxError:
+                    raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
+
+                try:
+                    pipeline(transform_manager)
+                except NotChanged:
+                    logger.info("Aborted update as data hasn't changed")
+                except TransformException, e:
+                    transform_manager.logger.exception("Transform failed.")
+                finally:
+                    shutil.rmtree(output_directory)
+
+                log.append(transform_manager.log_stream.getvalue())
+                graphs_touched |= transform_manager.graphs_touched
+
+            updated = self.time_zone.localize(datetime.datetime.now())
+            
+            update_log.log = '\n\n'.join(log)
+
+            client.publish(self.UPDATED_CHANNEL,
+                           self.pack({'slug': update_log.update_definition.slug,
+                                      'graphs': graphs_touched,
+                                      'updated': updated}))
+        finally:
+            shutil.rmtree(update_directory)

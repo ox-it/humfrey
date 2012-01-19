@@ -1,9 +1,9 @@
 from django import forms
 from django.forms.models import inlineformset_factory
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, resolve
 
-from .models import UpdateDefinition, UpdatePipeline
+from .models import UpdateDefinition, UpdatePipeline, LocalFile
 from .utils import evaluate_pipeline
 
 class UpdateDefinitionForm(forms.ModelForm):
@@ -13,7 +13,9 @@ class UpdateDefinitionForm(forms.ModelForm):
         slug = self.cleaned_data['slug']
         if self.instance.slug and slug != self.instance.slug:
             raise ValidationError("You cannot change the slug once set")
-        if reverse('update:definition-detail', args=[slug]) == reverse('update:definition-create'):
+
+        # Any reserved name will resolve to something not having keyword arguments.
+        if not resolve(reverse('update:definition-detail', args=[slug]))[2]:
             raise ValidationError("'%s' is a reserved name." % slug)
         return slug
 
@@ -36,3 +38,7 @@ UpdatePipelineFormset = inlineformset_factory(UpdateDefinition,
                                               UpdatePipelineForm,
                                               can_delete=True,
                                               extra=2)
+
+class CreateFileForm(forms.ModelForm):
+    class Meta:
+        model = LocalFile

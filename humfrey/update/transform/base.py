@@ -6,30 +6,13 @@ import pickle
 import redis
 from django.conf import settings
 
-class TransformManager(object):
-    def __init__(self, transform_directory, output_directory, parameters):
-        self.transform_directory = transform_directory
-        self.output_directory = output_directory
-        self.parameters = parameters
-        self.counter = 0
-        self.transforms = []
-        self.graphs_touched = set()
-    def __call__(self, extension):
-        filename = os.path.join(self.output_directory, '%s.%s' % (self.counter, extension))
-        self.counter += 1
-        return filename
-    def start(self, transform, inputs, type='generic'):
-        self.current = {'transform': transform,
-                        'inputs': inputs,
-                        'start': datetime.datetime.now(),
-                        'type': type}
-    def end(self, outputs):
-        self.current['end'] = datetime.datetime.now()
-        self.current['outputs'] = outputs
-        self.transforms.append(self.current)
-        del self.current
-    def touched_graph(self, graph_name):
-        self.graphs_touched.add(graph_name)
+class TransformException(Exception):
+    pass
+
+class NotChanged(TransformException):
+    pass
+
+
 
 class Transform(object):
     def get_redis_client(self):

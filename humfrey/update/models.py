@@ -28,6 +28,8 @@ class UpdateDefinition(models.Model):
     title = models.CharField(max_length=80)
     description = models.TextField(blank=True)
 
+    owner = models.ForeignKey(User, related_name='owned_updates')
+
     cron_schedule = models.TextField(blank=True)
 
     status = models.CharField(max_length=10, choices=DEFINITION_STATUS_CHOICES, default='idle')
@@ -77,13 +79,16 @@ register(['update.administer_updatedefinition',
           'update.change_updatedefinition',
           'update.execute_updatedefinition',
           'update.delete_updatedefinition',
-          'update.notifications_updatedefinition'], UpdateDefinition)
+          'update.notifications_updatedefinition'],
+         UpdateDefinition, 'update')
 
 class UpdateLog(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
     user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
+    forced = models.BooleanField()
 
     trigger = models.CharField(max_length=80)
+    log = models.TextField(blank=True)
 
     queued = models.DateTimeField(null=True, blank=True)
     started = models.DateTimeField(null=True, blank=True)
@@ -100,9 +105,36 @@ class UpdatePipeline(models.Model):
             raise ValueError(e)
         return super(UpdatePipeline, self).save(*args, **kwargs)
 
+class UpdateVariable(models.Model):
+    update_definition = models.ForeignKey(UpdateDefinition, related_name="variables")
+    name = models.TextField()
+    value = models.TextField()
+
 class LocalFile(models.Model):
     name = models.CharField(max_length=255, unique=True, db_index=True)
     content = models.FileField(upload_to=settings.UPDATE_FILES_DIRECTORY)
     publish = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
 
-register(['update.read_localfile','update.modify_localfile','update.delete_localfile'], LocalFile)
+    def get_absolute_url(self):
+        return reverse('update:file-detail', args=[self.name])
+    def get_contents(self):
+        self.content.open()
+        try:
+            return self.content.read()
+        except AttributeError:
+            return None
+        finally:
+            self.content.close()
+
+    can_view = permission_check('view')
+    can_change = permission_check('change')
+    can_delete = permission_check('delete')
+    can_administer = permission_check('administer')
+
+register(['update.view_localfile',
+          'update.change_localfile',
+          'update.delete_localfile',
+          'update.administer_localfile'],
+         LocalFile, 'update')

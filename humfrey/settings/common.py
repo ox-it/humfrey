@@ -99,6 +99,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'django_hosts',
+    'object_permissions',
     'humfrey.base',
     'humfrey.desc',
     'humfrey.linkeddata',

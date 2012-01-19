@@ -2,7 +2,6 @@ from __future__ import with_statement
 
 import base64
 import datetime
-import logging
 import pickle
 
 import pytz
@@ -15,8 +14,6 @@ from humfrey.update.transform.base import Transform
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.utils import sparql
 from humfrey.utils.namespaces import NS
-
-logger = logging.getLogger(__name__)
 
 class Upload(Transform):
     formats = {
