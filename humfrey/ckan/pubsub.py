@@ -99,7 +99,8 @@ def update_ckan_dataset(channel, data):
 
     datasets = list(graph.subjects(NS.rdf.type, NS.void.Dataset))
     if len(datasets) != 1:
-        raise ValueError("Expected one dataset, got %d" % len(datasets))
+        logger.debug("Expected one dataset for %r, got %d", data['slug'], len(datasets))
+        return
     dataset = Resource(datasets[0], graph, endpoint)
 
     find = functools.partial(_find, graph, dataset._identifier)
