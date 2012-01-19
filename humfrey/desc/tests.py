@@ -53,8 +53,8 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
 
 #@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class DocViewTestCase(ClientTestCase, GraphTestMixin):
-    _TEST_URI = settings.TEST_URI
-    _HTTP_HOST = settings.TEST_DOMAIN
+    _TEST_URI = 'http://data.example.com/id/foo'
+    _HTTP_HOST = 'data.example.com'
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
     @mock.patch('humfrey.desc.views.DocView.endpoint')
