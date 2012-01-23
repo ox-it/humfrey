@@ -5,8 +5,25 @@
 {% block content %}
   <h1>File: {{ local_file.name }}</h1>
   
-  <section>
-    <h2>File contents</h2>
+  <p><a href="{{ local_file.get_download_url }}">Download</a></p>
+  
+  {% if local_file.is_text %}
+    <section>
+      <h2>File contents</h2>
+      {% if can_change %}
+        <form method="post" action="{{ local_file.get_absolute_url }}">
+          <input type="hidden" name="action" value="update"/>
+          <textarea name="contents" rows="50" style="width:100%">{{ local_file.get_contents }}</textarea>
+          <input type="submit" value="Update"/>
+        </form>
+      {% else %}
+        <div class="update-file-contents">
+          <pre>{{ local_file.contents }}</pre>
+        </div> 
+      {% endif %}
+    </section>
+  {% endif %}
+  
   {% if can_change %}
   <form method="post" action="{{ local_file.get_absolute_url }}">
     <input type="hidden" name="action" value="update"/>
