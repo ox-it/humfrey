@@ -1,0 +1,20 @@
+table.update-definitions, table.update-logs {
+	border-collapse:collapse;
+}
+
+tr.outcome-errors {
+	font-weight: bold;
+	color: #a00;
+	background-color:#fcc;
+}
+
+tr.outcome-warnings {
+	color:#ca0;
+	background-color:#fdb;
+}
+
+tr.outcome-inprogress {
+	color:#00a;
+	font-style:italic;
+	background-color:#ccf;
+}
