@@ -163,6 +163,23 @@ class LocalFile(models.Model):
             return None
         finally:
             self.content.close()
+    def is_text(self):
+        self.content.open()
+        try:
+            data = self.content.read(512)
+        except:
+            return False
+        finally:
+            self.content.close()
+        try:
+            data.decode('utf-8')
+        except UnicodeDecodeError, e:
+            # Couldn't decode as UTF-8/ASCII, and not because we'd
+            # broken off the end of a multi-byte character. 
+            if e.start < 507:
+                return False
+        # Check for any low-ordinal bytes
+        return not any([ord(b) < 0x0a for b in data])
 
     can_view = permission_check('view')
     can_change = permission_check('change')
