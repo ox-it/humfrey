@@ -20,6 +20,9 @@
         <td>{{ file.publish|yesno }}</td>
         <td>{{ file.created }}</td>
         <td>{{ file.modified }}</td>
+      </tr>{% empty %}
+      <tr>
+        <td colspan="4">There are not yet any files uploaded.</td>
       </tr>{% endfor %}
     </tbody>
   </table>
