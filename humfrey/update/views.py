@@ -20,7 +20,7 @@ from humfrey.utils.views import RedisView
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.update.longliving.updater import Updater
 
-from humfrey.update.models import UpdateDefinition, LocalFile
+from humfrey.update.models import UpdateDefinition, LocalFile, UpdateLog
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset, CreateFileForm
 
 class IndexView(HTMLView, RedisView):
@@ -205,8 +205,51 @@ class FileDetailView(HTMLView, JSONView):
             raise PermissionDenied
         context['local_file'].delete()
         return HttpResponseSeeOther(reverse('update:file-list'))
-        
-        
+
+class UpdateLogView(HTMLView, JSONView):
+    _json_indent = 2
+
+    def simplify(self, value):
+        if isinstance(value, UpdateDefinition):
+            return self.simplify({'_url': value.get_absolute_url(),
+                                  'slug': value.slug,
+                                  'title': value.title})
+        elif isinstance(value, UpdateLog):
+            return self.simplify({'_url': value.get_absolute_url(),
+                                  'id': value.id,
+                                  'forced': value.forced,
+                                  'trigger': value.trigger,
+                                  'max_log_level': value.max_log_level,
+                                  'log': value.log})
+        else:
+            return super(UpdateLogView, self).simplify(value)
+
+class UpdateLogListView(UpdateLogView):
+    @method_decorator(login_required)
+    def get(self, request, slug):
+        definition = get_object_or_404(UpdateDefinition, slug=slug)
+        if not definition.can_view:
+            raise PermissionDenied
+        context = {
+            'definition': definition,
+            'logs': list(definition.update_log.all().order_by('-id')),
+        }
+        return self.render(request, context, 'update/log-list')
+
+class UpdateLogDetailView(UpdateLogView):
+    @method_decorator(login_required)
+    def get(self, request, slug, id):
+        definition = get_object_or_404(UpdateDefinition, slug=slug)
+        if not definition.can_view:
+            raise PermissionDenied
+        log = get_object_or_404(definition.update_log, id=id)
+        context = {
+            'definition': definition,
+            'log': log,
+        }
+        return self.render(request, context, 'update/log-detail')
+
+
 class FileDetailPermissionsView(View):
     @method_decorator(login_required)
     def get(self, request, name):
@@ -214,4 +257,3 @@ class FileDetailPermissionsView(View):
         if not local_file.can_administer(request.user):
             raise PermissionDenied
         return view_permissions(request, local_file, local_file.get_absolute_url())
-    

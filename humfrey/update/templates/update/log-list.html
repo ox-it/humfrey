@@ -1,0 +1,32 @@
+{% extends "update/base.html" %}
+
+{% block title %}Logs for {{ definition.title }}{% endblock %}
+
+{% block content %}
+  <h1>Logs for <em>{{ definition.title }}</em></h1>
+  
+  <table class="update-logs">
+    <thead>
+      <tr>
+        <th>Trigger</th>
+        <th>User</th>
+        <th>Queued</th>
+        <th>Started</th>
+        <th>Completed</th>
+        <th>Outcome</th>
+      </tr>
+    </thead>
+    <tbody>{% for log in logs %}
+      <tr class="outcome-{{ log.outcome }}">
+        <td>{{ log.trigger }}</td>
+        <td>{{ log.user }}</td>
+        <td>{{ log.queued }}</td>
+        <td>{{ log.started }}</td>
+        <td>{{ log.completed }}</td>
+        <td>{{ log.get_outcome_display }}</td>
+        <td><a href="{{ log.get_absolute_url }}">View</a></td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+  
+{% endblock %}
