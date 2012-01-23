@@ -4,7 +4,7 @@ import mimetypes
 import os
 import urllib2
 
-from humfrey.update.transform.base import Transform
+from humfrey.update.transform.base import Transform, TransformException
 
 class Retrieve(Transform):
     mimetype_overrides = {
@@ -18,9 +18,12 @@ class Retrieve(Transform):
         transform_manager.logger.info("Attempting to retrieve %r" % self.url)
         request = urllib2.Request(self.url)
         request.headers['Accept'] = "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8"
-        response = urllib2.urlopen(request)
+        try:
+            response = urllib2.urlopen(request)
+        except (urllib2.HTTPError, urllib2.URLError), e:
+            raise TransformException(e)
         transform_manager.logger.info("Response received for %r" % self.url)
-        
+
         content_type = response.headers.get('Content-Type', 'unknown/unknown')
         content_type = content_type.split(';')[0].strip()
         extension = self.extension \
@@ -28,9 +31,9 @@ class Retrieve(Transform):
                  or (mimetypes.guess_extension(content_type) or '').lstrip('.') \
                  or (mimetypes.guess_extension(content_type, strict=False) or '').lstrip('.') \
                  or 'unknown'
-        
+
         transform_manager.logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
-            
+
         with open(transform_manager(extension), 'w') as output:
             transform_manager.start(self, [input], type='identity')
             block_size = os.statvfs(output.name).f_bsize
@@ -40,6 +43,6 @@ class Retrieve(Transform):
                     break
                 output.write(chunk)
             transform_manager.end([output.name])
-            
+
             transform_manager.logger.info("File from %r saved to %r" % (self.url, output.name))
             return output.name
