@@ -126,6 +126,8 @@ class Updater(LonglivingThread):
                     logger.info("Aborted update as data hasn't changed")
                 except TransformException, e:
                     transform_manager.logger.exception("Transform failed.")
+                except Exception, e:
+                    transform_manager.logger.exception("Transform failed, perhaps ungracefully.")
                 finally:
                     shutil.rmtree(output_directory)
 
