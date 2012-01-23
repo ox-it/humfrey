@@ -40,7 +40,7 @@ class Upload(Transform):
     def execute(self, transform_manager, input):
         transform_manager.start(self, [input])
 
-        logger.debug("Starting upload of %r", input)
+        transform_manager.logger.debug("Starting upload of %r", input)
 
         client = redis.client.Redis(**settings.REDIS_PARAMS)
 
@@ -48,7 +48,7 @@ class Upload(Transform):
         try:
             serializer = self.formats[extension]
         except KeyError:
-            logger.exception("Unrecognized RDF extension: %r", extension)
+            transform_manager.logger.exception("Unrecognized RDF extension: %r", extension)
             raise
 
         graph = rdflib.ConjunctiveGraph()
@@ -56,14 +56,14 @@ class Upload(Transform):
                     format=serializer,
                     publicID=self.graph_name)
 
-        logger.debug("Parsed graph")
+        transform_manager.logger.debug("Parsed graph")
 
         datetime_now = self.site_timezone.localize(datetime.datetime.now().replace(microsecond=0))
         modified = graph.value(self.graph_name, NS['dcterms'].modified,
                                default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
-            logger.debug("Getting created date from %r", settings.ENDPOINT_QUERY)
+            transform_manager.logger.debug("Getting created date from %r", settings.ENDPOINT_QUERY)
             endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
             results = endpoint.query(self.created_query % {'graph': self.graph_name.n3()})
             if results:
@@ -76,7 +76,7 @@ class Upload(Transform):
             (self.graph_name, NS['dcterms'].created, created),
         )
 
-        logger.debug("About to serialize and queue")
+        transform_manager.logger.debug("About to serialize and queue")
 
         output = transform_manager('rdf')
         with open(output, 'w') as f:
@@ -95,14 +95,14 @@ class Upload(Transform):
             'mimetype': 'application/rdf+xml',
         })))
 
-        logger.info("Queued %r for upload", output)
+        transform_manager.logger.info("Queued %r for upload", output)
 
         for message in pubsub.listen():
             message = pickle.loads(base64.b64decode(message['data']))
             if message['filename'] == output:
                 break
 
-        logger.info("%r accepted for upload", output)
+        transform_manager.logger.info("%r accepted for upload", output)
 
         pubsub.unsubscribe(Uploader.UPLOADED_PUBSUB)
 
