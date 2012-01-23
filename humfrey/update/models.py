@@ -1,9 +1,11 @@
 import datetime
+import logging
 
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.template.base import mark_safe
 from django_longliving.util import pack, get_redis_client
 from object_permissions import register
 
@@ -89,10 +91,38 @@ class UpdateLog(models.Model):
 
     trigger = models.CharField(max_length=80)
     log = models.TextField(blank=True)
+    max_log_level = models.SmallIntegerField(null=True, blank=True)
 
     queued = models.DateTimeField(null=True, blank=True)
     started = models.DateTimeField(null=True, blank=True)
     completed = models.DateTimeField(null=True, blank=True)
+
+    def get_absolute_url(self):
+        return reverse('update:log-detail', args=[self.update_definition.slug, self.id])
+    def outcome(self):
+        level = self.max_log_level
+        if level >= logging.ERROR:
+            return 'errors'
+        elif level >= logging.WARNING:
+            return 'warnings'
+        elif level >= 0:
+            return 'success'
+        else:
+            return 'inprogress'
+
+    def get_outcome_display(self):
+        level = self.max_log_level
+        if level >= logging.ERROR:
+            return 'errors'
+        elif level >= logging.WARNING:
+            return 'warnings'
+        elif level >= 0:
+            return 'success'
+        else:
+            return 'in progress'
+
+    def __unicode__(self):
+        return '%s at %s' % (self.update_definition, self.queued)
 
 class UpdatePipeline(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines")

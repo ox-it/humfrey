@@ -18,6 +18,16 @@ from humfrey.update.utils import evaluate_pipeline
 
 logger = logging.getLogger(__name__)
 
+class _MaxLogLevelHandler(logging.Handler):
+    def __init__(self, update_log):
+        self.update_log = update_log
+        super(_MaxLogLevelHandler, self).__init__()
+        self.setLevel(0)
+    def emit(self, record):
+        previous = self.update_log.max_log_level
+        if not previous or record.levelno > previous:
+            self.update_log.max_log_level = record.levelno
+
 class TransformManager(object):
     def __init__(self, update_log, output_directory, parameters, force=False):
         self.update_log = update_log
@@ -29,6 +39,7 @@ class TransformManager(object):
         self.log_stream = StringIO.StringIO()
         self.handler = logging.StreamHandler(self.log_stream)
         self.logger.addHandler(self.handler)
+        self.logger.addHandler(_MaxLogLevelHandler(update_log))
 
         self.counter = 0
         self.transforms = []
@@ -122,7 +133,7 @@ class Updater(LonglivingThread):
                 graphs_touched |= transform_manager.graphs_touched
 
             updated = self.time_zone.localize(datetime.datetime.now())
-            
+
             update_log.log = '\n\n'.join(log)
 
             client.publish(self.UPDATED_CHANNEL,
