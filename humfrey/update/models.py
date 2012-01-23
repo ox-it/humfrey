@@ -35,6 +35,7 @@ class UpdateDefinition(models.Model):
     cron_schedule = models.TextField(blank=True)
 
     status = models.CharField(max_length=10, choices=DEFINITION_STATUS_CHOICES, default='idle')
+    last_log = models.ForeignKey('UpdateLog', null=True, blank=True)
 
     last_queued = models.DateTimeField(null=True, blank=True)
     last_started = models.DateTimeField(null=True, blank=True)
@@ -63,12 +64,14 @@ class UpdateDefinition(models.Model):
             raise self.AlreadyQueued()
         self.status = 'queued'
         self.last_queued = datetime.datetime.now()
-        self.save()
 
         update_log = UpdateLog.objects.create(update_definition=self,
                                               user=user,
                                               trigger=trigger,
                                               queued=self.last_queued)
+
+        self.last_log = update_log
+        self.save()
 
         redis_client = get_redis_client()
         redis_client.lpush(self.UPDATE_QUEUE, pack(update_log))
