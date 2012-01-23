@@ -46,23 +46,25 @@ ul.update-definitions li p {
           <th>Last queued</th>
           <th>Last started</th>
           <th>Last completed</th>
-          <th>Description</th>
+          <th>Outcome</th>
           <th>State</th>
           <th>Edit</th>
+          <th>Log</th>
           <th>Execute</th>
       <tbody>
     {% for definition in update_definitions %}
-        <tr>
+        <tr class="outcome-{{ definition.last_log.outcome }}">
           <td>{{ definition.slug }}</td>
           <td>{{ definition.title }}</td>
           <td>{{ definition.last_queued|timesince }} ago</td>
           <td>{{ definition.last_started|timesince }} ago</td>
           <td>{{ definition.last_completed|timesince }} ago</td>
-          <td>{{ definition.description }}</td>
+          <td><a href="{{ definition.last_log.get_absolute_url }}">{{ definition.last_log.get_outcome_display }}</a></td>
           <td>{{ definition.get_status_display }}</td>
           <td>{% if definition|can_change:user %}
             <a href="{% url update:definition-detail definition.slug %}">Edit</a>
           {% endif %}</td>
+          <td><a href="{% url update:log-list definition.slug %}">Log</a></td>
           <td>{% if definition|can_execute:user %}{% if definition.status == 'idle' %}
             <form method="post" action="{% url update:definition-detail definition.slug %}">
               <input type="hidden" name="action" value="execute"/>
