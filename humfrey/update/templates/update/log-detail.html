@@ -1,0 +1,31 @@
+{% extends "update/base.html" %}
+
+{% block title %}Log {{ log.id }} for {{ definition }}{% endblock %}
+
+{% block content %}
+  <h1>Log {{ log.id }} for {{ definition }}</h1>
+  
+  <p><a href="{% url update:log-list definition.slug %}">Back to all logs for <em>{{ definition }}</em></a>
+  
+  <table>
+    <tbody>
+      <tr>
+        <td rowspan="2"><img src="{{ STATIC_URL }}{{ log.get_outcome_icon }}" alt="{{ log.get_outcome_display }}"/></td>
+        <th>Trigger</th>
+        <th>User</th>
+        <th>Queued</th>
+        <th>Started</th>
+        <th>Completed</th>
+      </tr>
+      <tr>
+        <td>{{ log.trigger }}</td>
+        <td>{{ log.user }}</td>
+        <td>{{ log.queued }}</td>
+        <td>{{ log.started }}</td>
+        <td>{{ log.completed }}</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <pre>{{ log.log }}</pre>
+{% endblock %} 

@@ -105,6 +105,17 @@ class UpdateLog(models.Model):
 
     def get_absolute_url(self):
         return reverse('update:log-detail', args=[self.update_definition.slug, self.id])
+
+    outcomes = {'errors': {'label': 'errors',
+                           'icon': 'gnome-icons/32x32/dialog-error.png'},
+                'warnings': {'label': 'warnings',
+                             'icon': 'gnome-icons/32x32/dialog-warning.png'},
+                'success': {'label': 'success',
+                            'icon': 'gnome-icons/32x32/emblem-default.png'},
+                'inprogress': {'label': 'in progress',
+                               'icon': 'gnome-icons/32x32/system-run.png'}}
+
+    @property
     def outcome(self):
         level = self.max_log_level
         if level >= logging.ERROR:
@@ -116,16 +127,12 @@ class UpdateLog(models.Model):
         else:
             return 'inprogress'
 
+
     def get_outcome_display(self):
-        level = self.max_log_level
-        if level >= logging.ERROR:
-            return 'errors'
-        elif level >= logging.WARNING:
-            return 'warnings'
-        elif level >= 0:
-            return 'success'
-        else:
-            return 'in progress'
+        return self.outcomes[self.outcome]['label']
+
+    def get_outcome_icon(self):
+        return self.outcomes[self.outcome]['icon']
 
     def __unicode__(self):
         return '%s at %s' % (self.update_definition, self.queued)
