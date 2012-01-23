@@ -76,6 +76,9 @@ class UpdateDefinition(models.Model):
         redis_client = get_redis_client()
         redis_client.lpush(self.UPDATE_QUEUE, pack(update_log))
 
+    def __unicode__(self):
+        return self.title
+
     def get_absolute_url(self):
         return reverse('update:definition-detail', args=[self.slug])
 
