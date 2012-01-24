@@ -1,0 +1,24 @@
+{% extends "browse/base.html" %}
+
+{% block title %}Browse{% endblock %}
+
+{% block content %}
+  <h1>Browse</h1>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Number of items</th>
+      </tr>
+    </thead>
+    <tbody>
+{% for list in lists %}
+      <tr>
+        <td><a href="{% url browse:list list.id %}">{{ list.name }}</a></td>
+        <td>{{ list.count }}</td>
+      </tr>
+{% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

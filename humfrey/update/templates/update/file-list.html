@@ -1,0 +1,46 @@
+{% extends "update/base.html" %}
+
+{% block title %}Files used for transforming datasets{% endblock %}
+
+{% block content %}
+  <h1>Files used for transforming datasets</h1>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Published</th>
+        <th>Created</th>
+        <th>Last modified</th>
+      </tr>
+    </thead>
+    <tbody>{% for file in files %}
+      <tr>
+        <td><a href="{{ file.get_absolute_url }}">{{ file.name }}</a></td>
+        <td>{{ file.publish|yesno }}</td>
+        <td>{{ file.created }}</td>
+        <td>{{ file.modified }}</td>
+      </tr>{% empty %}
+      <tr>
+        <td colspan="4">There are not yet any files uploaded.</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+  
+  <section>
+    <h2>Upload file</h2>
+    
+    <form method="post" action="." enctype="multipart/form-data">
+    <table>
+      <tbody>{{ form }}</tbody>
+      <tfoot>
+        <tr>
+          <td>
+            <input type="submit" value="Upload"/>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    </form>
+  </section>
+{% endblock %}

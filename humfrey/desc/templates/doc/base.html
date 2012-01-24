@@ -2,12 +2,10 @@
 
 {% block title %}{{ subject.label }}{% endblock %}
 
-{% block extrahead %}{{ block.super }}{% for format in formats %}
+{% block extra_head %}{{ block.super }}{% for format in formats %}
   <link rel="alternate" type="{{ format.mimetypes.0 }}" href="{{ format.url }}" title="{{ format.name }} description of {{ subject.label }}"/>{% endfor %}{% endblock %}
 
-{% block body %}
-  <section>
-
+{% block content %}
     {% block doc_intro %}
     {% if subject.foaf_logo %}
       <img class="logo" src="{{ subject.foaf_logo.uri }}" alt=""/>
@@ -16,7 +14,7 @@
       {{ subject.label }}
 {% if show_follow_link %}
       <a href="{{ subject.uri }}" style="text-decoration:none; position:relative; top:2px" title="Follow">
-        <img src="{{ MEDIA_URL }}follow.png" alt="" style="border: 0"/>
+        <img src="{{ STATIC_URL }}desc/follow.png" alt="" style="border: 0"/>
       </a>
 {% endif %}
     </h1>
@@ -44,7 +42,7 @@
         <h2>Toolbox</h2>
         <ul>
           <li>
-            <a href="{% url sparql %}?query={{ "SELECT ?subject ?predicate WHERE {  ?subject ?predicate <"|urlencode }}{{ subject.uri|urlencode }}{{ "> } LIMIT 200"|urlencode }}">
+            <a href="{% url sparql:endpoint %}?query={{ "SELECT ?subject ?predicate WHERE {  ?subject ?predicate <"|urlencode }}{{ subject.uri|urlencode }}{{ "> } LIMIT 200"|urlencode }}">
               What links here
             </a>
           </li>
@@ -52,7 +50,7 @@
             <li>
               Other things of type:
               {% for type in subject.all.rdf_type %}  
-                <a href="{% url sparql %}?query={{ "SELECT ?subject WHERE {  ?subject a <"|urlencode }}{{ type.uri|urlencode }}{{ "> } LIMIT 200"|urlencode }}">
+                <a href="{% url sparql:endpoint %}?query={{ "SELECT ?subject WHERE {  ?subject a <"|urlencode }}{{ type.uri|urlencode }}{{ "> } LIMIT 200"|urlencode }}">
                   {{ type.label }}</a>{% if not forloop.last %}, {% endif %}
               {% endfor %}
             </li>
@@ -153,8 +151,7 @@
           <th>{{ predicate|node }}</th>
           <td>
             {% for object in objects %}
-              {{ object|node|linebreaksbr }}
-              {% if not forloop.last %}<br/>{% endif %}
+              <div>{{ object|node|truncatewords_html:100 }}</div>
             {% endfor %}
           </td>
         </tr>
@@ -171,5 +168,4 @@
     {% endcomment %}
 
     <div style="clear:both"/>
-  </section>
 {% endblock %}

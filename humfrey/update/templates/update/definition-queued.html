@@ -1,0 +1,18 @@
+{% extends "update/base.html" %}
+
+{% block title %}Queue for update: {{ object.title }}{% endblock %}
+
+{% block content %}
+  <h1>{{ object.title }}: Queue for update</h1>
+  
+  <p>
+{% if success %}
+    The update was successfully added to the execution queue.
+{% else %}
+    The update is already active, and was not queued again.
+{% endif %}
+  </p>
+  
+  <p>You may wish to <a href="{% url update:index %}">return to the
+     dataset updater page</a>.</p>
+{% endblock %}

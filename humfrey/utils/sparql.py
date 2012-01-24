@@ -1,12 +1,14 @@
-import urllib2, urllib, rdflib, itertools, re, simplejson, logging, time, sys
-from datetime import datetime
-from lxml import etree
-try:
-    from collections import namedtuple
-except ImportError:
-    from namedtuple import namedtuple
 from collections import defaultdict
-from django.conf import settings
+import logging
+import sys
+import time
+import urllib
+import urllib2
+import weakref
+
+from lxml import etree
+import rdflib
+import simplejson
 
 from .namespaces import NS
 from .resource import Resource
@@ -14,10 +16,22 @@ from .resource import Resource
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
 
-class ResultList(list):
+class SparqlResult(object):
     pass
 
-logger = logging.getLogger('humfrey.sparql.queries')
+class SparqlResultGraph(SparqlResult, rdflib.ConjunctiveGraph):
+    pass
+
+class SparqlResultList(SparqlResult, list):
+    pass
+
+class SparqlResultBool(SparqlResult, object):
+    def __init__(self, value):
+        self._value = bool(value)
+    def __nonzero__(self):
+        return self._value
+
+logger = logging.getLogger(__name__)
 
 def trim_indentation(s):
     """Taken from PEP-0257"""
@@ -45,6 +59,40 @@ def trim_indentation(s):
     # Return a single string:
     return '\n'.join(trimmed)
 
+class SparqlResultBinding(dict):
+    pass
+
+def Result(fields, bindings=None):
+    fields = tuple(fields)
+    if fields in Result._memo:
+        cls = Result._memo[fields]
+    else:
+        class cls(SparqlResultBinding):
+            def __init__(self, bindings):
+                if isinstance(bindings, list):
+                    bindings = dict(zip(self._fields, bindings))
+                for field in fields:
+                    if field not in bindings:
+                        bindings[field] = None
+                super(cls, self).__init__(bindings)
+            def __iter__(self):
+                return (self[field] for field in self._fields)
+            def __getattr__(self, name):
+                return self[name]
+            @property
+            def fields(self):
+                return self._fields
+            def __reduce__(self):
+                return (Result, (self._fields, self._asdict()))
+            def _asdict(self):
+                return dict(self)
+        cls._fields = fields
+        Result._memo[fields] = cls
+    if bindings:
+        return cls(bindings)
+    else:
+        return cls
+Result._memo = weakref.WeakValueDictionary()
 
 class Endpoint(object):
     def __init__(self, url, update_url=None, namespaces={}):
@@ -53,7 +101,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, common_prefixes = True):
+    def query(self, query, common_prefixes=True):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
@@ -91,18 +139,18 @@ class Endpoint(object):
             elif content_type == 'application/sparql-results+json':
                 result = self.parse_json_results(response)
             else: # response.headers['Content-Type'] == 'application/rdf+xml':
-                result = rdflib.ConjunctiveGraph()
+                result = SparqlResultGraph()
                 result.parse(response)
             result.query = query
             result.duration = time.time() - start_time
             return result
-        except Exception, e:
-            logging.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
+        except Exception:
+            logger.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
             raise
         finally:
             try:
-                logging.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
-            except UnboundLocalError, e:
+                logger.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
+            except UnboundLocalError:
                 pass
 
     def update(self, query):
@@ -111,16 +159,13 @@ class Endpoint(object):
         }))
         request.headers['User-Agent'] = 'sparql.py'
 
-        try:
-            response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
-            pass
+        urllib2.urlopen(request)
 
     def insert_data(self, triples, graph=None):
         triples = ' . '.join(' '.join(map(self.quote, triple)) for triple in triples)
         triples = "GRAPH %s { %s }" % (self.quote(graph), triples) if graph else triples
         return self.update("INSERT DATA { %s }" % triples)
-        
+
     def delete_data(self, triples, graph=None):
         triples = ' . '.join(' '.join(map(self.quote, triple)) for triple in triples)
         triples = "GRAPH %s { %s }" % (self.quote(graph), triples) if graph else triples
@@ -128,7 +173,7 @@ class Endpoint(object):
 
     def clear(self, graph):
         return self.update("CLEAR GRAPH %s" % self.quote(graph))
-        
+
 
     def describe(self, uri):
         return self.query("DESCRIBE <%s>" % uri)
@@ -153,9 +198,9 @@ class Endpoint(object):
 
     def get(self, uri):
         return Resource(self, uri)
-    
+
     def quote(self, uri):
-        if isinstance(uri, rdflib.Node.Node):
+        if isinstance(uri, rdflib.term.Node):
             return uri.n3()
         elif not uri:
             return uri
@@ -168,22 +213,21 @@ class Endpoint(object):
         xml = etree.parse(response).getroot()
 
         if len(xml.xpath('srx:boolean', namespaces=NS)):
-            #raise Exception(map(etree.tostring, xml.xpath('srx:boolean', namespaces=NS)))
-            return xml.xpath('srx:boolean', namespaces=NS)[0].text.strip() == 'true'
+            return SparqlResultBool(xml.xpath('srx:boolean', namespaces=NS)[0].text.strip() == 'true')
 
-        fields = [re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', e.attrib['name'])) for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
+        fields = [e.attrib['name'] for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
         empty_results_dict = dict((f, None) for f in fields)
-        Result = namedtuple('Result', fields)
-        
+        ResultClass = Result(fields)
+
         g = rdflib.ConjunctiveGraph()
 
-        results = ResultList()
+        results = SparqlResultList()
         results.fields = fields
         for result_xml in xml.xpath('srx:results/srx:result', namespaces=NS):
             result = empty_results_dict.copy()
             for binding in result_xml.xpath('srx:binding', namespaces=NS):
-                result[re.sub(r'[^a-zA-Z\d_]+', '_', re.sub(r'^([^a-zA-Z])', r'f_\1', binding.attrib['name']))] = self.parse_binding(binding[0], g)
-            results.append(Result(**result))
+                result[binding.attrib['name']] = self.parse_binding(binding[0], g)
+            results.append(ResultClass(result))
 
         return results
 
@@ -208,15 +252,15 @@ class Endpoint(object):
         json = simplejson.load(response)
 
         if 'boolean' in json:
-            return json['boolean'] == True
+            return SparqlResultBool(json['boolean'])
 
         vars_ = json['head']['vars']
-        Result = namedtuple('Result', json['head']['vars'])
+        ResultClass = Result(json['head']['vars'])
         pb = self.parse_json_binding
 
-        results = ResultList()
+        results = SparqlResultList()
         for binding in json['results']['bindings']:
-            results.append( Result(*[pb(binding.get(v), graph) for v in vars_]) )
+            results.append(ResultClass(*[pb(binding.get(v), graph) for v in vars_]))
         results.fields = vars_
         return results
 

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Administration{% endblock %}
+
+{% block nav %}
+  <li><a href="{% url index %}">home</a></li>{% if perms.pingback.admin %}
+  <li><a href="{% url pingback:moderation %}">pingbacks</a>{% endif %}{% if perms.update.admin %}
+  <li><a href="{% url update:index %}">dataset updater</a></li>{% endif %}{% if user.is_staff %}
+  <li><a href="{% url admin:index %}">admin</a></li>{% endif %}{% if user.is_authenticated %}
+  <li><a href="{% url logout %}">log out <small>({{ user.username }})</small></a></li>{% endif %}
+{% endblock %}
+

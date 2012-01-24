@@ -1,0 +1,147 @@
+{% extends "update/base.html" %}{% load humfrey_update %}
+
+{% block title %}Updater status{% endblock %}
+
+{% block extra_head %}{{ block.super }}
+<style type="text/css">
+ul.update-definitions {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+ul.update-definitions li {
+  margin:2px 1em 1em 2px;
+  padding:5px;
+  border:1px solid #006699;
+  width:300px;
+  float:left;
+}
+
+ul.update-definitions li h3 {
+  margin: 0;
+  font-size:1em;
+}
+
+ul.update-definitions li p {
+  margin:4px 0 4px 0;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+  <h1>Update status</h1>
+  
+  <section>
+    <h2>Update definitions</h2>
+    
+    <p><a href="{% url update:file-list %}">View files used when performing updates</a></p>
+
+    <table class="update-definitions">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Identifier</th>
+          <th>Name</th>
+          <th>Last queued</th>
+          <th>Last started</th>
+          <th>Last completed</th>
+          <th>State</th>
+          <th>Edit</th>
+          <th>Log</th>
+          <th>Execute</th>
+      <tbody>
+    {% for definition in update_definitions %}
+        <tr class="outcome-{{ definition.last_log.outcome }}">
+          <td>
+            <a href="{{ definition.last_log.get_absolute_url }}">
+              <img src="{{ STATIC_URL }}{{ definition.last_log.get_outcome_icon }}" alt="{{ definition.get_status_display }}"/>
+            </a>
+          </td>
+          <td>{{ definition.slug }}</td>
+          <td>{{ definition.title }}</td>
+          <td>{{ definition.last_queued|timesince }} ago</td>
+          <td>{{ definition.last_started|timesince }} ago</td>
+          <td>{{ definition.last_completed|timesince }} ago</td>
+          <td>{{ definition.get_status_display }}</td>
+          <td>{% if definition|can_change:user %}
+            <a href="{% url update:definition-detail definition.slug %}">Edit</a>
+          {% endif %}</td>
+          <td><a href="{% url update:log-list definition.slug %}">Log</a></td>
+          <td>{% if definition|can_execute:user %}{% if definition.status == 'idle' %}
+            <form method="post" action="{% url update:definition-detail definition.slug %}">
+              <input type="hidden" name="action" value="execute"/>
+              <input type="submit" value="Queue for execution"/>
+            </form>
+          {% else %}
+            Already queued
+          {% endif %}{% endif %}</td>
+        </tr>
+    {% empty %}
+        <tr>
+          <td colspan="7">{% if perms.update.view_updatedefinition %}
+            There are not yet any update definitions
+          {% else %}
+            There are not yet any update definitions that you can view
+          {% endif %}</td>
+        </tr>
+    {% endfor %}
+      </tbody>{% if perms.update.add_updatedefinition %}
+      <tfoot>
+        <tr>
+          <td colspan="5"><a href="{% url update:definition-create %}">Create new</a></td>
+        </tr>
+      </tfoot>{% endif %}
+    </table>
+    
+    
+    <div style="clear:both;"/>
+  </section>
+  
+  <section>
+    <h2>Update queue</h2>
+  
+    <table>
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Name</th>
+          <th>Queued</th>
+          <th>Trigger</th>
+          <th>User</th>
+        </tr>
+      </thead>
+      <tbody>{% for item in update_queue %}
+        <tr>
+          <td>{% if item.update_definition|can_view:user %}
+            <a href="{{ item.update_definition.get_absolute_url }}">{{ item.update_definition.slug }}</a>
+          {% else %}
+            {{ item.update_definition.slug }}
+          {% endif %}</td>
+          <td>{{ item.update_definition.title }}</td>
+          <td>{{ item.queued|timesince }} ago</td>
+          <td>{{ item.trigger }}</td>
+          <td>{{ item.user }}</td>
+        </tr>{% empty %}
+        <tr>
+          <td colspan="5">The update queue is empty.</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Upload queue</h2>
+  
+    {% if upload_queue %}
+    <ul>
+    {% for item in upload_queue %}
+      <li>{{ item.graph_name }}; queued for {{ item.queued_at|timesince }}</li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>The upload queue is empty.</p>
+    {% endif %}
+    </section>
+{% endblock %}

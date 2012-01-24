@@ -1,0 +1,49 @@
+{% extends "update/base.html" %}{% load humfrey_update %}
+
+{% block title %}Update definition: {{ object.title|default:"Create" }}{% endblock %}
+
+{% block content %}
+  <h1>{{ object.title|default:"Create update definition" }}</h1>
+  
+  <form method="post" action="">{% csrf_token %}
+  
+  <table>
+    <tbody>
+      {{ form }}
+    </tbody>
+  </table>
+  
+  <section>
+    <h2>Update pipelines</h2>
+    
+    {{ pipelines.management_form }}
+    
+  <table>
+    <thead>
+      <tr>
+        <th>Remove</th>
+        <th>Pipeline</th>
+      </tr>
+    </thead>
+    <tbody>
+  {% for pipeline in pipelines.forms %}
+      <tr>
+        <td>{{ pipeline.DELETE }}{{ pipeline.id }}</td> 
+        <td>{{ pipeline.value }}</td>
+        <td>{{ pipeline.errors.value.0 }}</td>
+      </tr>
+  {% endfor %}
+    </tbody>
+  </table>
+
+  {% if object|can_change:user %}
+    <input type="submit" name="action" value="{{ object.pk|yesno:"Update,Create" }}"/>
+  {% endif %}
+  {% if object|can_delete:user and object.pk %}
+    <div style="float:right">
+      <input type="submit" name="action" value="Delete"/>
+    </div>
+  {% endif %}
+  
+  </form>
+{% endblock %}

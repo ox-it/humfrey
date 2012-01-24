@@ -11,6 +11,14 @@ from django.http import HttpResponse
 from django_conneg.decorators import renderer
 
 from humfrey.utils.views import EndpointView
+from humfrey.utils.sparql import SparqlResultList, SparqlResultBool
+
+# Register the RDF/JSON and JSON-LD serializer plugins
+from rdflib import plugin
+from rdflib.serializer import Serializer
+plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
+plugin.register("json-ld", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
+del plugin, Serializer
 
 class _RDFViewMetaclass(type):
     @classmethod
@@ -19,7 +27,7 @@ class _RDFViewMetaclass(type):
         def render(self, request, context, template_name):
             graph = context.get('graph')
             if not isinstance(graph, rdflib.ConjunctiveGraph):
-                raise NotImplementedError
+                return NotImplemented
             return HttpResponse(graph.serialize(format=method), mimetype=mimetype)
         render.__name__ = 'render_%s' % format
         return render
@@ -40,6 +48,8 @@ class RDFView(EndpointView):
         ('nt', 'text/plain', 'nt', 'N-Triples'),
         ('ttl', 'text/turtle', 'turtle', 'Turtle'),
         ('n3', 'text/n3', 'n3', 'Notation3'),
+        ('rdfjson', 'application/rdf+json', 'rdf-json', 'RDF/JSON'),
+        ('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),
     )
 
 class ResultSetView(EndpointView):
@@ -65,7 +75,7 @@ class ResultSetView(EndpointView):
                 if value is None:
                     continue
                 yield '      <binding name="%s">\n' % escape(field)
-                yield ' '*8
+                yield ' ' * 8
                 if isinstance(value, rdflib.URIRef):
                     yield '<uri>%s</uri>' % escape(value).encode('utf-8')
                 elif isinstance(value, rdflib.BNode):
@@ -137,12 +147,12 @@ class ResultSetView(EndpointView):
             yield '\n'
 
     def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
-        if isinstance(context.get('result'), bool):
+        if isinstance(context.get('result'), SparqlResultBool):
             spool = spool_boolean(context['result'])
-        elif isinstance(context.get('results'), list):
+        elif isinstance(context.get('results'), SparqlResultList):
             spool = spool_resultset(context['results'])
         else:
-            raise NotImplementedError
+            return NotImplemented
         return HttpResponse(spool, mimetype=mimetype)
 
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
@@ -151,7 +161,7 @@ class ResultSetView(EndpointView):
                                      self._spool_srx_boolean,
                                      self._spool_srx_resultset,
                                      'application/sparql-results+xml')
-        
+
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):
         return self.render_resultset(request, context,

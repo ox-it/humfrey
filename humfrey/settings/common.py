@@ -4,6 +4,8 @@
 import ConfigParser
 import os
 
+import rdflib
+
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
 
 try:
@@ -13,9 +15,13 @@ except KeyError:
 
 config = ConfigParser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
-relative_path = lambda *args: os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
 
-config = dict((':'.join([sec,key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
+def relative_path(*args):
+    # Return None if any of the arguments are None.
+    if all(args):
+        return os.path.abspath(os.path.join(os.path.dirname(HUMFREY_CONFIG_FILE), *args))
+
+config = dict((':'.join([sec, key]), config.get(sec, key)) for sec in config.sections() for key in config.options(sec))
 
 DEBUG = config.get('main:debug') == 'true'
 TEMPLATE_DEBUG = DEBUG
@@ -55,16 +61,6 @@ USE_L10N = True
 # Example: "/home/media/media.lawrence.com/"
 MEDIA_ROOT = ''
 
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash if there is a path component (optional in other cases).
-# Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = '/site-media/'
-
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/admin-media/'
-
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = config.get('main:secret_key')
 if not SECRET_KEY:
@@ -96,7 +92,9 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django_hosts',
+    'object_permissions',
     'humfrey.base',
     'humfrey.desc',
     'humfrey.linkeddata',
@@ -109,6 +107,12 @@ INSTALLED_APPS = (
 )
 
 TEST_RUNNER = 'humfrey.tests.HumfreyTestSuiteRunner'
+
+LONGLIVING_CLASSES = set([
+    'django_longliving.longliving.pubsub.PubSubDispatcherThread',
+])
+
+LONGLIVING_PUBSUB_WATCHERS = ('humfrey.archive.pubsub.update_dataset_archive',)
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
@@ -128,8 +132,17 @@ ENDPOINT_GRAPH = config.get('endpoints:graph')
 
 CACHE_BACKEND = config.get('supporting_services:cache_backend') or 'locmem://'
 
+# Cache directories
+
+CACHE_DIRECTORY = relative_path(config.get('main:cache_directory'))
+IMAGE_CACHE_DIRECTORY = relative_path(config.get('images:cache_directory')) \
+                     or (CACHE_DIRECTORY and os.path.join(CACHE_DIRECTORY, 'images'))
+UPDATE_CACHE_DIRECTORY = relative_path(config.get('update:cache_directory')) \
+                     or (CACHE_DIRECTORY and os.path.join(CACHE_DIRECTORY, 'update'))
+
 REDIS_PARAMS = {'host': config.get('supporting_services:redis_host') or 'localhost',
-                'port': int(config.get('supporting_services:redis_port') or 6379)}
+                'port': int(config.get('supporting_services:redis_port') or 6379),
+                'db': int(config.get('supporting_services:redis_db') or 0)}
 
 REDIS_PARAMS = {} if config.get('supporting_services:disable_redis_support') == 'true' else REDIS_PARAMS
 
@@ -137,11 +150,14 @@ REDIS_PARAMS = {} if config.get('supporting_services:disable_redis_support') == 
 SERVED_DOMAINS = ()
 
 ID_MAPPING = ()
+ADDITIONAL_NAMESPACES = {}
 
-RESIZED_IMAGE_CACHE_DIR = config.get('images:external_image_cache')
-if RESIZED_IMAGE_CACHE_DIR:
-    RESIZED_IMAGE_CACHE_DIR = relative_path(RESIZED_IMAGE_CACHE_DIR)
 THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
+THUMBNAIL_HEIGHTS = tuple(int(w.strip()) for w in config.get('images:thumbnail_heights', '200').split(','))
+
+DOWNLOADER_DEFAULT_DIR = config.get('downloader:default_dir')
+if DOWNLOADER_DEFAULT_DIR:
+    DOWNLOADER_DEFAULT_DIR = relative_path(DOWNLOADER_DEFAULT_DIR)
 
 LOG_FILENAMES = {}
 for k in ('access', 'pingback', 'query'):
@@ -152,7 +168,8 @@ for k in ('access', 'pingback', 'query'):
 del k, v
 
 if config.get('main:log_to_stderr') == 'true':
-    import logging, sys
+    import logging
+    import sys
     log_level = config.get('main:log_level') or 'WARNING'
     if log_level not in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'):
         raise RuntimeError('log_level in config file must be one of DEBUG, INFO, WARNING, ERROR and CRITICAL')
@@ -175,8 +192,38 @@ DOC_RDF_PROCESSORS = (
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback',)
+    INSTALLED_APPS += ('humfrey.pingback', 'django_longliving')
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
+    LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
+                               'humfrey.update.longliving.downloader.Downloader',
+                               'humfrey.update.longliving.uploader.Uploader',
+                               ])
+    PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
+    PINGBACK_DATASET = rdflib.URIRef(config['pingback:dataset'])
+
+if config.get('update:enabled') == 'true':
+    INSTALLED_APPS += ('humfrey.update',)
+    LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater'])
+    UPDATE_TRANSFORMS = (
+        'humfrey.update.transform.html.HTMLToXML',
+        'humfrey.update.transform.local_file.LocalFile',
+        'humfrey.update.transform.retrieve.Retrieve',
+        'humfrey.update.transform.spreadsheet.GnumericToTEI',
+        'humfrey.update.transform.spreadsheet.ODSToTEI',
+        'humfrey.update.transform.union.Union',
+        'humfrey.update.transform.upload.Upload',
+        'humfrey.update.transform.xslt.XSLT',
+    )
+    UPDATE_TRANSFORM_REPOSITORY = config.get('update:transform_repository')
+
+if config.get('ckan:enabled') == 'true':
+    LONGLIVING_PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
+    CKAN_API_KEY = config.get('ckan:api_key')
+    CKAN_GROUPS = set()
+    CKAN_TAGS = set()
+
+LONGLIVING_PUBSUB_WATCHERS += ('humfrey.browse.pubsub.update_list',)
+
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
 
@@ -184,3 +231,5 @@ CACHE_TIMES = {
     'page': 1800,
 }
 CACHE_TIMES.update(dict((k[6:], int(v)) for k, v in config.iteritems() if k.startswith('cache:')))
+
+GRAPH_BASE = config.get('main:graph_base') or 'http://localhost/graph/'

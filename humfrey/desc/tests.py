@@ -2,14 +2,16 @@ import itertools
 
 import mock
 import rdflib.term
+import unittest
 import unittest2
 
 from django.test.client import Client
-from django.http import HttpResponseNotFound
+from django.http import HttpResponse
+from django.conf import settings
 
 from humfrey.desc import rdf_processors, views
 from humfrey.utils import sparql, resource
-from humfrey.tests.stubs import stub_reverse_crossdomain
+from humfrey.tests.stubs import stub_reverse_full
 
 class GraphTestMixin(object):
     def check_valid_terms(self, graph):
@@ -20,7 +22,7 @@ class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         self.client = Client()
 
-@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
+@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     _ALL = [
         rdf_processors.formats,
@@ -49,26 +51,28 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
             self.check_valid_terms(graph)
             self.assertIsInstance(context, (type(None), dict))
 
-#@mock.patch('humfrey.linkeddata.uri.reverse_crossdomain', stub_reverse_crossdomain)
+#@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class DocViewTestCase(ClientTestCase, GraphTestMixin):
-    _TEST_URI = 'http://data/example.com/id/Foo'
-    _HTTP_HOST = 'data.example.org'
-
-    @mock.patch('humfrey.desc.views.DocView.get_types')
-    def testNoTypes(self, get_types):
-        get_types.return_value = ()
-        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
-        self.assertIsInstance(response, HttpResponseNotFound)
-
+    _TEST_URI = 'http://data.example.com/id/foo'
+    _HTTP_HOST = 'data.example.com'
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
     @mock.patch('humfrey.desc.views.DocView.endpoint')
     def testGraphValid(self, endpoint, get_types):
         get_types.return_value = (rdflib.URIRef('http://example.org/vocab/Thing'),)
         endpoint.query.return_value = rdflib.ConjunctiveGraph()
-        response = self.client.get('/doc/', {'uri': self._TEST_URI, 'format': 'html'}, HTTP_HOST='data.example.org')
+        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
+        self.assertIsInstance(response, HttpResponse)
+        self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.context['subject_uri'], rdflib.URIRef)
         self.assertIsInstance(response.context['doc_uri'], rdflib.URIRef)
         self.check_valid_terms(response.context['graph'])
+
+    @mock.patch('humfrey.desc.views.DocView.get_types')
+    def dtestNoTypes(self, get_types):
+        get_types.return_value = ()
+        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
+        print response.context
+        self.assertEqual(response.status_code, 404)
 
 

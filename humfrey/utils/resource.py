@@ -1,5 +1,11 @@
+import base64
 from collections import defaultdict
-import urllib2, base64, re, hashlib, random, itertools, logging
+import hashlib
+import itertools
+import logging
+import random
+import re
+import urllib2
 from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode
@@ -165,9 +171,14 @@ class BaseResource(object):
             objects.add(p)
             if isinstance(o, URIRef):
                 objects.add(o)
+        for s in self._graph.subjects(NS.ov.describes):
+            for o in self._graph.objects(s):
+                if isinstance(o, URIRef):
+                    objects.add(o)
+
         return ["""
             CONSTRUCT {
-              ?s rdfs:label ?label
+              ?s ?p ?label
             } WHERE {
               ?s ?p ?label .
               FILTER ( %s ) .
@@ -212,7 +223,7 @@ class BaseResource(object):
             if isinstance(v, (URIRef, BNode)):
                 return -4
             else:
-                return {'en-GB': -3, 'en-US': -2, 'en': -1}.get(v.language, 0)
+                return {'en-GB':-3, 'en-US':-2, 'en':-1}.get(v.language, 0)
         return sorted(values, key=f)
 
     @property
@@ -279,22 +290,6 @@ class BaseResource(object):
     @property
     def hexhash(self):
         return hashlib.sha1(self._identifier).hexdigest()[:8]
-
-class Account(object):
-    def render(self):
-        if self.foaf_accountServiceHomepage.uri == URIRef('http://www.twitter.com/'):
-            return mark_safe('<a href="%s"><img class="icon" src="http://twitter-badges.s3.amazonaws.com/t_mini-b.png" alt="%s on Twitter"/> @%s</a>' % tuple(map(escape,
-                (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountName))))
-        else:
-            return mark_safe('<a href="%s">%s at %s</a>' % tuple(map(escape, (self.foaf_accountProfilePage.uri, self.foaf_accountName, self.foaf_accountServiceHomepage.uri))))
-
-    _WIDGET_TEMPLATES = {
-        URIRef('http://www.twitter.com/'): 'widgets/twitter.html',
-    }
-    def widget_templates(self):
-        return [self._WIDGET_TEMPLATES.get(self.foaf_accountServiceHomepage.uri)] + super(Account, self).widget_templates()
-
-register(Account, 'foaf:OnlineAccount')
 
 class Address(object):
     def render(self):

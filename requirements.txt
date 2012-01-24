@@ -1,10 +1,20 @@
-Django==1.3
-simplejson
-rdflib
-lxml
-pytz
-PIL
+Django>=1.3
+django-conneg>=0.6
 django_hosts
+django_longliving
+django-object-permissions
+dulwich
+junitxml
+lxml
+mock
+PIL
 python-memcached
+pytz
 PyYAML
-django-conneg>=0.3
+rdflib
+redis
+simplejson
+unittest2
+-e hg+https://code.google.com/p/rdfextras/@dd40b6c730c2#egg=rdfextras
+pyparsing
+-e hg+https://bitbucket.org/alexsdutton/ckanclient#egg=ckanclient
