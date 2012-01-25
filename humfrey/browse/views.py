@@ -6,9 +6,9 @@ import rdflib
 from django_conneg.views import HTMLView, JSONView, JSONPView
 from humfrey.linkeddata.uri import doc_forward
 from humfrey.results.views.standard import RDFView
-from humfrey.utils.views import CachedView, RedisView
+from humfrey.utils.views import RedisView
 
-class IndexView(RedisView, HTMLView, JSONPView, CachedView):
+class IndexView(RedisView, HTMLView, JSONPView):
     LIST_META = 'humfrey:browse:list-meta:all'
 
     def get(self, request):
@@ -20,7 +20,7 @@ class IndexView(RedisView, HTMLView, JSONPView, CachedView):
         }
         return self.render(request, context, 'browse/index')
 
-class ListView(RedisView, HTMLView, JSONPView, CachedView):
+class ListView(RedisView, HTMLView, JSONPView):
     LIST_META = 'humfrey:browse:list-meta:individual'
     LIST_ITEMS = 'humfrey:browse:list:%s:%s'
 

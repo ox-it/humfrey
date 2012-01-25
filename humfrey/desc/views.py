@@ -13,7 +13,7 @@ from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedire
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
 from humfrey.results.views.standard import RDFView
-from humfrey.utils.views import CachedView, EndpointView
+from humfrey.utils.views import EndpointView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
@@ -52,7 +52,7 @@ class DescView(EndpointView):
         else:
             raise Http404
 
-class DocView(RDFView, HTMLView, CachedView):
+class DocView(RDFView, HTMLView):
 
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None

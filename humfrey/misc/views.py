@@ -1,11 +1,10 @@
 import datetime
 
-import rdflib
 from django.conf import settings
 
 from django_conneg.views import HTMLView
 
-from humfrey.utils.views import CachedView, EndpointView
+from humfrey.utils.views import EndpointView
 from humfrey.utils.sparql import SparqlResultList, SparqlResultBool, SparqlResultGraph
 
 # Only create FeedView class if feedparser and pytz are importable.
@@ -17,7 +16,7 @@ try:
 except ImportError, e:
     pass
 else:
-    class FeedView(HTMLView, CachedView):
+    class FeedView(HTMLView):
         rss_url = None
         template_name = None
 
@@ -42,14 +41,14 @@ else:
             return self.render(request, context, 'index')
 
 
-class SimpleView(HTMLView, CachedView):
+class SimpleView(HTMLView):
     context = {}
     template_name = None
 
     def get(self, request):
         return self.render(request, self.context.copy(), self.template_name)
 
-class CannedQueryView(CachedView, EndpointView):
+class CannedQueryView(EndpointView):
     query = None
     template_name = None
 
