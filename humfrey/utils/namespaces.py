@@ -20,6 +20,7 @@ NS = {
     'ov': 'http://open.vocab.org/terms/',
     'owl': 'http://www.w3.org/2002/07/owl#',
     'oxp': 'http://ns.ox.ac.uk/namespace/oxpoints/2009/02/owl#',
+    'pf': 'http://jena.hpl.hp.com/ARQ/property#',
     'qb': 'http://purl.org/linked-data/cube#',
     'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     'rdfs':   'http://www.w3.org/2000/01/rdf-schema#',
