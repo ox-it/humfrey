@@ -342,7 +342,7 @@ class Image(object):
             logging.exception("HEAD request for image failed: %r", unicode(self._identifier))
             return False
         return True
-register(Image, *settings.IMAGE_TYPES)
+register(Image, *getattr(settings, 'IMAGE_TYPES', []))
 
 class Dataset(object):
     template_name = 'doc/dataset'
