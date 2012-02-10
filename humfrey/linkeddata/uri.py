@@ -10,7 +10,14 @@ import rdflib
 
 from django.conf import settings
 
-from django_hosts.reverse import reverse_full
+if 'django_hosts' in settings.INSTALLED_APPS:
+    from django_hosts.reverse import reverse_full
+    with_hosts = True
+else:
+    from django.core.urlresolvers import reverse
+    def reverse_full(host, *args, **kwargs):
+        return reverse(*args, **kwargs)
+    with_hosts = False
 
 class DocURLs(object):
     def __init__(self, base, format_pattern):
@@ -76,10 +83,15 @@ def doc_backward(url, formats=None):
     url, format = match.group('url'), match.group('format')
     if format and formats is not None and format not in formats:
         url, format = '%s.%s' % (url, format), None
+    
+    if with_hosts:
+        url_part = url
+    else:
+        url_part = urlparse.urlparse(url).path
 
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
-        if url.startswith(doc_prefix):
-            url = id_prefix + url[len(doc_prefix):]
-            return rdflib.URIRef(url), format, is_local
+        if url_part.startswith(doc_prefix):
+            url_part = id_prefix + url_part[len(doc_prefix):]
+            return rdflib.URIRef(url_part), format, is_local
     else:
         return None, None, None
