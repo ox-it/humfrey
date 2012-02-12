@@ -36,8 +36,8 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
         for rdf_processor in self._ALL:
             endpoint = mock.Mock(spec=sparql.Endpoint)
             graph = rdflib.ConjunctiveGraph()
-            doc_uri = rdflib.URIRef('http://example.com/doc/Foo')
-            subject_uri = rdflib.URIRef('http://example.com/id/Foo')
+            doc_uri = rdflib.URIRef('http://example.org/doc/Foo')
+            subject_uri = rdflib.URIRef('http://example.org/id/Foo')
             subject = resource.Resource(subject_uri, graph, endpoint)
             renderers = views.DocView().FORMATS.values()
 
@@ -55,8 +55,8 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
 
 #@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class DocViewTestCase(ClientTestCase, GraphTestMixin):
-    _TEST_URI = 'http://data.example.com/id/foo'
-    _HTTP_HOST = 'data.example.com'
+    _TEST_URI = 'http://data.example.org/id/foo'
+    _HTTP_HOST = 'data.example.org'
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
     @mock.patch('humfrey.desc.views.DocView.endpoint')
