@@ -1,3 +1,4 @@
+import imp
 from xml.sax.saxutils import escape
 try:
     import json
@@ -5,6 +6,11 @@ except ImportError:
     import simplejson as json
 
 import rdflib
+import rdflib.plugin
+try: # This moved during the transition from rdflib 2.4 to rdflib 3.0.
+    from rdflib.serializer import Serializer # 3.0
+except ImportError:
+    from rdflib.syntax.serializers import Serializer # 2.4
 
 from django.http import HttpResponse
 
@@ -13,12 +19,19 @@ from django_conneg.decorators import renderer
 from humfrey.utils.views import EndpointView
 from humfrey.utils.sparql import SparqlResultList, SparqlResultBool
 
-# Register the RDF/JSON and JSON-LD serializer plugins
-from rdflib import plugin
-from rdflib.serializer import Serializer
-plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
-plugin.register("json-ld", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
-del plugin, Serializer
+# Register the RDF/JSON and JSON-LD serializer plugins if available
+try:
+    imp.find_module('rdfextras.serializers.rdfjson')
+    rdflib.plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
+    with_rdfjson_serializer = True
+except ImportError:
+    with_rdfjson_serializer = False
+try:
+    imp.find_module('rdfextras.serializers.jsonld')
+    rdflib.plugin.register("rdf-json", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
+    with_jsonld_serializer = True
+except ImportError:
+    with_jsonld_serializer = False
 
 class _RDFViewMetaclass(type):
     @classmethod
@@ -48,9 +61,12 @@ class RDFView(EndpointView):
         ('nt', 'text/plain', 'nt', 'N-Triples'),
         ('ttl', 'text/turtle', 'turtle', 'Turtle'),
         ('n3', 'text/n3', 'n3', 'Notation3'),
-        ('rdfjson', 'application/rdf+json', 'rdf-json', 'RDF/JSON'),
-        ('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),
     )
+    if with_rdfjson_serializer:
+        RDF_SERIALIZATIONS += (('rdfjson', 'application/rdf+json', 'rdf-json', 'RDF/JSON'),)
+    if with_jsonld_serializer:
+        RDF_SERIALIZATIONS += (('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),)
+
 
 class ResultSetView(EndpointView):
     def _spool_srx_boolean(self, result):
