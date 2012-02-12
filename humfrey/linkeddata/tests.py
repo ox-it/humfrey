@@ -10,9 +10,13 @@ TEST_ID_MAPPING = (
     ('http://id.example.org/', 'http://data.example.org/doc/', True)
 )
 
-@mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING)
-@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
+def patch(f):
+    f = mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING, create=True)(f)
+    f = mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full, create=True)(f)
+    return f
+
 class URITestCase(unittest2.TestCase):
+    @patch
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri, format='n3'),
@@ -22,6 +26,7 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc:random/foo')
 
+    @patch
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
         doc_root = 'http://data.example.org/doc/'
@@ -59,11 +64,13 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri, described=True, format='nt'),
                          doc_root + qs_with_format)
 
+    @patch
     def testDocLocalNegotiate(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc/foo')
 
+    @patch
     def testDocLocalNegotiateMissing(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),

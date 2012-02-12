@@ -31,6 +31,7 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     ]
 
     @unittest2.expectedFailure
+    @mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
     def testAll(self):
         for rdf_processor in self._ALL:
             endpoint = mock.Mock(spec=sparql.Endpoint)
