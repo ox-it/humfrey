@@ -8,7 +8,10 @@ import weakref
 
 from lxml import etree
 import rdflib
-import simplejson
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 from .namespaces import NS
 from .resource import Resource
@@ -249,7 +252,7 @@ class Endpoint(object):
 
     def parse_json_results(self, response):
         graph = rdflib.ConjunctiveGraph()
-        json = simplejson.load(response)
+        json = json.load(response)
 
         if 'boolean' in json:
             return SparqlResultBool(json['boolean'])
