@@ -10,30 +10,9 @@ from django.db import transaction, connections, DEFAULT_DB_ALIAS
 from django.utils.importlib import import_module
 from django.conf import settings
 
-from django_jenkins.runner import CITestSuiteRunner
 
 class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
-    def __init__(self, *args, **kwargs):
-        for connection in connections.all():
-            connection.settings_dict.update({
-                'ENGINE': 'django.db.backends.sqlite3',
-                'SUPPORTS_TRANSACTIONS': False,
-            })
-        self.temporary_database_name = tempfile.mktemp()
-        super(HumfreyTestSuiteRunner, self).__init__(*args, **kwargs)
-        
-    def setup_databases(self, **kwargs):
-        pass
-    def teardown_databases(self, old_config, **kwargs):
-        pass
-    
     def run_suite(self, suite, **kwargs):
-        for connection in connections.all():
-            connection.settings_dict.update({
-                'ENGINE': 'django.db.backends.sqlite3',
-                'SUPPORTS_TRANSACTIONS': False,
-            })
-
         if os.environ.get('HUMFREY_JUNIT_TEST'):
             import junitxml
             report_filename = os.path.join(os.path.dirname(__file__), '..', 'xmlresults.xml')
@@ -45,13 +24,21 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
             return result
         else:
             return super(HumfreyTestSuiteRunner, self).run_suite(suite, **kwargs)
+
+    _ignore_test_modules = [
+       'django.contrib.auth.tests',
+       'django.contrib.auth.tests.decorators',
+       'django.contrib.auth.tests.signals',
+       'django.contrib.auth.tests.views',
+       'object_permissions.tests.backend',
+       'object_permissions.tests.groups',
+       'object_permissions.tests.permissions',
+    ]
     
     def _filter_suite(self, suite):
         tests = []
         for testcase in suite._tests:
-            if isinstance(testcase, (DjangoTestCase, DocTestCase)):
-                continue
-            if type(testcase).__module__.startswith('django.'):
+            if type(testcase).__module__ in self._ignore_test_modules:
                 continue
             if isinstance(testcase, unittest.TestSuite):
                 self._filter_suite(testcase)
@@ -69,7 +56,12 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
         return suite
     
     
-class HumfreyJenkinsTestSuiteRunner(HumfreyTestSuiteRunner, CITestSuiteRunner):
-    def run_suite(self, suite, **kwargs):
-        return super(HumfreyTestSuiteRunner, self).run_suite(suite, **kwargs)
+try:
+    from django_jenkins.runner import CITestSuiteRunner
+except ImportError:
+    pass
+else:
+    class HumfreyJenkinsTestSuiteRunner(HumfreyTestSuiteRunner, CITestSuiteRunner):
+        def run_suite(self, suite, **kwargs):
+            return super(HumfreyTestSuiteRunner, self).run_suite(suite, **kwargs)
 

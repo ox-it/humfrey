@@ -27,6 +27,8 @@ ROOT_URLCONF = 'humfrey.tests.urls.empty'
 
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3'}}
 
+TEST_RUNNER = 'humfrey.tests.runners.HumfreyTestSuiteRunner'
+
 try:
     imp.find_module('django_jenkins')
 except ImportError:
