@@ -3,7 +3,6 @@ django-conneg>=0.6
 django_hosts
 django_longliving
 django-object-permissions
-dulwich
 junitxml
 lxml
 mock
