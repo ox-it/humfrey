@@ -1,7 +1,7 @@
 import itertools
 
 import mock
-import rdflib.term
+import rdflib
 import unittest
 import unittest2
 
@@ -15,14 +15,15 @@ from humfrey.tests.stubs import stub_reverse_full
 
 class GraphTestMixin(object):
     def check_valid_terms(self, graph):
-        for term in itertools.chain.from_iterable(graph):
-            self.assertIsInstance(term, rdflib.term.Identifier)
+        for s, p, o in graph:
+            self.assertIsInstance(s, (rdflib.URIRef, rdflib.BNode))
+            self.assertIsInstance(p, (rdflib.URIRef,))
+            self.assertIsInstance(o, (rdflib.URIRef, rdflib.BNode, rdflib.Literal))
 
 class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         self.client = Client()
 
-@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
 class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
     _ALL = [
         rdf_processors.formats,
