@@ -1,3 +1,9 @@
+python-django-humfrey (0.2.1) unstable; urgency=low
+
+  * Added ability to import update definitions.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Sat, 26 Feb 2012 23:06:52 +0000
+
 python-django-humfrey (0.1) unstable; urgency=low
 
   * Initial release.
