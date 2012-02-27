@@ -1,3 +1,9 @@
+python-django-humfrey (0.2.3) unstable; urgency=low
+
+  * Fixed rdflib import for backwards compatibility with 2.4.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 12:21:42 +0000
+
 python-django-humfrey (0.2.2) unstable; urgency=low
 
   * Fixed typo in update definition importer.
