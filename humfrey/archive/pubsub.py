@@ -12,7 +12,11 @@ from django.conf import settings
 from django_longliving.decorators import pubsub_watcher
 import pytz
 from rdflib import URIRef, BNode, Literal
-from rdflib.plugins.parsers.ntriples import NTriplesParser
+
+try:
+    from rdflib.plugins.parsers.ntriples import NTriplesParser # 3.0
+except ImportError:
+    from rdflib.syntax.parsers.ntriples import NTriplesParser # 2.4
 
 from humfrey.update.longliving.updater import Updater
 from humfrey.utils.namespaces import NS
