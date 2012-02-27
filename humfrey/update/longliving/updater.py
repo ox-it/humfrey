@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class _MaxLogLevelHandler(logging.Handler):
     def __init__(self, update_log):
         self.update_log = update_log
-        super(_MaxLogLevelHandler, self).__init__()
+        logging.Handler.__init__(self)
         self.setLevel(0)
     def emit(self, record):
         previous = self.update_log.max_log_level
