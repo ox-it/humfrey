@@ -36,7 +36,7 @@ def _graph_triples(out, graph):
         out.write(chunk)
 
 class ArchiveSink(object):
-    localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d]+$')
+    localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
 
     def __init__(self, out, namespaces, encoding='utf-8'):
         self.out = out
@@ -77,8 +77,8 @@ class ArchiveSink(object):
                 break
         else:
             match = self.localpart.search(p)
-            tag_name = p[match.start:]
-            write(u'    <%s xmlns=%s' % (tag_name, quoteattr(p[:match.start])))
+            tag_name = p[match.start():]
+            write(u'    <%s xmlns=%s' % (tag_name, quoteattr(p[:match.start()])))
 
         if isinstance(o, Literal):
             if o.language:
@@ -99,7 +99,7 @@ def update_dataset_archives(channel, data):
 
     updated = data['updated'].replace(microsecond=0)
 
-    endpoint = Endpoint()
+    endpoint = Endpoint(settings.ENDPOINT_QUERY)
 
     query = "SELECT ?dataset WHERE { %s }" % " UNION ".join("{ %s void:inDataset ?dataset }" % g.n3() for g in data['graphs'])
     datasets = set(r['dataset'] for r in endpoint.query(query))
@@ -148,5 +148,3 @@ def update_dataset_archive(dataset, graphs, updated):
         os.unlink(nt_name)
         if os.path.exists(rdf_name):
             os.unlink(rdf_name)
-
-
