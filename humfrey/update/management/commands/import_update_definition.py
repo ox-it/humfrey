@@ -30,7 +30,8 @@ class Command(BaseCommand):
                 local_file.content.delete()
             with open(os.path.join(path, filename)) as src:
                 local_file.content.save(filename, File(src))
-            print local_file.content.file.name
+            user = User.objects.get(username=owner)
+            user.grant('update.view_localfile', local_file)
 
     def import_definition(self, meta, default_owner):
         slug = meta.xpath('slug')[0].text
