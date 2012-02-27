@@ -26,7 +26,7 @@ class Command(BaseCommand):
             if filename == 'meta.xml' or filename.startswith('.'):
                 continue
             local_file, _ = LocalFile.objects.get_or_create(name=filename)
-            if local_file.content.file:
+            if local_file.content:
                 local_file.content.delete()
             with open(os.path.join(path, filename)) as src:
                 local_file.content.save(filename, File(src))
