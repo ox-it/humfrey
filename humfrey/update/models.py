@@ -17,8 +17,11 @@ DEFINITION_STATUS_CHOICES = (
     ('active', 'Active'),
 )
 
-permission_check = lambda name : (lambda self, user : user.has_perm('update.%s_updatedefinition' % name)
-                                                   or user.has_perm(name, self))
+def permission_check(model, perm):
+    name = 'update.%s_%s' % (perm, model)
+    def f(self, user):
+        return user.has_perm(name) or user.has_perm(name, self)
+    return f
 
 class UpdateDefinition(models.Model):
     UPDATE_QUEUE = 'humfrey:update:update-queue'
@@ -50,12 +53,12 @@ class UpdateDefinition(models.Model):
             ("administer_updatedefinition", "Can administer an update definition"),
         )
 
-    can_view = permission_check('view')
-    can_change = permission_check('change')
-    can_execute = permission_check('execute')
-    can_delete = permission_check('delete')
-    can_administer = permission_check('administer')
-    receives_notifications = permission_check('notifications')
+    can_view = permission_check('updatedefinition', 'view')
+    can_change = permission_check('updatedefinition', 'change')
+    can_execute = permission_check('updatedefinition', 'execute')
+    can_delete = permission_check('updatedefinition', 'delete')
+    can_administer = permission_check('updatedefinition', 'administer')
+    receives_notifications = permission_check('updatedefinition', 'notifications')
 
     def queue(self, trigger, user=None, silent=False):
         if self.status != 'idle':
@@ -188,10 +191,10 @@ class LocalFile(models.Model):
         # Check for any low-ordinal bytes
         return not any([ord(b) < 0x0a for b in data])
 
-    can_view = permission_check('view')
-    can_change = permission_check('change')
-    can_delete = permission_check('delete')
-    can_administer = permission_check('administer')
+    can_view = permission_check('localfile', 'view')
+    can_change = permission_check('localfile', 'change')
+    can_delete = permission_check('localfile', 'delete')
+    can_administer = permission_check('localfile', 'administer')
 
 register(['update.view_localfile',
           'update.change_localfile',

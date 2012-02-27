@@ -63,7 +63,7 @@ setup(
     description='A Django-based RESTful linked data frontend for SPARQL endpoints.',
     author='Oxford University Computing Services',
     author_email='opendata@oucs.ox.ac.uk',
-    version='0.2.5',
+    version='0.2.6',
     packages=packages,
     license='BSD',
     url='https://github.com/oucs/humfrey',
