@@ -91,6 +91,10 @@ def update_ckan_dataset(channel, data):
         logger.debug("No graphs updated for %r; aborting", data['slug'])
         return
 
+    if not getattr(settings, 'CKAN_API_KEY', None):
+        logger.debug("No CKAN_API_KEY setting, not doing anything.")
+        return
+
     client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
 
     endpoint = Endpoint(settings.ENDPOINT_QUERY)
