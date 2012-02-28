@@ -5,7 +5,7 @@ import rdflib
 import unittest
 import unittest2
 
-from django.test.client import Client
+from django.test.client import Client, RequestFactory
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -23,14 +23,14 @@ class GraphTestMixin(object):
 class ClientTestCase(unittest2.TestCase):
     def setUp(self):
         self.client = Client()
+        self.factory = RequestFactory()
 
-class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
+class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
     _ALL = [
         rdf_processors.formats,
         rdf_processors.doc_meta,
     ]
 
-    @unittest2.expectedFailure
     @mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
     def testAll(self):
         for rdf_processor in self._ALL:
@@ -39,7 +39,11 @@ class RDFProcessorsTestCase(unittest2.TestCase, GraphTestMixin):
             doc_uri = rdflib.URIRef('http://example.org/doc/Foo')
             subject_uri = rdflib.URIRef('http://example.org/id/Foo')
             subject = resource.Resource(subject_uri, graph, endpoint)
-            renderers = views.DocView().FORMATS.values()
+
+            doc_view = views.DocView.as_view()
+            renderers = doc_view._renderers
+
+            request = self.factory.get('')
 
             context = rdf_processor(request=request,
                                     graph=graph,
@@ -71,10 +75,9 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
         self.check_valid_terms(response.context['graph'])
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
-    def dtestNoTypes(self, get_types):
+    def testNoTypes(self, get_types):
         get_types.return_value = ()
         response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
-        print response.context
         self.assertEqual(response.status_code, 404)
 
 
