@@ -1,8 +1,10 @@
+# *-* coding: UTF-8 *-*
+
 import mock
 import unittest2
 import rdflib
 
-from humfrey.linkeddata.uri import doc_forward
+from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.tests.stubs import stub_reverse_full
 
 TEST_ID_MAPPING = (
@@ -75,6 +77,31 @@ class URITestCase(unittest2.TestCase):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc/foo')
+
+class UnicodeURITestCase(unittest2.TestCase):
+    TESTS = [
+        (u'http://id.example.org/fuß', 'http://data.example.org/doc/fu%C3%9F'),
+        (u'http://id.example.org/βήτα', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
+        (u'http://id.other.org/fuß', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2Ffu%C3%9F'),
+        (u'http://id.other.org/βήτα', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2F%CE%B2%CE%AE%CF%84%CE%B1'),
+
+        ('http://id.example.org/fu%C3%9F', 'http://data.example.org/doc/fu%C3%9F'),
+        ('http://id.example.org/%CE%B2%CE%AE%CF%84%CE%B1', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
+        ('http://id.other.org/fu%C3%9F', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2Ffu%C3%9F'),
+        ('http://id.other.org/%CE%B2%CE%AE%CF%84%CE%B1', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2F%CE%B2%CE%AE%CF%84%CE%B1'),
+    ]
+
+    @patch
+    def testUnicodeForward(self):
+        for uri, url in self.TESTS:
+            self.assertEqual(doc_forward(uri, described=True), url)
+
+    @patch
+    def testUnicodeBackward(self):
+        for uri, url in self.TESTS:
+            if isinstance(uri, unicode):
+                self.assertEqual(doc_backward(url)[0], rdflib.URIRef(uri))
+
 
 if __name__ == '__main__':
     unittest2.main()

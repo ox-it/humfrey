@@ -37,9 +37,14 @@ def doc_forwards(uri, graph=None, described=None):
     of uri. described is a ternary boolean.
     """
 
+    if isinstance(uri, unicode):
+        encoded_uri = uri.encode('utf-8')
+    else:
+        encoded_uri = urllib.unquote(uri)
+
     for id_prefix, doc_prefix, _ in settings.ID_MAPPING:
         if uri.startswith(id_prefix):
-            base = doc_prefix + uri[len(id_prefix):]
+            base = doc_prefix + urllib.quote(encoded_uri[len(id_prefix):])
             pattern = base.replace('%', '%%') + '.%(format)s'
             return DocURLs(base, pattern)
 
@@ -47,7 +52,7 @@ def doc_forwards(uri, graph=None, described=None):
         described = True
 
     if described == False:
-        return DocURLs(unicode(uri), unicode(uri).replace('%', '%%'))
+        return DocURLs(encoded_uri, encoded_uri.replace('%', '%%'))
 
     if described == True:
         view_name = 'doc-generic'
@@ -55,7 +60,7 @@ def doc_forwards(uri, graph=None, described=None):
         view_name = 'desc'
 
     base = 'http:%s?%s' % (reverse_full('data', view_name),
-                           urllib.urlencode((('uri', uri.encode('utf-8')),)))
+                           urllib.urlencode((('uri', encoded_uri),)))
 
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
@@ -92,6 +97,6 @@ def doc_backward(url, formats=None):
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
         if url_part.startswith(doc_prefix):
             url_part = id_prefix + url_part[len(doc_prefix):]
-            return rdflib.URIRef(url_part), format, is_local
+            return rdflib.URIRef(urllib.unquote(url_part)), format, is_local
     else:
         return None, None, None
