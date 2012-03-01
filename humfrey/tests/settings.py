@@ -1,7 +1,6 @@
 import atexit
 import imp
 import os
-import shutil
 import tempfile
 
 os.environ['HUMFREY_CONFIG_FILE'] = os.path.join(os.path.dirname(__file__), 'data', 'config.ini')
@@ -11,9 +10,13 @@ from humfrey.settings.common import *
 # Directory for variable files
 VAR_DIR = tempfile.mkdtemp()
 
-@atexit.register
-def remove_var_dir():
-    shutil.rmtree(VAR_DIR)
+def register_atexit(VAR_DIR):
+    @atexit.register
+    def remove_var_dir():
+        import shutil
+        shutil.rmtree(VAR_DIR)
+register_atexit(VAR_DIR)
+
 
 MEDIA_ROOT = os.path.join(VAR_DIR, 'media')
 UPDATE_FILES_DIRECTORY = os.path.join(MEDIA_ROOT, 'update-files')
@@ -46,3 +49,5 @@ else:
 TEST_URI = 'http://data/example.com/id/Foo'
 TEST_DOMAIN = 'data.example.org'
 
+import logging, sys
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)

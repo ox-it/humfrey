@@ -5,20 +5,10 @@ import unittest2
 import rdflib
 
 from humfrey.linkeddata.uri import doc_forward, doc_backward
-from humfrey.tests.stubs import stub_reverse_full
-
-TEST_ID_MAPPING = (
-    ('http://random.example.org/id/', 'http://data.example.org/doc:random/', False),
-    ('http://id.example.org/', 'http://data.example.org/doc/', True)
-)
-
-def patch(f):
-    f = mock.patch('django.conf.settings.ID_MAPPING', TEST_ID_MAPPING, create=True)(f)
-    f = mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full, create=True)(f)
-    return f
+from humfrey.tests.stubs import patch_id_mapping
 
 class URITestCase(unittest2.TestCase):
-    @patch
+    @patch_id_mapping
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri, format='n3'),
@@ -28,7 +18,7 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc:random/foo')
 
-    @patch
+    @patch_id_mapping
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
         doc_root = 'http://data.example.org/doc/'
@@ -66,13 +56,13 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri, described=True, format='nt'),
                          doc_root + qs_with_format)
 
-    @patch
+    @patch_id_mapping
     def testDocLocalNegotiate(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc/foo')
 
-    @patch
+    @patch_id_mapping
     def testDocLocalNegotiateMissing(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
@@ -93,19 +83,20 @@ class UnicodeURITestCase(unittest2.TestCase):
 
         # Requests without percent-encoding UTF-8 bytes
         ('http://id.example.org/fu\xc3\x9f', 'http://data.example.org/doc/fu%C3%9F'),
-        ('http://id.example.org/\xce\xb2\xce%AE\xcf\x84\xce\xb1', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
+        ('http://id.example.org/\xce\xb2\xce\xae\xcf\x84\xce\xb1', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
     ]
 
-    @patch
+    @patch_id_mapping
     def testUnicodeForward(self):
         for uri, url in self.TESTS:
             self.assertEqual(doc_forward(uri, described=True), url)
 
-    @patch
+    @patch_id_mapping
     def testUnicodeBackward(self):
         for uri, url in self.TESTS:
             if isinstance(uri, unicode):
                 self.assertEqual(doc_backward(url)[0], rdflib.URIRef(uri))
+
 
 if __name__ == '__main__':
     unittest2.main()

@@ -1,17 +1,20 @@
-import itertools
+# *-* coding: utf-8 *-*
 
 import mock
 import rdflib
-import unittest
 import unittest2
+
+try:
+    from rdflib.namespace import RDF
+except ImportError:
+    from rdflib.RDF import RDFNS as RDF
 
 from django.test.client import Client, RequestFactory
 from django.http import HttpResponse
-from django.conf import settings
 
 from humfrey.desc import rdf_processors, views
 from humfrey.utils import sparql, resource
-from humfrey.tests.stubs import stub_reverse_full
+from humfrey.tests.stubs import patch_id_mapping
 
 class GraphTestMixin(object):
     def check_valid_terms(self, graph):
@@ -31,7 +34,7 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
         rdf_processors.doc_meta,
     ]
 
-    @mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
+    @patch_id_mapping
     def testAll(self):
         for rdf_processor in self._ALL:
             endpoint = mock.Mock(spec=sparql.Endpoint)
@@ -53,7 +56,7 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
                                     endpoint=endpoint,
                                     renderers=renderers)
 
-            self.assertFalse(endpoint.query.called, "The rdf procesor should not be touching the endpoint (at the moment)")
+            self.assertFalse(endpoint.query.called, "The RDF processor should not be touching the endpoint (at the moment)")
             self.check_valid_terms(graph)
             self.assertIsInstance(context, (type(None), dict))
 
@@ -80,4 +83,29 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
         response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
         self.assertEqual(response.status_code, 404)
 
+    @mock.patch('humfrey.desc.views.DocView.get_types')
+    @mock.patch('humfrey.desc.views.DocView.endpoint')
+    @patch_id_mapping
+    def testUnicodeURLs(self, endpoint, get_types):
+        get_types.return_value = (rdflib.URIRef('http://example.org/vocab/Thing'),)
 
+        graph = rdflib.ConjunctiveGraph()
+        graph.add((rdflib.URIRef(self._TEST_URI), RDF.type, rdflib.URIRef('http://example.org/vocab/Thing')))
+        endpoint.query.return_value = graph
+
+        url_tests = [
+            ('/doc/fu%C3%9F', u'http://id.example.org/fuß', False),
+            ('/doc/fu%c3%9F', '/doc/fu%C3%9F', True),
+        ]
+
+        for url, uri, redirect in url_tests:
+            print '='*80
+            print 'TESTING', url, uri, redirect
+            import urlparse
+            print "GP", repr(self.client._get_path(urlparse.urlparse(url)))
+            response = self.client.get(url, HTTP_HOST=self._HTTP_HOST)
+            self.assertEqual(response.status_code, 301 if redirect else 200)
+            if redirect:
+                self.assertEqual(response['Location'], uri)
+            else:
+                self.assertEqual(response.context['subject_uri'], rdflib.URIRef(uri))

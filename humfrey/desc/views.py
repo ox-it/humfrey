@@ -1,3 +1,4 @@
+import logging
 from urlparse import urlparse
 
 import rdflib
@@ -16,6 +17,8 @@ from humfrey.results.views.standard import RDFView
 from humfrey.utils.views import EndpointView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
+
+logger = logging.getLogger(__name__)
 
 class IdView(EndpointView):
     def get(self, request):
@@ -64,15 +67,18 @@ class DocView(RDFView, HTMLView):
 
         uri, format, is_local = doc_backward(doc_url, set(self._renderers_by_format))
         if not uri:
+            logger.debug("Could not resolve URL to a URI: %r", doc_url)
             raise Http404
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
 
         types = self.get_types(uri)
         if not types:
+            logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
             raise Http404
 
         if expected_doc_url != doc_url:
+            logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
             return HttpResponsePermanentRedirect(expected_doc_url)
 
         # If no format was given explicitly (i.e. format parameter or
@@ -122,6 +128,7 @@ class DocView(RDFView, HTMLView):
                 graph.add((doc_uri, NS['dcterms'].license, license_uri))
 
         if not graph:
+            logger.debug("Graph for %r was empty; 404ing", uri)
             raise Http404
 
         for doc_rdf_processor in self._doc_rdf_processors:
