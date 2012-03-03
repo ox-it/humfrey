@@ -20,7 +20,7 @@ class VocabularyLoader(Transform):
             return
 
         request = urllib2.Request(uri)
-        request.headers['Accept'] = 'application/rdf+xml, text/n3'
+        request.headers['Accept'] = 'application/rdf+xml, text/n3, text/turtle, text/plain'
 
         try:
             response = urllib2.urlopen(request)
