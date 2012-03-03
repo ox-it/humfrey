@@ -14,6 +14,11 @@ class VocabularyLoader(Transform):
             self.load_vocabulary(transform_manager, prefix, uri)
 
     def load_vocabulary(self, transform_manager, prefix, uri):
+        overrides = getattr(settings, 'VOCABULARY_URL_OVERRIDES', {})
+        uri = overrides.get(prefix, uri)
+        if not uri:
+            return
+
         request = urllib2.Request(uri)
         request.headers['Accept'] = 'application/rdf+xml, text/n3'
 
