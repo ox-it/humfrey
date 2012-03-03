@@ -109,7 +109,7 @@ LONGLIVING_CLASSES = set([
     'django_longliving.longliving.pubsub.PubSubDispatcherThread',
 ])
 
-LONGLIVING_PUBSUB_WATCHERS = ('humfrey.archive.pubsub.update_dataset_archive',)
+LONGLIVING_PUBSUB_WATCHERS = ('humfrey.archive.pubsub.update_dataset_archives',)
 
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
@@ -219,8 +219,6 @@ if config.get('ckan:enabled') == 'true':
     CKAN_API_KEY = config.get('ckan:api_key')
     CKAN_GROUPS = set()
     CKAN_TAGS = set()
-
-LONGLIVING_PUBSUB_WATCHERS += ('humfrey.browse.pubsub.update_list',)
 
 
 SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'true') == 'true'
