@@ -12,10 +12,15 @@ from django.conf import settings
 from django_longliving.decorators import pubsub_watcher
 import pytz
 from rdflib import URIRef, BNode, Literal
-from rdflib.plugins.parsers.ntriples import NTriplesParser
+
+try:
+    from rdflib.plugins.parsers.ntriples import NTriplesParser # 3.0
+except ImportError:
+    from rdflib.syntax.parsers.ntriples import NTriplesParser # 2.4
 
 from humfrey.update.longliving.updater import Updater
 from humfrey.utils.namespaces import NS
+from humfrey.utils.sparql import Endpoint
 
 def _graph_triples(out, graph):
     url = '%s?%s' % (settings.ENDPOINT_GRAPH,
@@ -31,7 +36,7 @@ def _graph_triples(out, graph):
         out.write(chunk)
 
 class ArchiveSink(object):
-    localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d]+$')
+    localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
 
     def __init__(self, out, namespaces, encoding='utf-8'):
         self.out = out
@@ -72,8 +77,8 @@ class ArchiveSink(object):
                 break
         else:
             match = self.localpart.search(p)
-            tag_name = p[match.start:]
-            write(u'    <%s xmlns=%s' % (tag_name, quoteattr(p[:match.start])))
+            tag_name = p[match.start():]
+            write(u'    <%s xmlns=%s' % (tag_name, quoteattr(p[:match.start()])))
 
         if isinstance(o, Literal):
             if o.language:
@@ -88,15 +93,29 @@ class ArchiveSink(object):
 
 
 @pubsub_watcher(channel=Updater.UPDATED_CHANNEL, priority=90)
-def update_dataset_archive(channel, data):
+def update_dataset_archives(channel, data):
     if not getattr(settings, 'ARCHIVE_PATH', None):
         return
 
-    graphs = data['graphs']
-    archive_path = os.path.join(settings.ARCHIVE_PATH, data['id'])
+    updated = data['updated'].replace(microsecond=0)
+
+    endpoint = Endpoint(settings.ENDPOINT_QUERY)
+
+    query = "SELECT ?dataset WHERE { %s }" % " UNION ".join("{ %s void:inDataset ?dataset }" % g.n3() for g in data['graphs'])
+    datasets = set(r['dataset'] for r in endpoint.query(query))
+
+    for dataset in datasets:
+        query = "SELECT ?graph WHERE { ?graph void:inDataset %s }" % dataset.n3()
+        graphs = set(r['graph'] for r in endpoint.query(query))
+        update_dataset_archive(dataset, graphs, updated)
+
+def update_dataset_archive(dataset, graphs, updated):
+    dataset_id = dataset.rsplit('/', 1)[1]
+
+    archive_path = os.path.join(settings.ARCHIVE_PATH, dataset_id)
 
     if not os.path.exists(archive_path):
-        os.makedirs(archive_path)
+        os.makedirs(archive_path, 0755)
 
     nt_fd, nt_name = tempfile.mkstemp('.nt')
     rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
@@ -117,8 +136,9 @@ def update_dataset_archive(channel, data):
         previous_name = os.path.join(archive_path, 'latest.rdf')
         if not os.path.exists(previous_name) or not filecmp._do_cmp(previous_name, rdf_name):
             new_name = os.path.join(archive_path,
-                                    data['updated'].astimezone(pytz.utc).isoformat() + '.rdf')
+                                    updated.astimezone(pytz.utc).isoformat() + '.rdf')
             shutil.move(rdf_name, new_name)
+            os.chmod(new_name, 0644)
             if os.path.exists(previous_name):
                 os.unlink(previous_name)
             os.symlink(new_name, previous_name)
@@ -128,5 +148,3 @@ def update_dataset_archive(channel, data):
         os.unlink(nt_name)
         if os.path.exists(rdf_name):
             os.unlink(rdf_name)
-
-

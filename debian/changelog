@@ -1,3 +1,40 @@
+python-django-humfrey (0.2.7) unstable; urgency=low
+
+  * Improved archiver behavour.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 14:25:11 +0000
+
+python-django-humfrey (0.2.6) unstable; urgency=low
+
+  * Fixed permissions checks for local files.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 14:25:11 +0000
+
+python-django-humfrey (0.2.5) unstable; urgency=low
+
+  * Update definition importer now makes sure process owner can read local
+    files.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 14:08:51 +0000
+
+python-django-humfrey (0.2.4) unstable; urgency=low
+
+  * Fixed rdflib import for backwards compatibility with 2.4.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 12:21:42 +0000
+
+python-django-humfrey (0.2.3) unstable; urgency=low
+
+  * Fix logging Py2.6 incompatibility in humfrey.update
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 09:18:29 +0000
+
+python-django-humfrey (0.2.2) unstable; urgency=low
+
+  * Fixed typo in update definition importer.
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 27 Feb 2012 09:00:03 +0000
+
 python-django-humfrey (0.2.1) unstable; urgency=low
 
   * Added ability to import update definitions.
