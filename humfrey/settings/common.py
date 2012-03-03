@@ -209,6 +209,7 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.spreadsheet.ODSToTEI',
         'humfrey.update.transform.union.Union',
         'humfrey.update.transform.upload.Upload',
+        'humfrey.update.transform.vocabularies.VocabularyLoader',
         'humfrey.update.transform.xslt.XSLT',
     )
     UPDATE_TRANSFORM_REPOSITORY = config.get('update:transform_repository')
