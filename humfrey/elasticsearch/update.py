@@ -8,6 +8,8 @@ try:
 except ImportError:
     import simplejson as json
 
+import rdflib
+
 from django.conf import settings
 from django_longliving.util import pack, unpack, get_redis_client
 
@@ -34,27 +36,7 @@ class IndexUpdater(object):
         groups = meta.get('group', [])
         fields = results.fields
 
-        results = [dict((k, v._identifier if isinstance(v, resource.BaseResource) else v) for k, v in result._asdict().iteritems()) for result in results]
-        new_results = collections.defaultdict(dict)
-        for result in results:
-            uri = result['uri']
-            for key in fields:
-                if key in groups:
-                    if key not in new_results[uri]:
-                        new_results[uri][key] = collections.defaultdict(dict)
-                    subresult = {'uri': result[key]}
-                    if result[key]:
-                        new_results[uri][key][result[key]] = subresult
-                elif key.split('_')[0] in groups:
-                    if result[key]:
-                        subresult[key.split('_', 1)[1]] = result[key]
-                else:
-                    new_results[uri][key] = result[key]
 
-        for result in new_results.itervalues():
-            for key in groups:
-                if key in result:
-                    result[key] = result[key].values()
 
 
         with tempfile.TemporaryFile() as f:
@@ -63,9 +45,9 @@ class IndexUpdater(object):
                 result_id = sha1(result['uri']).hexdigest()
                 result_ids.add(result_id)
                 result_hash = self.hash_result(result)
-                print '-'*80
+                print '-' * 80
                 print result
-                print '-'*80
+                print '-' * 80
 
                 cached_hash = self.client.hget(hash_key, result_id)
                 if cached_hash == result_hash:
@@ -88,7 +70,7 @@ class IndexUpdater(object):
 
             conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
-            
+
             conn.putrequest('POST', '/search/%s/_bulk' % meta['id'])
             conn.putheader("User-Agent", "humfrey")
             conn.putheader("Content-Length", str(f.tell()))
@@ -97,8 +79,99 @@ class IndexUpdater(object):
             f.seek(0)
             for line in f:
                 conn.send(line)
-        
+
             response = conn.getresponse()
             print response.status
             print response.read()
             conn.close()
+
+    @classmethod
+    def dictify(cls, groups, src):
+        dst = {}
+        for key in src.iterkeys():
+            if not src[key]:
+                continue
+            x = dst
+            for i in key.split('_')[:-1]:
+                if i not in x:
+                    x[i] = {}
+                x = x[i]
+            x[key.rsplit('_', 1)[-1]] = src[key]
+
+        for group in groups:
+            x = dst
+            for key in group[:-1]:
+                x = x.get(key, {})
+            if group[-1] in x:
+                #print "GR", group[-1]
+                val = x[group[-1]]
+                x[group[-1]] = {cls.get_id(val): val}
+                if isinstance(val, dict):
+                    val.pop('id', None)
+
+        id = cls.get_id(dst)
+        dst.pop('id', None)
+        return {id: dst}
+
+    @classmethod
+    def get_id(cls, src):
+        if 'uri' in src:
+            return src['uri']
+        elif 'id' in src:
+            return src['id']
+        else:
+            return rdflib.BNode()
+
+    @classmethod
+    def merge_dicts(cls, groups, one, two):
+        immediate_groups = set(g[0] for g in groups)
+
+        #print "M", one, two
+
+        for id in two:
+            if id not in one:
+                one[id] = {}
+            if isinstance(two[id], basestring):
+                one[id] = two[id]
+                continue
+            for key in two[id]:
+                if key in immediate_groups:
+                    if key not in one[id]:
+                        one[id][key] = {}
+                    cls.merge_dicts(set(g[1:] for g in groups if len(g) > 1),
+                                    one[id][key], two[id][key])
+                elif isinstance(two[id], dict) and isinstance(two[id][key], dict):
+                    if key not in one[id]:
+                        one[id][key] = {'_singleton': True}
+                    one[id][key].update(two[id][key])
+                elif two[id][key]:
+                    one[id][key] = two[id][key]
+        return one
+
+    @classmethod
+    def flatten_result(cls, results):
+        if results.get('_singleton'):
+            del results['_singleton']
+            return results
+        results = results.values()
+        for result in results:
+            if not isinstance(result, dict):
+                continue
+            for k in result:
+                if isinstance(result[k], dict):
+                    result[k] = cls.flatten_result(result[k])
+        return results
+
+    def parse_results(self, meta, results):
+        fields = results.fields
+        groups = meta.get('group', [])
+        groups = tuple(g.split('_') for g in groups)
+        groups = tuple(sorted(groups, key=len, reverse=True))
+
+        out = {}
+
+        for result in results:
+            result = self.dictify(groups, result)
+            self.merge_dicts(groups, out, result)
+
+        return self.flatten_result(out)
