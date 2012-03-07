@@ -28,7 +28,8 @@ class SparqlResultGraph(SparqlResult, rdflib.ConjunctiveGraph):
 class SparqlResultList(SparqlResult, list):
     def __init__(self, fields, arg=None):
         self.fields = fields
-        list.__init__(self, arg)
+        if arg:
+            list.__init__(self, arg)
 
 class SparqlResultBool(SparqlResult, object):
     def __init__(self, value):
