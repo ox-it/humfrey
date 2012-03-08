@@ -6,7 +6,10 @@ from django import template
 register = template.Library()
 
 def munge_parameter(context, prefix, name, value):
-    key = "%s.%s" % (prefix, name)
+    if prefix:
+        key = "%s.%s" % (prefix, name)
+    else:
+        key = name
     
     url = urlparse.urlparse(context['base_url'])
     query = urlparse.parse_qsl(url.query, True)

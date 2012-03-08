@@ -12,6 +12,8 @@ body.elasticsearch div.sidebar-item {
 }
 
 body.elasticsearch div.sidebar-item h2 {
+	font-size:120%;
+	font-weight:bold;
 	margin: -5px -5px 5px -5px;
 	padding: 2px 5px;
 	color: #ddd;
@@ -47,15 +49,17 @@ body.elasticsearch div.search-box input[type='text'] {
 
 body.elasticsearch div.facet h3 {
 	margin:5px 0 0 0;
+	border-bottom:1px solid #aaa;
 }
 
-body.elasticsearch div.facet ul {
+body.elasticsearch div.sidebar-item ul {
 	margin: 0;
 	list-style: none;
 	padding-left:0;
+	font-size:90%;
 }
 
-body.elasticsearch div.facet li.selected {
+body.elasticsearch div.sidebar-item li.selected {
 	font-weight: bold;
 }
 

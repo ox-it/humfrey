@@ -39,7 +39,10 @@ class SearchView(HTMLView, JSONPView):
     def get(self, request):
         form = SearchForm(request.GET or None)
         context = {'form': form,
-                   'base_url': request.build_absolute_uri()}
+                   'base_url': request.build_absolute_uri(),
+                   'renderers': [{'name': r.name,
+                                  'format': r.format,
+                                  'mimetypes': r.mimetypes} for r in self._renderers]}
         
         if form.is_valid():
             context.update(self.get_results(request.GET, form.cleaned_data))

@@ -1,4 +1,4 @@
-{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}
+{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}{% load humfrey_elasticsearch %}
 
 {% block extra_head %}{{ block.super }}
   <link rel="stylesheet" href="{{ STATIC_URL }}elasticsearch/base.css"/>
@@ -28,7 +28,16 @@
 	{% endif %}
   </div>
   {% endif %}
+
+  {% if hits %}
+  <div class="sidebar-item">
+    <h2>Other formats</h2>
+    <ul>{% for renderer in renderers %}
+      <li><a href="{% set_parameter "" "format" renderer.format %}">{{ renderer.name }}</a></li>{% endfor %}
+    </ul>
   </div>
+  </div>
+  {% endif %}
   
   <div class="results">
   {% if hits %}
