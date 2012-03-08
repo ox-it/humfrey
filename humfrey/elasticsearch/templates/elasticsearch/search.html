@@ -1,15 +1,36 @@
 {% extends "elasticsearch/base.html" %}{% load humfrey_desc %}
 
+{% block extra_head %}{{ block.super }}
+  <link rel="stylesheet" href="{{ STATIC_URL }}elasticsearch/base.css"/>
+  <script type="application/javascript" href="{{ STATIC_URL }}elasticsearch/base.js"></script>
+{% endblock %}
+  
+
 {% block title %}Search{% endblock %}
 
 {% block content %}
   <h1>Search</h1>
   
-  <form method="get" action=".">
-    {{ form.q }}
-    <input type="submit" value="Search"/>
-  </form>
+  <div class="sidebar">
+    <div class="sidebar-item search-box">
+      <h2>Query</h2>
+      <form method="get" action=".">
+        {{ form.q }}
+        <input type="submit" value="Search"/>
+      </form>
+    </div>
   
+  {% if facets %}
+  <div class="sidebar-item">
+    <h2>Refine by&hellip;</h2>
+    {% if facets.type %}
+      {% include "elasticsearch/facet.html" with facet=facets.type facet_name="type" %}
+	{% endif %}
+  </div>
+  {% endif %}
+  </div>
+  
+  <div class="results">
   {% if hits %}
   
   <p>Your search returned <strong>{{ hits.total }}</strong> results in <strong>{{ took }}</strong>ms.</p>
@@ -18,8 +39,13 @@
   
   <ol start="{{ start }}">
   {% for hit in hits.hits %}
-    <li style="line-height:1.1em; margin-bottom:1em">
-      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.source.uri|doc_url }}">{{ hit.source.label|default:"<em>unnamed</em>" }}</a>
+    <li style="line-height:1.1em; margin-bottom:1em; clear:right">
+      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.source.uri|doc_url }}">
+      {% if hit.source.image %}
+      <img style="float:right; margin-bottom:1em" src="{% url resized-image %}?url={{ hit.source.image }}&amp;width=200&amp;height=120" alt=""/>
+      {% endif %}
+
+      {{ hit.source.label|default:"<em>unnamed</em>" }}</a>
       {% if hit.source.type.label %}
         <small>{{ hit.source.type.label|capfirst }}</small>
       {% endif %}
@@ -36,7 +62,12 @@
   </ol>
 
   {% include "elasticsearch/pagination.html" %}
+  {% else %}
   
+  <p>Enter a query to start searching.</p>
   {% endif %}
+  </div>
+  
+  <div style="clear:both;"></div>
   
 {% endblock %}

@@ -1,0 +1,64 @@
+body.elasticsearch div.sidebar {
+	float: left;
+	width:180px;
+}
+
+body.elasticsearch div.sidebar-item {
+	margin-bottom: 5px;
+	padding: 5px;
+	background-color: #f8f8f8;
+	border:1px solid #002147;
+	-moz-border-radius: 8px;
+}
+
+body.elasticsearch div.sidebar-item h2 {
+	margin: -5px -5px 5px -5px;
+	padding: 2px 5px;
+	color: #ddd;
+	background: #606c88; /* Old browsers */
+background: -moz-linear-gradient(top,  #606c88 0%, #3f4c6b 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#606c88), color-stop(100%,#3f4c6b)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(top,  #606c88 0%,#3f4c6b 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(top,  #606c88 0%,#3f4c6b 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(top,  #606c88 0%,#3f4c6b 100%); /* IE10+ */
+background: linear-gradient(top,  #606c88 0%,#3f4c6b 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#606c88', endColorstr='#3f4c6b',GradientType=0 ); /* IE6-9 */
+	border-bottom:1px solid #002147;
+	-moz-border-radius-topleft: 6px;
+	-moz-border-radius-topright: 6px;
+	
+}
+
+body.elasticsearch div.search-box input[type='text'] {
+	width:166px;
+		-moz-border-bottom-colors: none;
+    -moz-border-image: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    background: url("search.png") no-repeat scroll white;
+    border-color: #888;
+    border-right: 1px solid #DDDDDD;
+    border-style: solid;
+    border-width: 1px;
+    box-shadow: 0 1px 0 #F1F1F1, 0 1px 1px #E0E0E0 inset;
+    margin-bottom: 5px;
+}
+
+body.elasticsearch div.facet h3 {
+	margin:5px 0 0 0;
+}
+
+body.elasticsearch div.facet ul {
+	margin: 0;
+	list-style: none;
+	padding-left:0;
+}
+
+body.elasticsearch div.facet li.selected {
+	font-weight: bold;
+}
+
+body.elasticsearch div.results {
+	margin-left: 200px;
+}

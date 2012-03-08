@@ -38,14 +38,15 @@ class SearchView(HTMLView, JSONPView):
                 
     def get(self, request):
         form = SearchForm(request.GET or None)
-        context = {'form': form}
+        context = {'form': form,
+                   'base_url': request.build_absolute_uri()}
         
         if form.is_valid():
-            context.update(self.get_results(form.cleaned_data))
+            context.update(self.get_results(request.GET, form.cleaned_data))
 
         return self.render(request, context, 'elasticsearch/search')
     
-    def get_results(self, cleaned_data):
+    def get_results(self, parameters, cleaned_data):
         page = cleaned_data.get('page') or 1
         start = (page - 1) * self.page_size
         url = urlparse.urlunsplit(('http',
@@ -55,15 +56,40 @@ class SearchView(HTMLView, JSONPView):
                                    ''))
 
         query = {
-            'query': {'query_string': {'query': cleaned_data['q']}},
+            'query': {'query_string': {'query': cleaned_data['q'],
+                                       'default_operator': 'AND'}},
             'from': start,
+            'filter': {'and': []},
+            'facets': {'type': {'terms': {'field': 'type.label',
+                                          'size': 20},
+
+                                }
+                       }
         }
+
+        for key in parameters:
+            if key.startswith('filter.'):
+                if not parameters[key]:
+                    filter = {'missing': {'field': key[7:]}}
+                else:
+                    filter = {'term': {key[7:]: parameters[key]}}
+                query['filter']['and'].append(filter)
+        if not query['filter']['and']:
+            del query['filter']['and']
+        if not query['filter']:
+            del query['filter']
 
         response = urllib2.urlopen(url, json.dumps(query))
         results = self.Deunderscorer(json.load(response))
 
         results.update(self.get_pagination(page, start, results))
         results['q'] = cleaned_data['q']
+
+        for key in query['facets']:
+            results['facets'][key]['meta'] = query['facets'][key]
+            filter_value = parameters.get('filter.%s' % query['facets'][key]['terms']['field'])
+            results['facets'][key]['filter'] = {'present': filter_value is not None,
+                                                'value': filter_value}
 
         return results
 
