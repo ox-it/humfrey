@@ -12,6 +12,7 @@ from .forms import SearchForm
 
 class SearchView(HTMLView, JSONPView):
     index_name = 'search'
+    page_size = 10
 
     class Deunderscorer(object):
         def __init__(self, obj):
@@ -46,21 +47,34 @@ class SearchView(HTMLView, JSONPView):
     
     def get_results(self, cleaned_data):
         page = cleaned_data.get('page') or 1
-        start = (page - 1) * 10
+        start = (page - 1) * self.page_size
         url = urlparse.urlunsplit(('http',
                                    '%s:%d' % (settings.ELASTICSEARCH_SERVER['host'], settings.ELASTICSEARCH_SERVER['port']),
                                    '/%s/_search' % self.index_name,
-                                   urllib.urlencode({'q': cleaned_data['q'],
-                                                     'from': start}),
+                                   '',
                                    ''))
-        value = self.Deunderscorer(json.load(urllib2.urlopen(url)))
-        print value['hits']
+
+        query = {
+            'query': {'query_string': {'query': cleaned_data['q']}},
+            'from': start,
+        }
+
+        response = urllib2.urlopen(url, json.dumps(query))
+        results = self.Deunderscorer(json.load(response))
+
+        results.update(self.get_pagination(page, start, results))
+        results['q'] = cleaned_data['q']
+
+        return results
+
+    def get_pagination(self, page, start, results):
+        print results['hits']
         
-        value['page_count'] = int(math.ceil(value['hits']['total'] / 10.0))
-        value['start'] = start + 1
+        results['page_count'] = int(math.ceil(results['hits']['total'] / 10.0))
+        results['start'] = start + 1
         
-        pages = set([1, value['page_count']])
-        pages.update(p for p in range(page-5, page+6) if 1 <= p <= value['page_count'])
+        pages = set([1, results['page_count']])
+        pages.update(p for p in range(page-5, page+6) if 1 <= p <= results['page_count'])
         pages = sorted(pages)
         
         pages_out = []
@@ -68,10 +82,9 @@ class SearchView(HTMLView, JSONPView):
             if pages_out and pages_out[-1] != p - 1:
                 pages_out.append(None)
             pages_out.append(p)
-        value['pages'] = pages_out
-        value['page'] = page
-        value['q'] = cleaned_data['q']
+        results['pages'] = pages_out
+        results['page'] = page
         
-        return value
+        return results
         
         
