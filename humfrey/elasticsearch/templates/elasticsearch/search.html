@@ -1,0 +1,42 @@
+{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+  <h1>Search</h1>
+  
+  <form method="get" action=".">
+    {{ form.q }}
+    <input type="submit" value="Search"/>
+  </form>
+  
+  {% if hits %}
+  
+  <p>Your search returned <strong>{{ hits.total }}</strong> results in <strong>{{ took }}</strong>ms.</p>
+  
+  {% include "elasticsearch/pagination.html" %}
+  
+  <ol start="{{ start }}">
+  {% for hit in hits.hits %}
+    <li style="line-height:1.1em; margin-bottom:1em">
+      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.source.uri|doc_url }}">{{ hit.source.label|default:"<em>unnamed</em>" }}</a>
+      {% if hit.source.type.label %}
+        <small>{{ hit.source.type.label|capfirst }}</small>
+      {% endif %}
+      
+      <br/>
+      <span style="color:#002147">{{ hit.source.uri }}</span>
+      {% if hit.source.description %}
+        <br/>
+        {{ hit.source.description|truncatewords:50 }}
+      {% endif %}
+      
+      </li>
+  {% endfor %}
+  </ol>
+
+  {% include "elasticsearch/pagination.html" %}
+  
+  {% endif %}
+  
+{% endblock %}

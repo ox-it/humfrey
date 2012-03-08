@@ -1,0 +1,19 @@
+{% if page_count > 1 %}
+  <p style="text-align: center; vertical-align: middle; line-height:1em">
+  {% if page != 1 %}
+    <a style="font-size: 300%; vertical-align: middle" href="?q={{ q }}&amp;page={{ page|add:"-1" }}">«</a>
+  {% endif %}
+  {% for other_page in pages %}
+  {% if other_page %}
+  {% if other_page == page %}
+    <strong style="vertical-align: middle">{{ other_page }}</strong>
+  {% else %}
+    <a style="vertical-align: middle" href="?q={{ q }}&amp;page={{ other_page }}">{{ other_page }}</a>
+  {% endif %}
+  {% else %}&hellip;{% endif %}
+  {% endfor %}
+  {% if page != page_count %}
+    <a style="font-size: 300%; vertical-align: middle" href="?q={{ q }}&amp;page={{ page|add:"1" }}">»</a>
+  {% endif %}
+  </p>
+{% endif %}
