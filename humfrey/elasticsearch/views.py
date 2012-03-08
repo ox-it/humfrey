@@ -68,13 +68,9 @@ class SearchView(HTMLView, JSONPView):
         return results
 
     def get_pagination(self, page, start, results):
-        print results['hits']
-        
-        results['page_count'] = int(math.ceil(results['hits']['total'] / 10.0))
-        results['start'] = start + 1
-        
-        pages = set([1, results['page_count']])
-        pages.update(p for p in range(page-5, page+6) if 1 <= p <= results['page_count'])
+        page_count = int(math.ceil(results['hits']['total'] / 10.0))
+        pages = set([1, page_count])
+        pages.update(p for p in range(page-5, page+6) if 1 <= p <= page_count)
         pages = sorted(pages)
         
         pages_out = []
@@ -82,9 +78,8 @@ class SearchView(HTMLView, JSONPView):
             if pages_out and pages_out[-1] != p - 1:
                 pages_out.append(None)
             pages_out.append(p)
-        results['pages'] = pages_out
-        results['page'] = page
         
-        return results
-        
-        
+        return {'page_count': page_count,
+                'start': start + 1,
+                'pages': pages_out,
+                'page': page}
