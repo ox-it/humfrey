@@ -1,3 +1,5 @@
+from __future__ import division
+
 import json
 import math
 import urllib
@@ -5,14 +7,19 @@ import urllib2
 import urlparse
 
 from django.conf import settings
-from django_conneg.views import HTMLView, JSONPView
+from django.http import HttpResponse
+from django_conneg.decorators import renderer
+from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
 
 from .forms import SearchForm
 
 
-class SearchView(HTMLView, JSONPView):
+class SearchView(HTMLView, JSONPView, ErrorCatchingView):
     index_name = 'search'
     page_size = 10
+
+    class MissingQuery(Exception):
+        pass
 
     class Deunderscorer(object):
         def __init__(self, obj):
@@ -51,7 +58,8 @@ class SearchView(HTMLView, JSONPView):
     
     def get_results(self, parameters, cleaned_data):
         page = cleaned_data.get('page') or 1
-        start = (page - 1) * self.page_size
+        page_size = cleaned_data.get('page_size') or self.page_size
+        start = (page - 1) * page_size
         url = urlparse.urlunsplit(('http',
                                    '%s:%d' % (settings.ELASTICSEARCH_SERVER['host'], settings.ELASTICSEARCH_SERVER['port']),
                                    '/%s/_search' % self.index_name,
@@ -62,6 +70,7 @@ class SearchView(HTMLView, JSONPView):
             'query': {'query_string': {'query': cleaned_data['q'],
                                        'default_operator': 'AND'}},
             'from': start,
+            'size': page_size,
             'filter': {'and': []},
             'facets': {'type': {'terms': {'field': 'type.label',
                                           'size': 20},
@@ -85,7 +94,7 @@ class SearchView(HTMLView, JSONPView):
         response = urllib2.urlopen(url, json.dumps(query))
         results = self.Deunderscorer(json.load(response))
 
-        results.update(self.get_pagination(page, start, results))
+        results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
 
         for key in query['facets']:
@@ -96,8 +105,8 @@ class SearchView(HTMLView, JSONPView):
 
         return results
 
-    def get_pagination(self, page, start, results):
-        page_count = int(math.ceil(results['hits']['total'] / 10.0))
+    def get_pagination(self, page_size, page, start, results):
+        page_count = int(math.ceil(results['hits']['total'] / page_size))
         pages = set([1, page_count])
         pages.update(p for p in range(page-5, page+6) if 1 <= p <= page_count)
         pages = sorted(pages)
