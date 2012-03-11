@@ -1,3 +1,10 @@
+python-django-humfrey (0.3) unstable; urgency=low
+
+  * Included elasticsearch integration
+  * Added vocabulary-loading transform
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Mon, 11 Mar 2012 16:46:01 +0000
+
 python-django-humfrey (0.2.7) unstable; urgency=low
 
   * Improved archiver behavour.
