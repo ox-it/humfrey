@@ -17,7 +17,7 @@ from humfrey.utils import sparql, resource
 
 class IndexUpdater(object):
     def __init__(self):
-        self.endpoint = sparql.Endpoint(settings.ENDPOINT_URL)
+        self.endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
         self.client = get_redis_client()
 
     @classmethod
