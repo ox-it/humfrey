@@ -121,3 +121,21 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
                 'start': start + 1,
                 'pages': pages_out,
                 'page': page}
+
+    @renderer(format="autocomplete", name="Autocomplete JSON")
+    def render_autocomplete(self, request, context, template_name):
+        if not context.get('hits'):
+            raise self.MissingQuery()
+        context = {'items': [{'id': hit['_source']['uri'],
+                              'name': hit['_source']['label'],
+                              'altNames': '\t'.join(l for l in hit['_source'].get('altLabel', []) + hit['_source'].get('hiddenLabel', []))} for hit in context['hits']['hits']]}
+        return self.render_to_format(request, context, template_name, 'json')
+
+    def error(self, request, exception, args, kwargs, status_code):
+        if isinstance(exception, self.MissingQuery):
+            return self.error_view(request,
+                                   {'error': {'status_code': 400,
+                                              'message': "Missing 'q' parameter."}},
+                                   'elasticsearch/bad_request')
+        else:
+            return super(SearchView, self).error(request, exception, args, kwargs, status_code)
