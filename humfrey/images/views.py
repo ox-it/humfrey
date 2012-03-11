@@ -71,6 +71,9 @@ class ResizedImageView(EndpointView):
                     resized = im
                 else:
                     resized = im.resize((int(size[0] * factor), int(size[1] * factor)), Image.ANTIALIAS)
+
+                if resized.mode != "RGB":
+                    resized = im.convert("RGB")
                 resized.save(filename, format='jpeg')
             except Exception:
                 os.unlink(filename)
