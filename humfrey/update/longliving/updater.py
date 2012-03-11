@@ -101,46 +101,40 @@ class Updater(LonglivingThread):
                             .update(status='idle', last_completed=update_log.completed)
 
     def process_item(self, client, update_log):
+        graphs_touched = set()
+        log = []
 
-        update_directory = tempfile.mkdtemp()
-        try:
+        variables = update_log.update_definition.variables.all()
+        variables = dict((v.name, v.value) for v in variables)
 
-            graphs_touched = set()
-            log = []
+        for pipeline in update_log.update_definition.pipelines.all():
+            output_directory = tempfile.mkdtemp()
+            transform_manager = TransformManager(update_log, output_directory, variables, force=update_log.forced)
 
-            variables = update_log.update_definition.variables.all()
-            variables = dict((v.name, v.value) for v in variables)
+            try:
+                pipeline = evaluate_pipeline(pipeline.value.strip())
+            except SyntaxError:
+                raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
 
-            for pipeline in update_log.update_definition.pipelines.all():
-                output_directory = tempfile.mkdtemp()
-                transform_manager = TransformManager(update_log, output_directory, variables, force=update_log.forced)
+            try:
+                pipeline(transform_manager)
+            except NotChanged:
+                logger.info("Aborted update as data hasn't changed")
+            except TransformException, e:
+                transform_manager.logger.exception("Transform failed.")
+            except Exception, e:
+                transform_manager.logger.exception("Transform failed, perhaps ungracefully.")
+            finally:
+                pass #shutil.rmtree(output_directory)
 
-                try:
-                    pipeline = evaluate_pipeline(pipeline.value.strip())
-                except SyntaxError:
-                    raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
+            log.append(transform_manager.log_stream.getvalue())
+            graphs_touched |= transform_manager.graphs_touched
 
-                try:
-                    pipeline(transform_manager)
-                except NotChanged:
-                    logger.info("Aborted update as data hasn't changed")
-                except TransformException, e:
-                    transform_manager.logger.exception("Transform failed.")
-                except Exception, e:
-                    transform_manager.logger.exception("Transform failed, perhaps ungracefully.")
-                finally:
-                    shutil.rmtree(output_directory)
+        updated = self.time_zone.localize(datetime.datetime.now())
 
-                log.append(transform_manager.log_stream.getvalue())
-                graphs_touched |= transform_manager.graphs_touched
+        update_log.log = '\n\n'.join(log)
 
-            updated = self.time_zone.localize(datetime.datetime.now())
-
-            update_log.log = '\n\n'.join(log)
-
-            client.publish(self.UPDATED_CHANNEL,
-                           self.pack({'slug': update_log.update_definition.slug,
-                                      'graphs': graphs_touched,
-                                      'updated': updated}))
-        finally:
-            shutil.rmtree(update_directory)
+        client.publish(self.UPDATED_CHANNEL,
+                       self.pack({'slug': update_log.update_definition.slug,
+                                  'graphs': graphs_touched,
+                                  'updated': updated}))

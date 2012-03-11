@@ -26,7 +26,10 @@ class SparqlResultGraph(SparqlResult, rdflib.ConjunctiveGraph):
     pass
 
 class SparqlResultList(SparqlResult, list):
-    pass
+    def __init__(self, fields, arg=None):
+        self.fields = fields
+        if arg:
+            list.__init__(self, arg)
 
 class SparqlResultBool(SparqlResult, object):
     def __init__(self, value):
@@ -63,7 +66,24 @@ def trim_indentation(s):
     return '\n'.join(trimmed)
 
 class SparqlResultBinding(dict):
-    pass
+    def __init__(self, bindings):
+        if isinstance(bindings, list):
+            bindings = dict(zip(self._fields, bindings))
+        for field in self._fields:
+            if field not in bindings:
+                bindings[field] = None
+        super(SparqlResultBinding, self).__init__(bindings)
+    def __iter__(self):
+        return (self[field] for field in self._fields)
+    def __getattr__(self, name):
+        return self[name]
+    @property
+    def fields(self):
+        return self._fields
+    def __reduce__(self):
+        return (Result, (self._fields, self._asdict()))
+    def _asdict(self):
+        return dict(self)
 
 def Result(fields, bindings=None):
     fields = tuple(fields)
@@ -71,25 +91,7 @@ def Result(fields, bindings=None):
         cls = Result._memo[fields]
     else:
         class cls(SparqlResultBinding):
-            def __init__(self, bindings):
-                if isinstance(bindings, list):
-                    bindings = dict(zip(self._fields, bindings))
-                for field in fields:
-                    if field not in bindings:
-                        bindings[field] = None
-                super(cls, self).__init__(bindings)
-            def __iter__(self):
-                return (self[field] for field in self._fields)
-            def __getattr__(self, name):
-                return self[name]
-            @property
-            def fields(self):
-                return self._fields
-            def __reduce__(self):
-                return (Result, (self._fields, self._asdict()))
-            def _asdict(self):
-                return dict(self)
-        cls._fields = fields
+            _fields = fields
         Result._memo[fields] = cls
     if bindings:
         return cls(bindings)
@@ -224,8 +226,7 @@ class Endpoint(object):
 
         g = rdflib.ConjunctiveGraph()
 
-        results = SparqlResultList()
-        results.fields = fields
+        results = SparqlResultList(fields)
         for result_xml in xml.xpath('srx:results/srx:result', namespaces=NS):
             result = empty_results_dict.copy()
             for binding in result_xml.xpath('srx:binding', namespaces=NS):
@@ -261,10 +262,9 @@ class Endpoint(object):
         ResultClass = Result(json['head']['vars'])
         pb = self.parse_json_binding
 
-        results = SparqlResultList()
+        results = SparqlResultList(vars_)
         for binding in json['results']['bindings']:
             results.append(ResultClass(*[pb(binding.get(v), graph) for v in vars_]))
-        results.fields = vars_
         return results
 
     def parse_json_binding(self, binding, graph):

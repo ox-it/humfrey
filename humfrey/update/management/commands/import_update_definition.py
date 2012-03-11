@@ -17,7 +17,8 @@ class Command(BaseCommand):
         with open(definition_filename, 'r') as f:
             meta = etree.parse(definition_filename)
 
-        owner = meta.xpath('/meta/owner')[0].text
+        owner_username = meta.xpath('/meta/owner')[0].text
+        owner, _ = User.objects.get_or_create(username=owner_username)
 
         for definition in meta.xpath('/meta/definition'):
             self.import_definition(definition, owner)
@@ -30,8 +31,7 @@ class Command(BaseCommand):
                 local_file.content.delete()
             with open(os.path.join(path, filename)) as src:
                 local_file.content.save(filename, File(src))
-            user = User.objects.get(username=owner)
-            user.grant('update.view_localfile', local_file)
+            owner.grant('update.view_localfile', local_file)
 
     def import_definition(self, meta, default_owner):
         slug = meta.xpath('slug')[0].text
@@ -46,8 +46,11 @@ class Command(BaseCommand):
             setattr(definition, name, field[0].text if field else '')
 
         owner = meta.xpath('owner')
-        owner = owner[0].text if owner else default_owner
-        definition.owner = User.objects.get(username=owner)
+        if owner:
+            owner, _ = User.objects.get_or_create(username=owner[0].text)
+        else:
+            owner = default_owner
+        definition.owner = owner
 
         definition.save()
 

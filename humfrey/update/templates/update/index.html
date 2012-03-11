@@ -56,7 +56,7 @@ ul.update-definitions li p {
         <tr class="outcome-{{ definition.last_log.outcome }}">
           <td>
             <a href="{{ definition.last_log.get_absolute_url }}">
-              <img src="{{ STATIC_URL }}{{ definition.last_log.get_outcome_icon }}" alt="{{ definition.get_status_display }}"/>
+              <img src="{{ STATIC_URL }}{{ definition.last_log.get_outcome_icon }}" alt="{{ definition.last_log.get_outcome_display|capfirst }}" title="{{ definition.last_log.get_outcome_display|capfirst }}"/>
             </a>
           </td>
           <td>{{ definition.slug }}</td>

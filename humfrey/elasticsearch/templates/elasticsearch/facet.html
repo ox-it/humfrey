@@ -1,0 +1,30 @@
+{% load humfrey_elasticsearch %}
+{% with facet.meta.terms.field as field_name %}
+<div class="facet">
+  <h3>{{ facet_name|capfirst }}</h3>
+  <ul>
+    {% if facet.filter.present %}
+      <li><a href="{% remove_parameter "filter" field_name %}">All</a></li>
+	{% else %}
+      <li class="selected">All</li>
+	{% endif %}
+	{% for term in facet.terms %}
+	  {% if facet.filter.value == term.term %}
+        <li class="selected">{{ term.term|capfirst }} ({{ term.count }})</li>
+	  {% else %}
+        <li><a href="{% set_parameter "filter" field_name term.term %}">{{ term.term|capfirst }} ({{ term.count }})</a></li>
+	  {% endif %}
+	{% endfor %}
+{% comment %}{% if facets.type.other %}
+	  <li><em>other</em> ({{ facets.type.other }})</li>
+	{% endif %}{% endcomment %}
+	{% if facets.type.missing %}
+	  {% if facet.filter.value == "" %}
+	    <li class="selected"><em>unknown</em> ({{ facets.type.missing }})</li>
+      {% else %}
+	    <li><a href="{% set_parameter "filter" field_name "" %}"><em>unknown</em> ({{ facets.type.missing }})</a></li>
+	  {% endif %}
+	{% endif %}
+  </ul>
+</div>
+{% endwith %}
