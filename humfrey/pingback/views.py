@@ -91,7 +91,7 @@ class RESTfulPingbackView(PingbackView):
 class ModerationView(HTMLView, JSONPView, RedisView):
     def common(self, request):
         client = self.get_redis_client()
-        pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.PENDING_QUEUE_NAME)]
+        pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.QUEUE_NAME)]
         if pingback_hashes:
             pingbacks = client.mget(pingback_hashes)
             pingbacks = [pickle.loads(base64.b64decode(p)) for p in pingbacks]
