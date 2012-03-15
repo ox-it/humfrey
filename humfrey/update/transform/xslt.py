@@ -15,5 +15,5 @@ class XSLT(Transform):
             transform_manager.start(self, [template_filename, input], type='xslt')
             subprocess.call(['saxon', input, template_filename],
                             stdout=output)
-            transform_manager.end([output])
+            transform_manager.end([output.name])
             return output.name
