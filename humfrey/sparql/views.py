@@ -171,6 +171,6 @@ class SparqlView(EndpointView, RedisView, HTMLView):
         if 'error' in context:
             return self._error_view(request, context)
         else:
-            return self.render(request, context, 'sparql/index')
+            return self.render(request, context, 'sparql/query')
 
     post = get

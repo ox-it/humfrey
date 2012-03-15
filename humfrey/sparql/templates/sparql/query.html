@@ -1,0 +1,59 @@
+{% extends "sparql/base.html" %}{% load humfrey_desc %}
+
+{% block title %}SPARQL{% if store %} ({{ store.name }}){% endif %}{% endblock %}
+
+{% block extra_head %}
+    <script type="text/javascript">
+  	function changePrefixes()
+		{
+		if (document.getElementById('showprefixes').innerHTML != 'hide')
+		{
+			document.getElementById('prefixes').style.display = '';
+			document.getElementById('showprefixes').innerHTML = 'hide';
+		}else{
+			document.getElementById('prefixes').style.display = 'none';
+			document.getElementById('showprefixes').innerHTML = 'show';	
+		}
+		}
+	
+	</script>
+{% endblock %}
+
+{% block content %}
+    <h1>SPARQL{% if store %} ({{ store.name }}){% endif %}</h1>
+    
+    {% block sparql_results %}{% endblock %}
+
+    <h2>Query</h2>
+
+    <form method="get" action=".">
+      <table>
+        <tbody>
+			<tr><th>{{ form.query.label_tag }}:</th><td>{{ form.query.errors }}{{ form.query }}</td></tr>
+			<tr><th>{{ form.format.label_tag }}:</th><td> {{ form.format.errors }}{{ form.format }}</td></tr>
+			<tr><th>{{ form.common_prefixes.label_tag }}:</th>
+			<td>{{ form.common_prefixes.errors }}{{ form.common_prefixes }} {{ form.common_prefixes.help_text }} 
+				(<a id="showprefixes" onclick="changePrefixes(); return false;" href="">show</a>) </td></tr>
+			<tr id="prefixes" style="display:none"><th>Common prefixes:</th>
+			<td>
+			<code>
+				<table >
+					<tr><td>
+						{% for prefix, URI in namespaces %}
+								<span style="float:left; width:140px;">PREFIX {{prefix}}:</span> &lt;{{URI}}&gt;<br/>
+						{% endfor %}
+					</td></tr>	
+				</table>
+			</code>
+			</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="2" style="text-align:center; padding:1em">
+            <input type="submit" value="Query"/>
+          </td></tr>
+        </tfoot>
+      </table>
+    </form>
+    
+    {% include "queries.html" %}
+{% endblock %}
