@@ -1,8 +1,7 @@
-import collections
 from hashlib import sha1
 import httplib
-import operator
 import tempfile
+import urllib2
 try:
     import json
 except ImportError:
@@ -11,13 +10,13 @@ except ImportError:
 import rdflib
 
 from django.conf import settings
-from django_longliving.util import pack, unpack, get_redis_client
+from django_longliving.util import get_redis_client
 
-from humfrey.utils import sparql, resource
+from humfrey.utils import resource
+from humfrey.sparql.endpoint import Endpoint, Result
 
 class IndexUpdater(object):
     def __init__(self):
-        self.endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
         self.client = get_redis_client()
 
     @classmethod
@@ -34,7 +33,30 @@ class IndexUpdater(object):
 
     def update(self, index):
         hash_key = 'humfrey:elasticsearch:indices:%s' % index.slug
-        results = self.endpoint.query(index.query)
+        endpoint = Endpoint(index.store.query_endpoint)
+        results = endpoint.query(index.query)
+
+        try:
+            urllib2.urlopen(index.mapping_url)
+            index_exists = True
+        except urllib2.HTTPError, e:
+            if e.code == httplib.NOT_FOUND:
+                index_exists = False
+                index.update_mapping = True
+            else:
+                raise
+
+        if index.update_mapping:
+            index.update_mapping = False
+            if index_exists:
+                request = urllib2.Request(index.index_url)
+                request.get_method = lambda : 'DELETE'
+                urllib2.urlopen(request)
+
+            if index.mapping:
+                request = urllib2.Request(index.mapping_url, index.mapping)
+                request.get_method = lambda : 'PUT'
+                urllib2.urlopen(request)
 
         results = self.parse_results(index, results)
 
@@ -67,7 +89,7 @@ class IndexUpdater(object):
             conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
 
-            conn.putrequest('POST', '/search/%s/_bulk' % index.slug)
+            conn.putrequest('POST', '/%s/_bulk' % index.slug)
             conn.putheader("User-Agent", "humfrey")
             conn.putheader("Content-Length", str(f.tell()))
             conn.endheaders()
@@ -87,11 +109,9 @@ class IndexUpdater(object):
     def dictify(cls, groups, src):
         dst = {}
         for key, value in src.iteritems():
-            print "K", key, value
             if not value:
                 continue
             if isinstance(value, rdflib.Literal):
-                print "LIT", repr(value), repr(value.toPython())
                 try:
                     value = value.toPython()
                 except ValueError:
@@ -181,7 +201,7 @@ class IndexUpdater(object):
         out = {}
 
         for result in results:
-            result = sparql.Result(fields, [r._identifier if isinstance(r, resource.BaseResource) else r for r in result])
+            result = Result(fields, [r._identifier if isinstance(r, resource.BaseResource) else r for r in result])
             result = self.dictify(groups, result)
             self.merge_dicts(groups, out, result)
 

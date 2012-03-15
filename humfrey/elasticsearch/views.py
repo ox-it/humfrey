@@ -2,12 +2,10 @@ from __future__ import division
 
 import json
 import math
-import urllib
 import urllib2
 import urlparse
 
 from django.conf import settings
-from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
 

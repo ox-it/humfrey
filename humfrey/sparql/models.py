@@ -23,6 +23,9 @@ class Store(models.Model):
     can_query = permission_check('store', 'query')
     can_update = permission_check('store', 'update')
 
+    def __unicode__(self):
+        return self.name
+
 register(['sparql.administer_store',
           'sparql.query_store',
           'sparql.update_store'],
