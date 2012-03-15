@@ -1,3 +1,5 @@
+import traceback
+
 from django import forms
 from django.forms.models import inlineformset_factory
 from django.core.exceptions import ValidationError
@@ -30,7 +32,7 @@ class UpdatePipelineForm(forms.ModelForm):
         try:
             evaluate_pipeline(value)
         except Exception, e:
-            raise ValidationError(e)
+            raise ValidationError(traceback.format_exc())
         return value
 
 UpdatePipelineFormset = inlineformset_factory(UpdateDefinition,
