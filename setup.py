@@ -2,6 +2,8 @@ from distutils.core import setup
 from distutils.command.install import INSTALL_SCHEMES
 import os
 
+from humfrey import __version__
+
 #################################
 # BEGIN borrowed from Django #
 # licensed under the BSD #
@@ -63,7 +65,7 @@ setup(
     description='A Django-based RESTful linked data frontend for SPARQL endpoints.',
     author='Oxford University Computing Services',
     author_email='opendata@oucs.ox.ac.uk',
-    version='0.3',
+    version=__version__,
     packages=packages,
     license='BSD',
     url='https://github.com/oucs/humfrey',
