@@ -8,6 +8,8 @@ from django.conf import settings
 
 from django_longliving.base import LonglivingThread
 
+from humfrey.sparql.models import Store
+
 logger = logging.getLogger(__name__)
 
 class Uploader(LonglivingThread):
@@ -21,7 +23,12 @@ class Uploader(LonglivingThread):
             self.process_item(client, item)
 
     def process_item(self, client, item):
-        graph_url = '%s?%s' % (settings.ENDPOINT_GRAPH,
+        if item.get('store'):
+            graph_store_endpoint = Store.objects.get(slug=item['store']).graph_store_endpoint
+        else:
+            graph_store_endpoint = settings.ENDPOINT_GRAPH
+        print "X", graph_store_endpoint
+        graph_url = '%s?%s' % (graph_store_endpoint,
                                urllib.urlencode({'graph': item['graph_name']}))
 
         if 'filename' in item:

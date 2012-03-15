@@ -4,10 +4,11 @@ import urllib2
 
 from lxml import etree
 import pytz
-import redis
 
 from django.conf import settings
-from django_conneg.views import HTMLView, TextView
+from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView, ErrorCatchingView
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
 
 from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
@@ -18,6 +19,15 @@ from humfrey.utils.namespaces import NS
 
 from humfrey.sparql.endpoint import Endpoint, EndpointView, SparqlResultList, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
+from humfrey.sparql.models import Store, UserPrivileges
+
+class IndexView(HTMLView, JSONPView):
+    def get(self, request):
+        stores = Store.objects.all().order_by('name')
+        if not request.user.is_superuser:
+            stores = [s for s in stores if request.user.has_any_perms(s)]
+        context = {'stores': stores}
+        return self.render(request, context, 'sparql/index')
 
 class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
     def get(self, request, context):
@@ -42,8 +52,10 @@ class SparqlErrorView(HTMLView, TextView):
         return self.render(request, context, 'sparql/error')
     post = get
 
-class SparqlView(EndpointView, RedisView, HTMLView):
+class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
+
+    store = None # Use the default store
 
     class SparqlViewException(Exception):
         pass
@@ -116,7 +128,16 @@ class SparqlView(EndpointView, RedisView, HTMLView):
              tuple((r.format, r.name) for r in sorted(self._boolean_view._renderers, key=lambda r:r.name))),
         )
 
-    def get(self, request):
+    def get(self, request, store=None):
+        store = store or self.store
+        if store is not None:
+            store = get_object_or_404(Store, slug=store)
+            if not store.can_query(request.user):
+                raise PermissionDenied
+            self.endpoint = Endpoint(store.query_endpoint)
+
+        privileges = self.get_user_privileges(request)
+
         query = request.REQUEST.get('query')
         form = SparqlQueryForm(request.REQUEST if query else None,
                                formats=self.get_format_choices())
@@ -124,6 +145,7 @@ class SparqlView(EndpointView, RedisView, HTMLView):
         context = {
             'namespaces': sorted(NS.items()),
             'form': form,
+            'store': store,
         }
 
         additional_headers = context['additional_headers'] = {

@@ -101,7 +101,7 @@ def update_dataset_archives(channel, data):
 
     endpoint = Endpoint(settings.ENDPOINT_QUERY)
 
-    query = "SELECT ?dataset WHERE { %s }" % " UNION ".join("{ %s void:inDataset ?dataset }" % g.n3() for g in data['graphs'])
+    query = "SELECT ?dataset WHERE { %s }" % " UNION ".join("{ %s void:inDataset ?dataset }" % g.n3() for s, g in data['graphs'] if s is None)
     datasets = set(r['dataset'] for r in endpoint.query(query))
 
     for dataset in datasets:
