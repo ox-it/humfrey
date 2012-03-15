@@ -20,7 +20,7 @@ except ImportError:
 
 from humfrey.update.longliving.updater import Updater
 from humfrey.utils.namespaces import NS
-from humfrey.utils.sparql import Endpoint
+from humfrey.sparql.endpoint import Endpoint
 
 def _graph_triples(out, graph):
     url = '%s?%s' % (settings.ENDPOINT_GRAPH,

@@ -4,8 +4,7 @@ from django.conf import settings
 
 from django_conneg.views import HTMLView
 
-from humfrey.utils.views import EndpointView
-from humfrey.utils.sparql import SparqlResultList, SparqlResultBool, SparqlResultGraph
+from humfrey.sparql.endpoint import EndpointView, SparqlResultList, SparqlResultBool, SparqlResultGraph
 
 # Only create FeedView class if feedparser and pytz are importable.
 # This will make feedparser and pytz optional dependencies if one

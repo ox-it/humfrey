@@ -6,7 +6,7 @@ from django_conneg.decorators import renderer
 from django.utils.feedgenerator import RssUserland091Feed, Rss201rev2Feed, Atom1Feed, rfc2822_date
 from django.http import HttpResponse
 
-from humfrey.utils.views import EndpointView
+from humfrey.sparql.endpoint import EndpointView
 from humfrey.utils.namespaces import NS
 
 

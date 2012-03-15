@@ -16,8 +16,7 @@ from django.http import HttpResponse
 
 from django_conneg.decorators import renderer
 
-from humfrey.utils.views import EndpointView
-from humfrey.utils.sparql import SparqlResultList, SparqlResultBool
+from humfrey.sparql.endpoint import EndpointView, SparqlResultList, SparqlResultBool
 
 # Register the RDF/JSON and JSON-LD serializer plugins if available
 try:

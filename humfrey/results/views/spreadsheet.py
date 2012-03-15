@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from humfrey.utils.views import EndpointView
+from humfrey.sparql.endpoint import EndpointView
 from django_conneg.decorators import renderer
 
 class SpreadsheetView(EndpointView):

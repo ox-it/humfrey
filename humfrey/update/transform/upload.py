@@ -12,7 +12,7 @@ from django.conf import settings
 
 from humfrey.update.transform.base import Transform
 from humfrey.update.longliving.uploader import Uploader
-from humfrey.utils import sparql
+from humfrey.sparql.endpoint import Endpoint
 from humfrey.utils.namespaces import NS
 
 class Upload(Transform):
@@ -63,8 +63,8 @@ class Upload(Transform):
                                default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
-            transform_manager.logger.debug("Getting created date from %r", settings.ENDPOINT_QUERY)
-            endpoint = sparql.Endpoint(settings.ENDPOINT_QUERY)
+            transform_manager.logger.debug("Getting created date from %r", endpoint_query)
+            endpoint = Endpoint(endpoint_query)
             results = endpoint.query(self.created_query % {'graph': self.graph_name.n3()})
             if results:
                 created = results[0].date

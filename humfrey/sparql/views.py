@@ -13,10 +13,11 @@ from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
 from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
-from humfrey.sparql.forms import SparqlQueryForm
-from humfrey.utils.views import EndpointView, RedisView
+from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
-from humfrey.utils.sparql import SparqlResultList, SparqlResultGraph, SparqlResultBool
+
+from humfrey.sparql.endpoint import Endpoint, EndpointView, SparqlResultList, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.forms import SparqlQueryForm
 
 class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
     def get(self, request, context):

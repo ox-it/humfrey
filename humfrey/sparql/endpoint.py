@@ -1,5 +1,8 @@
+import base64
 from collections import defaultdict
+import hashlib
 import logging
+import pickle
 import sys
 import time
 import urllib
@@ -13,8 +16,13 @@ try:
 except ImportError:
     import simplejson as json
 
-from .namespaces import NS
-from .resource import Resource
+from django.conf import settings
+from django.views.generic import View
+from django.core.cache import cache
+
+from humfrey import __version__
+from humfrey.utils.namespaces import NS
+from humfrey.utils.resource import Resource
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
@@ -106,7 +114,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, common_prefixes=True):
+    def query(self, query, common_prefixes=True, timeout=None):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
@@ -118,11 +126,14 @@ class Endpoint(object):
             prefixes = ['PREFIX %s: <%s>\n' % i for i in prefixes]
             query = ''.join(prefixes + q)
 
+        print "URL", self._url
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
         }))
         request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml, text/plain'
-        request.headers['User-Agent'] = 'sparql.py'
+        request.headers['User-Agent'] = 'humfrey (%s; https://github.com/oucs/humfrey; %s)' % (__version__, settings.DEFAULT_FROM_EMAIL)
+        if timeout:
+            request.headers['Timeout'] = str(timeout)
 
         start_time = time.time()
 
@@ -282,3 +293,17 @@ class Endpoint(object):
         else:
             raise AssertionError("Unexpected binding type")
 
+class EndpointView(View):
+    endpoint = Endpoint(settings.ENDPOINT_QUERY)
+
+    def get_types(self, uri):
+        if ' ' in uri:
+            return set()
+        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
+        types = cache.get(key_name)
+        if False and types:
+            types = pickle.loads(base64.b64decode(types))
+        else:
+            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3()))
+            cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
+        return types

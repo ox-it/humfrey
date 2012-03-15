@@ -5,7 +5,7 @@ from django.template import RequestContext
 
 from django_conneg.decorators import renderer
 
-from humfrey.utils.views import EndpointView
+from humfrey.sparql.endpoint import EndpointView
 from humfrey.utils.resource import Resource
 
 class KMLView(EndpointView):
