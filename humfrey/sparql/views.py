@@ -84,6 +84,11 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
             return None
 
     def get_user_privileges(self, request):
+        if request.user.is_superuser:
+            return {'maximum_timeout': None,
+                    'throttle': False,
+                    'allow_concurrent_queries': True,
+                    'user_key': request.user.username}
         if not request.user.is_authenticated():
             overrides = ()
         else:
