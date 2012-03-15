@@ -56,6 +56,9 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
     store = None # Use the default store
+    default_timeout = None # Override this with some number of seconds
+    maximum_timeout = None # Override this with some number of seconds
+    allow_concurrent_queries = False
 
     class SparqlViewException(Exception):
         pass
@@ -65,37 +68,92 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
         def __init__(self, intensity):
             self.intensity = intensity
 
-    _THROTTLE_THRESHOLD = 10
-    _DENY_THRESHOLD = 20
-    _INTENSITY_DECAY = 0.05
+    throttle_threshold = 10
+    deny_threshold = 20
+    intensity_decay = 0.05
 
     _graph_view = staticmethod(SparqlGraphView.as_view())
     _resultset_view = staticmethod(SparqlResultSetView.as_view())
     _boolean_view = staticmethod(SparqlBooleanView.as_view())
     _error_view = staticmethod(SparqlErrorView.as_view())
+    
+    def _get_float(self, value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
-    def perform_query(self, request, query, common_prefixes):
+    def get_user_privileges(self, request):
+        if not request.user.is_authenticated():
+            overrides = ()
+        else:
+            try:
+                overrides = (UserPrivileges.objects.get(user=request.user),)
+            except UserPrivileges.DoesNotExist:
+                overrides = UserPrivileges.objects.filter(group__user=request.user)
+        privileges = {'maximum_timeout': self.maximum_timeout,
+                      'throttle': True,
+                      'throttle_threshold': self.throttle_threshold,
+                      'deny_threshold': self.deny_threshold,
+                      'intensity_decay': self.intensity_decay,
+                      'allow_concurrent_queries': self.allow_concurrent_queries,
+                      'user_key': request.user.username if request.user.is_authenticated() else request.META['REMOTE_ADDR']}
+        for override in overrides:
+            if override.disable_timeout:
+                privileges['maximum_timeout'] = None
+            if override.disable_throttle:
+                privileges['throttle'] = False
+            if override.allow_concurrent_queries:
+                privileges['allow_concurrent_queries'] = True
+            for name in ('maximum_timeout', 'throttle_threshold', 'deny_threshold', 'intensity_decay'):
+                if privileges[name] and getattr(override, name):
+                    privileges[name] = max(privileges[name], getattr(override, name))
+        return privileges
+
+    def get_timeout(self, request, privileges):
+        """
+        Pulls a timeout out of the request if one is given, and makes sure it
+        doesn't exceed any default timeouts (either default, or user-specific).
+        """
+
+        timeout = self._get_float(request.META.get('HTTP_TIMEOUT')) \
+               or self._get_float(request.REQUEST.get('timeout')) \
+               or self.default_timeout
+        if timeout and privileges['maximum_timeout']:
+            timeout = min(timeout, privileges['maximum_timeout'])
+        return timeout
+
+    def perform_query(self, request, query, common_prefixes, privileges):
         if settings.REDIS_PARAMS:
+            user_key = privileges['user_key']
             client = self.get_redis_client()
-            addr = request.META['REMOTE_ADDR']
-            if not client.setnx('sparql:lock:%s' % addr, 1):
+            if not privileges['allow_concurrent_queries'] and \
+               not client.setnx('sparql:lock:%s' % user_key, 1):
                 raise self.ConcurrentQueryException
             try:
-                intensity = float(client.get('sparql:intensity:%s' % addr) or 0)
-                last = float(client.get('sparql:last:%s' % addr) or 0)
-                intensity = max(0, intensity - (time.time() - last) * self._INTENSITY_DECAY)
-                if intensity > self._DENY_THRESHOLD:
-                    raise self.ExcessiveQueryException(intensity)
-                elif intensity > self._THROTTLE_THRESHOLD:
-                    time.sleep(intensity - self._THROTTLE_THRESHOLD)
+                if privileges['throttle']:
+                    intensity = float(client.get('sparql:intensity:%s' % user_key) or 0)
+                    last = float(client.get('sparql:last:%s' % user_key) or 0)
+                    intensity = max(0, intensity - (time.time() - last) * privileges['intensity_decay'])
+                    if intensity > privileges['deny_threshold']:
+                        raise self.ExcessiveQueryException(intensity)
+                    elif intensity > privileges['throttle_threshold']:
+                        time.sleep(intensity - privileges['throttle_threshold'])
 
-                start = time.time()
-                results = self.endpoint.query(query, common_prefixes=common_prefixes)
-                end = time.time()
+                    start = time.time()
 
-                new_intensity = intensity + end - start
-                client.set('sparql:intensity:%s' % addr, new_intensity)
-                client.set('sparql:last:%s' % addr, end)
+                results = self.endpoint.query(query,
+                                              common_prefixes=common_prefixes,
+                                              timeout=self.get_timeout(request, privileges))
+
+                if privileges['throttle']:
+                    end = time.time()
+
+                    new_intensity = intensity + end - start
+                    client.set('sparql:intensity:%s' % user_key, new_intensity)
+                    client.set('sparql:last:%s' % user_key, end)
+                else:
+                    new_intensity = None
 
                 client.publish(self.QUERY_CHANNEL,
                                self.pack({'query': query,
@@ -110,11 +168,13 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
                                           'formats': [r.format for r in self.get_renderers(request)],
                                           'intensity': new_intensity,
                                           'duration': results.duration,
+                                          'user': request.user if request.user.is_authenticated() else None,
                                           'successful': True}))
 
                 return results, new_intensity
             finally:
-                client.delete('sparql:lock:%s' % addr)
+                if not privileges['allow_concurrent_queries']:
+                    client.delete('sparql:lock:%s' % user_key)
         else:
             return self.endpoint.query(query, common_prefixes=common_prefixes), 0
 
@@ -148,16 +208,18 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
             'store': store,
         }
 
-        additional_headers = context['additional_headers'] = {
-            'X-Humfrey-SPARQL-Throttle-Threshold': self._THROTTLE_THRESHOLD,
-            'X-Humfrey-SPARQL-Deny-Threshold': self._DENY_THRESHOLD,
-            'X-Humfrey-SPARQL-Intensity-Decay': self._INTENSITY_DECAY,
-        }
+        if privileges['throttle']:
+            additional_headers = context['additional_headers'] = {
+                'X-Humfrey-SPARQL-Throttle-Threshold': privileges['throttle_threshold'],
+                'X-Humfrey-SPARQL-Deny-Threshold': privileges['deny_threshold'],
+                'X-Humfrey-SPARQL-Intensity-Decay': privileges['intensity_decay'],
+            }
 
         if form.is_valid():
             try:
-                results, intensity = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
-                additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
+                results, intensity = self.perform_query(request, query, form.cleaned_data['common_prefixes'], privileges)
+                if intensity is not None:
+                    additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
 
             except urllib2.HTTPError, e:
                 context['error'] = e.read() #parse(e).find('.//pre').text
