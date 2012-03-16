@@ -67,7 +67,7 @@ class IndexUpdater(object):
         with tempfile.TemporaryFile() as f:
             result_ids = set()
             for result in results:
-                result_id = sha1(result['uri']).hexdigest()
+                result_id = sha1(result['uri']).hexdigest()[:8]
                 result_ids.add(result_id)
                 result_hash = self.hash_result(result)
 
