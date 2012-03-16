@@ -33,17 +33,20 @@ class Upload(Transform):
 
     site_timezone = pytz.timezone(settings.TIME_ZONE)
 
-    def __init__(self, graph_name, method='PUT', store=None):
+    def __init__(self, graph_name, method='PUT', store=None, stores=None):
         self.graph_name = rdflib.URIRef(graph_name)
         self.method = method
-        self.store = store
+        self.stores = stores or []
+        if not stores:
+            self.stores.append(store)
 
     def execute(self, transform_manager, input):
-        if self.store:
-            store = self.get_store(transform_manager, self.store, update=True)
-            endpoint_query = store.query_endpoint
-        else:
-            endpoint_query = settings.ENDPOINT_QUERY
+        for store in self.stores:
+            if store:
+                store = self.get_store(transform_manager, store, update=True)
+                endpoint_query = store.query_endpoint
+            else:
+                endpoint_query = settings.ENDPOINT_QUERY
 
         transform_manager.start(self, [input])
 
@@ -96,7 +99,7 @@ class Upload(Transform):
         client.rpush(Uploader.QUEUE_NAME,
                      base64.b64encode(pickle.dumps({
             'filename': output,
-            'store': self.store,
+            'stores': self.stores,
             'graph_name': self.graph_name,
             'method': self.method,
             'queued_at': datetime.datetime.now(),
@@ -115,4 +118,5 @@ class Upload(Transform):
         pubsub.unsubscribe(Uploader.UPLOADED_PUBSUB)
 
         transform_manager.end([self.graph_name])
-        transform_manager.touched_graph((self.store, self.graph_name))
+        for store in self.stores:
+            transform_manager.touched_graph((store, self.graph_name))
