@@ -43,6 +43,10 @@ class IndexUpdater(object):
             if e.code == httplib.NOT_FOUND:
                 index_exists = False
                 index.update_mapping = True
+
+                request = urllib2.Request(index.index_url.rsplit('/', 1)[0])
+                request.get_method = lambda: 'PUT'
+                urllib2.urlopen(request)
             else:
                 raise
 
