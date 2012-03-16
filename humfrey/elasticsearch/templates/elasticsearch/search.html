@@ -1,4 +1,4 @@
-{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}{% load humfrey_elasticsearch %}
+{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}{% load humfrey_elasticsearch %}{% load hosts %}
 
 {% block extra_head %}{{ block.super }}
   <link rel="stylesheet" href="{{ STATIC_URL }}elasticsearch/base.css"/>
@@ -29,14 +29,14 @@
   </div>
   {% endif %}
 
-  {% if hits %}
+  {% if hits %}{% block other_formats %}
   <div class="sidebar-item">
     <h2>Other formats</h2>
     <ul>{% for renderer in renderers %}
       <li><a href="{% set_parameter "" "format" renderer.format %}">{{ renderer.name }}</a></li>{% endfor %}
     </ul>
   </div>
-  {% endif %}
+  {% endblock %}{% endif %}
   </div>
   
   <div class="results">
@@ -47,11 +47,11 @@
   {% include "elasticsearch/pagination.html" %}
   
   <ol start="{{ start }}">
-  {% for hit in hits.hits %}
+  {% for hit in hits.hits %}{% block hit %}
     <li style="line-height:1.1em; margin-bottom:1em; clear:right">
       <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.source.uri|doc_url }}">
       {% if hit.source.image %}
-      <img style="float:right; margin-bottom:1em" src="{% url resized-image %}?url={{ hit.source.image }}&amp;width=200&amp;height=120" alt=""/>
+      <img style="float:right; margin-bottom:1em" src="{% host_url resized-image on data %}?url={{ hit.source.image }}&amp;width=200&amp;height=120" alt=""/>
       {% endif %}
 
       {{ hit.source.label|default:"<em>unnamed</em>" }}</a>
@@ -67,7 +67,7 @@
       {% endif %}
       
       </li>
-  {% endfor %}
+  {% endblock %}{% endfor %}
   </ol>
 
   {% include "elasticsearch/pagination.html" %}
