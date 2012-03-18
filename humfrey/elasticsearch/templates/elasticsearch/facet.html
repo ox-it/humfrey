@@ -9,10 +9,10 @@
       <li class="selected">All</li>
 	{% endif %}
 	{% for term in facet.terms %}
-	  {% if facet.filter.value == term.term %}
-        <li class="selected">{{ term.term|capfirst }} ({{ term.count }})</li>
+	  {% if facet.filter.value == term.value %}
+        <li class="selected">{{ term.label|default:term.value|default:term.term|capfirst }} ({{ term.count }})</li>
 	  {% else %}
-        <li><a href="{% set_parameter "filter" field_name term.term %}">{{ term.term|capfirst }} ({{ term.count }})</a></li>
+        <li><a href="{% set_parameter "filter" field_name term.value %}">{{ term.label|default:term.value|default:term.term|capfirst }} ({{ term.count }})</a></li>
 	  {% endif %}
 	{% endfor %}
 {% comment %}{% if facets.type.other %}

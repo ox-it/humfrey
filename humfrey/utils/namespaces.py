@@ -1,8 +1,10 @@
+import re
+
 from rdflib import Namespace, URIRef
 
 from django.conf import settings
 
-__all__ = ['NS', 'register', 'expand']
+__all__ = ['NS', 'register', 'expand', 'contract']
 
 NS = {
     'aiiso': 'http://purl.org/vocab/aiiso/schema#',
@@ -45,6 +47,8 @@ HUMFREY = Namespace('http://purl.org/NET/humfrey/ns/')
 
 NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
 
+INVERSE_NS = tuple((v, k) for k, v in sorted(NS.items(), key=lambda (k,v): -len(v)))
+
 class _NS(dict):
     def __getattr__(self, key):
         return self[key]
@@ -54,9 +58,23 @@ NS = _NS((k, Namespace(v)) for k, v in NS.iteritems())
 def register(k, v):
     NS[k] = Namespace(v)
 
+is_localpart = re.compile(u"""^[A-Z _ a-z \xc0-\xd6 \xd8-\xf6 \xf8-\xff \u037f-\u1fff \u200c-\u218f]
+                               [A-Z _ a-z \xc0-\xd6 \xd8-\xf6 \xf8-\xff \u037f-\u1fff \u200c-\u218f \\- . \\d]*$""",
+                          re.VERBOSE).match
+
 def expand(qname):
     try:
         prefix, local = qname.split(':', 1)
+        if not is_localpart(local):
+            return URIRef(qname)
         return NS[prefix][local]
     except KeyError:
         return URIRef(qname)
+
+def contract(uri):
+    for ns, prefix in INVERSE_NS:
+        if uri.startswith(ns):
+            localpart = uri[len(ns):]
+            if is_localpart(localpart):
+                return "%s:%s" % (prefix, localpart)
+    return uri
