@@ -21,17 +21,21 @@ class Construct(Transform):
             endpoint_query = store.query_endpoint
         else:
             endpoint_query = settings.ENDPOINT_QUERY
-        
+
         endpoint = Endpoint(endpoint_query)
 
-        query_filename = self.query.execute(transform_manager)
+        if isinstance(self.query, basestring):
+            query = self.query
+        else:
+            query_filename = self.query.execute(transform_manager)
+            with open(query_filename, 'r') as query_file:
+                query = query_file.read()
 
         with open(transform_manager('nt'), 'w') as output:
-            transform_manager.start(self, [query_filename])
-            with open(query_filename, 'r') as query:
-                result = endpoint.query(query.read())
-            
+            transform_manager.start(self, [])
+            result = endpoint.query(query)
+
             result.serialize(output, 'nt')
-            
+
             transform_manager.end([output.name])
         return output.name
