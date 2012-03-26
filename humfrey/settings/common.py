@@ -207,6 +207,7 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.construct.Construct',
         'humfrey.update.transform.html.HTMLToXML',
         'humfrey.update.transform.local_file.LocalFile',
+        'humfrey.update.transform.normalize.Normalize',
         'humfrey.update.transform.retrieve.Retrieve',
         'humfrey.update.transform.spreadsheet.GnumericToTEI',
         'humfrey.update.transform.spreadsheet.ODSToTEI',
