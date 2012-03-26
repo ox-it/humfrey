@@ -45,9 +45,11 @@ class TransformManager(object):
         self.transforms = []
         self.graphs_touched = set()
 
-    def __call__(self, extension):
-        filename = os.path.join(self.output_directory, '%s.%s' % (self.counter, extension))
-        self.counter += 1
+    def __call__(self, extension=None, name=None):
+        if not name:
+            name = '%s.%s' % (self.counter, extension)
+            self.counter += 1
+        filename = os.path.join(self.output_directory, name)
         return filename
 
     def start(self, transform, inputs, type='generic'):
