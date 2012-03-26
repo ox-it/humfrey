@@ -17,8 +17,10 @@ register = template.Library()
 def node(obj):
     if isinstance(obj, BaseResource):
         return obj.render()
-    elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
+    elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-HTML']:
         return sanitize_html(unicode(obj))
+    elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
+        return sanitize_html(unicode(obj), is_xhtml=True)
     elif isinstance(obj, Literal):
         return mark_safe(escape(unicode(obj.toPython())).replace('\n', '<br/>\n'))
     else:
@@ -61,7 +63,8 @@ def property(obj, value):
     return obj.get_one_of(*value.split(','))
 
 @register.filter
-def sanitize_html(html):
+def sanitize_html(html, is_xhtml=False):
+    NS_PREFIX = '{http://www.w3.org/1999/xhtml}' if is_xhtml else ''
     good_attribs = 'src href alt title'.split()
     good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br a'.split()
     remove_tags = 'iframe'.split()
@@ -73,13 +76,18 @@ def sanitize_html(html):
                 del elem.attrib[key]
             if key == 'href':
                 elem.attrib['rel'] = 'nofollow'
+        if elem.tag.startswith(NS_PREFIX):
+            elem.tag = elem.tag[len(NS_PREFIX):]
         if elem.tag not in good_tags:
             elem.tag = 'div' if elem.tag in block_tags else 'span'
+
         for child in elem:
             sanitize(child)
         return elem
 
-    return mark_safe(etree.tostring(sanitize(etree.fromstring(html))))
+    tree = etree.fromstring(html,
+                            parser=(etree.XMLParser() if is_xhtml else etree.HTMLParser()))
+    return mark_safe(etree.tostring(sanitize(tree), method='html'))
 
 @register.filter
 def doc_url(uri):
