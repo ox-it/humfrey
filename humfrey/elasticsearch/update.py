@@ -43,6 +43,10 @@ class IndexUpdater(object):
             if e.code == httplib.NOT_FOUND:
                 index_exists = False
                 index.update_mapping = True
+
+                request = urllib2.Request(index.index_url.rsplit('/', 1)[0])
+                request.get_method = lambda: 'PUT'
+                urllib2.urlopen(request)
             else:
                 raise
 
@@ -63,7 +67,7 @@ class IndexUpdater(object):
         with tempfile.TemporaryFile() as f:
             result_ids = set()
             for result in results:
-                result_id = sha1(result['uri']).hexdigest()
+                result_id = sha1(result['uri']).hexdigest()[:8]
                 result_ids.add(result_id)
                 result_hash = self.hash_result(result)
 

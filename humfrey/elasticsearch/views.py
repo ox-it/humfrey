@@ -16,6 +16,10 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
     index_name = 'search'
     page_size = 10
 
+    facets = {'type': {'terms': {'field': 'type.label',
+                                          'size': 20}}}
+    template_name = 'elasticsearch/search'
+
     class MissingQuery(Exception):
         pass
 
@@ -52,7 +56,7 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
         if form.is_valid():
             context.update(self.get_results(request.GET, form.cleaned_data))
 
-        return self.render(request, context, 'elasticsearch/search')
+        return self.render(request, context, self.template_name)
     
     def get_results(self, parameters, cleaned_data):
         page = cleaned_data.get('page') or 1
@@ -70,12 +74,9 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
             'from': start,
             'size': page_size,
             'filter': {'and': []},
-            'facets': {'type': {'terms': {'field': 'type.label',
-                                          'size': 20},
-
-                                }
-                       }
         }
+        if self.facets:
+            query['facets'] = self.facets
 
         for key in parameters:
             if key.startswith('filter.'):
