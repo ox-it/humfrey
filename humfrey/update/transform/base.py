@@ -68,3 +68,12 @@ class Chain(Transform):
     def execute(self, transform_manager, *args):
         return self._second.execute(transform_manager,
                                     self._first.execute(transform_manager, *args))
+
+class Requires(Transform):
+    def __init__(self, first, requirements):
+        self._first, self._requirements = first, requirements
+
+    def execute(self, transform_manager, *args):
+        for requirement in self._requirements:
+            requirement.execute(transform_manager)
+        return self._first.execute(transform_manager, *args)

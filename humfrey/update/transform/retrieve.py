@@ -11,8 +11,8 @@ class Retrieve(Transform):
         'application/xml': 'xml',
     }
 
-    def __init__(self, url, extension=None):
-        self.url, self.extension = url, extension
+    def __init__(self, url, name=None, extension=None):
+        self.url, self.name, self.extension = url, name, extension
 
     def execute(self, transform_manager):
         transform_manager.logger.info("Attempting to retrieve %r" % self.url)
@@ -34,7 +34,7 @@ class Retrieve(Transform):
 
         transform_manager.logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
 
-        with open(transform_manager(extension), 'w') as output:
+        with open(transform_manager(extension, self.name), 'w') as output:
             transform_manager.start(self, [input], type='identity')
             block_size = os.statvfs(output.name).f_bsize
             while True:

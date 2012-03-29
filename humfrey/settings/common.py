@@ -203,9 +203,11 @@ if config.get('update:enabled') == 'true':
     INSTALLED_APPS += ('humfrey.update',)
     LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater'])
     UPDATE_TRANSFORMS = (
+        'humfrey.update.transform.base.Requires',
         'humfrey.update.transform.construct.Construct',
         'humfrey.update.transform.html.HTMLToXML',
         'humfrey.update.transform.local_file.LocalFile',
+        'humfrey.update.transform.normalize.Normalize',
         'humfrey.update.transform.retrieve.Retrieve',
         'humfrey.update.transform.spreadsheet.GnumericToTEI',
         'humfrey.update.transform.spreadsheet.ODSToTEI',

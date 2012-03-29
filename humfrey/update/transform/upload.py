@@ -52,7 +52,7 @@ class Upload(Transform):
 
         transform_manager.logger.debug("Starting upload of %r", input)
 
-        client = redis.client.Redis(**settings.REDIS_PARAMS)
+        client = self.get_redis_client()
 
         extension = input.rsplit('.', 1)[-1]
         try:
