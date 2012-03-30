@@ -2,7 +2,7 @@ from __future__ import with_statement
 
 import os
 import subprocess
-import StringIO
+import tempfile
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -25,18 +25,19 @@ class XSLT(Transform):
         template_filename = self.template.execute(transform_manager)
 
         with open(transform_manager(self.extension), 'w') as output:
-            transform_manager.start(self, [template_filename, input], type='xslt')
+            with tempfile.TemporaryFile() as stderr:
+                transform_manager.start(self, [template_filename, input], type='xslt')
 
-            stderr = StringIO.StringIO()
-            returncode = subprocess.call([self.saxon_path, input, template_filename],
-                                          stdout=output, stderr=stderr)
+                returncode = subprocess.call([self.saxon_path, input, template_filename],
+                                              stdout=output, stderr=stderr)
 
-            if stderr.tell():
-                self.transform_manager.logger.warning("XSLT warnings:\n\n%s\n", stderr.getvalue())
+                if stderr.tell():
+                    stderr.seek(0)
+                    self.transform_manager.logger.warning("XSLT warnings:\n\n%s\n", stderr.read())
 
-            if returncode != 0:
-                self.transform_manager.logger.error("XSLT transform failed with code %d", returncode)
-                raise TransformException
+                if returncode != 0:
+                    self.transform_manager.logger.error("XSLT transform failed with code %d", returncode)
+                    raise TransformException
 
-            transform_manager.end([output.name])
-            return output.name
+                transform_manager.end([output.name])
+                return output.name
