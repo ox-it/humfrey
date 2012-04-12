@@ -1,5 +1,5 @@
 import logging
-from urlparse import urlparse
+import urlparse
 
 import rdflib
 
@@ -41,7 +41,7 @@ class DescView(EndpointView):
     def get(self, request):
         uri = rdflib.URIRef(request.GET.get('uri', ''))
         try:
-            url = urlparse(uri)
+            url = urlparse.urlparse(uri)
         except Exception:
             raise Http404
         if not IRI.match(uri):
@@ -71,6 +71,7 @@ class DocView(RDFView, HTMLView):
             raise Http404
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        expected_doc_url = urlparse.urljoin(doc_url, expected_doc_url)
 
         types = self.get_types(uri)
         if not types:

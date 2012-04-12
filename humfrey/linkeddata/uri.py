@@ -95,6 +95,7 @@ def doc_backward(url, formats=None):
         url_part = urlparse.urlparse(url).path
 
     for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
+        doc_prefix = urlparse.urljoin(url, doc_prefix)
         if url_part.startswith(doc_prefix):
             url_part = id_prefix + url_part[len(doc_prefix):]
             return rdflib.URIRef(urllib.unquote(url_part)), format, is_local
