@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import logging
 import os
 import subprocess
 import tempfile
@@ -7,6 +8,8 @@ import tempfile
 from django.core.exceptions import ImproperlyConfigured
 
 from humfrey.update.transform.base import Transform, TransformException
+
+logger = logging.getLogger(__name__)
 
 class XSLT(Transform):
     def __init__(self, template, extension='xml'):
@@ -33,10 +36,10 @@ class XSLT(Transform):
 
                 if stderr.tell():
                     stderr.seek(0)
-                    self.transform_manager.logger.warning("XSLT warnings:\n\n%s\n", stderr.read())
+                    logger.warning("XSLT warnings:\n\n%s\n", stderr.read())
 
                 if returncode != 0:
-                    self.transform_manager.logger.error("XSLT transform failed with code %d", returncode)
+                    logger.error("XSLT transform failed with code %d", returncode)
                     raise TransformException
 
                 transform_manager.end([output.name])

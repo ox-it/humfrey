@@ -1,3 +1,4 @@
+import logging
 import shutil
 import urllib2
 
@@ -7,6 +8,8 @@ import rdflib
 from humfrey.utils.namespaces import NS
 from humfrey.update.transform.base import Transform
 from humfrey.update.transform.upload import Upload
+
+logger = logging.getLogger(__name__)
 
 class VocabularyLoader(Transform):
     def execute(self, transform_manager):
@@ -22,10 +25,12 @@ class VocabularyLoader(Transform):
         request = urllib2.Request(uri)
         request.headers['Accept'] = 'application/rdf+xml, text/n3, text/turtle, text/plain'
 
+        logger.debug("About to fetch %r for vocabulary %r", uri, prefix)
+
         try:
             response = urllib2.urlopen(request)
         except (urllib2.URLError, urllib2.HTTPError):
-            transform_manager.logger.exception("Failed to retrieve %r for vocabulary %r", uri, prefix)
+            logger.exception("Failed to retrieve %r for vocabulary %r", uri, prefix)
             return
         content_type = response.headers['Content-type'].split(';')[0]
         if content_type == 'application/rdf+xml':
@@ -33,7 +38,7 @@ class VocabularyLoader(Transform):
         elif content_type in ('text/n3', 'text/plain', 'text/turtle'):
             extension = 'ttl'
         else:
-            transform_manager.logger.exception('Unexpected content-type: %r', content_type)
+            logger.exception('Unexpected content-type: %r', content_type)
             return
 
         with open(transform_manager(extension), 'w') as output:

@@ -1,5 +1,7 @@
+import base64
 import datetime
 import logging
+import pickle
 
 from django.db import models
 from django.conf import settings
@@ -117,6 +119,11 @@ class UpdateLog(models.Model):
                             'icon': 'gnome-icons/32x32/emblem-default.png'},
                 'inprogress': {'label': 'in progress',
                                'icon': 'gnome-icons/32x32/system-run.png'}}
+
+    @property
+    def records(self):
+        if self.log:
+            return pickle.loads(base64.b64decode(self.log))
 
     @property
     def outcome(self):

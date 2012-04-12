@@ -2,6 +2,14 @@
 
 {% block title %}Log {{ log.id }} for {{ definition }}{% endblock %}
 
+{% block extra_head %}
+  <style type="text/css">
+    table { border-collapse: collapse }
+    td { padding: 0.2em;}
+    tr.overline td { border-top:1px solid #000}
+  </style>
+{% endblock %}
+
 {% block content %}
   <h1>Log {{ log.id }} for {{ definition }}</h1>
   
@@ -27,5 +35,28 @@
     </tbody>
   </table>
   
-  <pre>{{ log.log }}</pre>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Level</th>
+        <th>Logger</th>
+    </thead>
+    <tbody>{% for record in log.records %}
+      <tr{% if not forloop.first %} class="overline"{% endif %}>
+        <td>{{ record.time|date:"c" }}</td>
+        <td>{{ record.levelname }}</td>
+        <td>{{ record.name }}</td>
+      </tr>
+      <tr>
+        <td colspan="3">{{ record.message }}</td>
+      </tr>
+      {% if record.exc_info %}
+      <tr>
+        <td colspan="3"><pre>{% for line in record.exc_info.2 %}{{ line }}{% endfor %}</pre></td>
+      </tr>
+              {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %} 

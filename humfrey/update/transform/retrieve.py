@@ -1,10 +1,13 @@
 from __future__ import with_statement
 
+import logging
 import mimetypes
 import os
 import urllib2
 
 from humfrey.update.transform.base import Transform, TransformException
+
+logger = logging.getLogger(__name__)
 
 class Retrieve(Transform):
     mimetype_overrides = {
@@ -15,14 +18,14 @@ class Retrieve(Transform):
         self.url, self.name, self.extension = url, name, extension
 
     def execute(self, transform_manager):
-        transform_manager.logger.info("Attempting to retrieve %r" % self.url)
+        logger.info("Attempting to retrieve %r" % self.url)
         request = urllib2.Request(self.url)
         request.headers['Accept'] = "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8"
         try:
             response = urllib2.urlopen(request)
         except (urllib2.HTTPError, urllib2.URLError), e:
             raise TransformException(e)
-        transform_manager.logger.info("Response received for %r" % self.url)
+        logger.info("Response received for %r" % self.url)
 
         content_type = response.headers.get('Content-Type', 'unknown/unknown')
         content_type = content_type.split(';')[0].strip()
@@ -32,7 +35,7 @@ class Retrieve(Transform):
                  or (mimetypes.guess_extension(content_type, strict=False) or '').lstrip('.') \
                  or 'unknown'
 
-        transform_manager.logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
+        logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
 
         with open(transform_manager(extension, self.name), 'w') as output:
             transform_manager.start(self, [input], type='identity')
@@ -44,5 +47,5 @@ class Retrieve(Transform):
                 output.write(chunk)
             transform_manager.end([output.name])
 
-            transform_manager.logger.info("File from %r saved to %r" % (self.url, output.name))
+            logger.info("File from %r saved to %r" % (self.url, output.name))
             return output.name

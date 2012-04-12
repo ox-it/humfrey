@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import base64
 import datetime
+import logging
 import pickle
 
 import pytz
@@ -14,6 +15,8 @@ from humfrey.update.transform.base import Transform
 from humfrey.update.longliving.uploader import Uploader
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.utils.namespaces import NS
+
+logger = logging.getLogger(__name__)
 
 class Upload(Transform):
     formats = {
@@ -50,7 +53,7 @@ class Upload(Transform):
 
         transform_manager.start(self, [input])
 
-        transform_manager.logger.debug("Starting upload of %r", input)
+        logger.debug("Starting upload of %r", input)
 
         client = self.get_redis_client()
 
@@ -58,7 +61,7 @@ class Upload(Transform):
         try:
             serializer = self.formats[extension]
         except KeyError:
-            transform_manager.logger.exception("Unrecognized RDF extension: %r", extension)
+            logger.exception("Unrecognized RDF extension: %r", extension)
             raise
 
         graph = rdflib.ConjunctiveGraph()
@@ -66,14 +69,14 @@ class Upload(Transform):
                     format=serializer,
                     publicID=self.graph_name)
 
-        transform_manager.logger.debug("Parsed graph")
+        logger.debug("Parsed graph")
 
         datetime_now = self.site_timezone.localize(datetime.datetime.now().replace(microsecond=0))
         modified = graph.value(self.graph_name, NS['dcterms'].modified,
                                default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
-            transform_manager.logger.debug("Getting created date from %r", endpoint_query)
+            logger.debug("Getting created date from %r", endpoint_query)
             endpoint = Endpoint(endpoint_query)
             results = endpoint.query(self.created_query % {'graph': self.graph_name.n3()})
             if results:
@@ -86,7 +89,7 @@ class Upload(Transform):
             (self.graph_name, NS['dcterms'].created, created),
         )
 
-        transform_manager.logger.debug("About to serialize and queue")
+        logger.debug("About to serialize and queue")
 
         output = transform_manager('rdf')
         with open(output, 'w') as f:
@@ -106,14 +109,14 @@ class Upload(Transform):
             'mimetype': 'application/rdf+xml',
         })))
 
-        transform_manager.logger.info("Queued %r for upload", output)
+        logger.info("Queued %r for upload", output)
 
         for message in pubsub.listen():
             message = pickle.loads(base64.b64decode(message['data']))
             if message['filename'] == output:
                 break
 
-        transform_manager.logger.info("%r accepted for upload", output)
+        logger.info("%r accepted for upload", output)
 
         pubsub.unsubscribe(Uploader.UPLOADED_PUBSUB)
 
