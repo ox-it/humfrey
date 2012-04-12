@@ -38,7 +38,6 @@ body.elasticsearch div.search-box input[type='text'] {
     -moz-border-left-colors: none;
     -moz-border-right-colors: none;
     -moz-border-top-colors: none;
-    background: url("search.png") no-repeat scroll white;
     border-color: #888;
     border-right: 1px solid #DDDDDD;
     border-style: solid;

@@ -1,5 +1,6 @@
 from __future__ import division
 
+import collections
 import json
 import math
 import urllib2
@@ -8,6 +9,10 @@ import urlparse
 from django.conf import settings
 from django_conneg.decorators import renderer
 from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
+from rdflib import URIRef
+
+from humfrey.sparql.utils import get_labels
+from humfrey.utils.namespaces import expand, contract
 
 from .forms import SearchForm
 
@@ -16,10 +21,10 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
     index_name = 'search'
     page_size = 10
 
-    facets = {'type': {'terms': {'field': 'type.label',
+    facets = {'type': {'terms': {'field': 'type.uri',
                                           'size': 20}}}
     template_name = 'elasticsearch/search'
-
+    
     class MissingQuery(Exception):
         pass
 
@@ -79,11 +84,14 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
             query['facets'] = self.facets
 
         for key in parameters:
+            parameter = parameters[key]
             if key.startswith('filter.'):
-                if not parameters[key]:
+                if not parameter:
                     filter = {'missing': {'field': key[7:]}}
                 else:
-                    filter = {'term': {key[7:]: parameters[key]}}
+                    if key.endswith('.uri'):
+                        parameter = expand(parameter)
+                    filter = {'term': {key[7:]: parameter}}
                 query['filter']['and'].append(filter)
         if not query['filter']['and']:
             del query['filter']['and']
@@ -96,11 +104,24 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
         results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
 
+        facet_labels = set()
         for key in query['facets']:
-            results['facets'][key]['meta'] = query['facets'][key]
+            meta = results['facets'][key]['meta'] = query['facets'][key]
             filter_value = parameters.get('filter.%s' % query['facets'][key]['terms']['field'])
             results['facets'][key]['filter'] = {'present': filter_value is not None,
                                                 'value': filter_value}
+            if meta['terms']['field'].endswith('.uri'):
+                for term in results['facets'][key]['terms']:
+                    facet_labels.add(term['term'])
+                    term['value'] = contract(term['term'])
+        
+        labels = get_labels(facet_labels)
+        for key in query['facets']:
+            if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
+                for term in results['facets'][key]['terms']:
+                    uri = URIRef(term['term'])
+                    if uri in labels:
+                        term['label'] = unicode(labels[uri])
 
         return results
 
