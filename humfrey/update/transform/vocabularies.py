@@ -12,6 +12,10 @@ from humfrey.update.transform.upload import Upload
 logger = logging.getLogger(__name__)
 
 class VocabularyLoader(Transform):
+    def __init__(self, store=None, stores=[]):
+        self.stores = stores or []
+        if not stores:
+            self.stores.append(store)
     def execute(self, transform_manager):
         for prefix, uri in NS.iteritems():
             self.load_vocabulary(transform_manager, prefix, uri)
@@ -45,5 +49,5 @@ class VocabularyLoader(Transform):
             shutil.copyfileobj(response, output)
 
         graph_name = settings.GRAPH_BASE + 'vocabulary/' + prefix
-        upload = Upload(graph_name)
+        upload = Upload(graph_name, stores=self.stores)
         upload.execute(transform_manager, output.name)
