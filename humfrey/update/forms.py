@@ -17,7 +17,7 @@ class UpdateDefinitionForm(forms.ModelForm):
             raise ValidationError("You cannot change the slug once set")
 
         # Any reserved name will resolve to something not having keyword arguments.
-        if not resolve(reverse('update:definition-detail', args=[slug]))[2]:
+        if slug in ('create','files'):
             raise ValidationError("'%s' is a reserved name." % slug)
         return slug
 
