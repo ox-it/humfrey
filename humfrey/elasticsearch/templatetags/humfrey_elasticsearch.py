@@ -17,8 +17,8 @@ def munge_parameter(context, prefix, name, value):
     if value is not None:
         query.append((key, value))
     query.sort()
-    url = url._replace(query=urllib.urlencode(query))
-    return urlparse.urlunparse(url)
+    return '?' + urllib.urlencode(query)
+    #return urlparse.urlunparse(url)
 
 @register.simple_tag(takes_context=True)
 def set_parameter(context, prefix, name, value):
