@@ -114,6 +114,9 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
                 for term in results['facets'][key]['terms']:
                     facet_labels.add(term['term'])
                     term['value'] = contract(term['term'])
+            else:
+                for term in results['facets'][key]['terms']:
+                    term['value'] = term['term']
         
         labels = get_labels(facet_labels)
         for key in query['facets']:
