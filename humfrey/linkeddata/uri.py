@@ -9,12 +9,12 @@ except ImportError:
 import rdflib
 
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 if 'django_hosts' in settings.INSTALLED_APPS:
     from django_hosts.reverse import reverse_full
     with_hosts = True
 else:
-    from django.core.urlresolvers import reverse
     def reverse_full(host, *args, **kwargs):
         return reverse(*args, **kwargs)
     with_hosts = False
@@ -81,7 +81,7 @@ BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 def doc_backward(url, formats=None):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
-    if url.split(':', 1)[-1].split('?')[0] == reverse_full('data', 'doc-generic'):
+    if parsed_url.path == reverse('doc-generic'):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)
