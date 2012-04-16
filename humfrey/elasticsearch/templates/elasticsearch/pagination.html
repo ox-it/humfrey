@@ -1,19 +1,19 @@
 {% load humfrey_elasticsearch %}{% with previous_page=page|add:"-1" next_page=page|add:"1" %}{% if page_count > 1 %}
   <p style="text-align: center; vertical-align: middle; line-height:1em; clear:right">
   {% if page != 1 %}
-    <a style="font-size: 300%; vertical-align: middle" href="{% set_parameter "" "page" previous_page %}">«</a>
+    <a class="pagination pagination-previous" href="{% set_parameter "" "page" previous_page %}">«</a>
   {% endif %}
   {% for other_page in pages %}
   {% if other_page %}
   {% if other_page == page %}
-    <strong style="vertical-align: middle">{{ other_page }}</strong>
+    <strong>{{ other_page }}</strong>
   {% else %}
-    <a style="vertical-align: middle" href="{% set_parameter "" "page" other_page %}">{{ other_page }}</a>
+    <a class="pagination pagination-page" href="{% set_parameter "" "page" other_page %}">{{ other_page }}</a>
   {% endif %}
   {% else %}&hellip;{% endif %}
   {% endfor %}
   {% if page != page_count %}
-    <a style="font-size: 300%; vertical-align: middle" href="{% set_parameter "" "page" next_page %}">»</a>
+    <a class="pagination pagination-next" href="{% set_parameter "" "page" next_page %}">»</a>
   {% endif %}
   </p>
 {% endif %}{% endwith %}
