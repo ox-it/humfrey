@@ -18,7 +18,10 @@ class VocabularyLoader(Transform):
             self.stores.append(store)
     def execute(self, transform_manager):
         for prefix, uri in NS.iteritems():
-            self.load_vocabulary(transform_manager, prefix, uri)
+            try:
+                self.load_vocabulary(transform_manager, prefix, uri)
+            except Exception, e:
+                logger.error("Failed to load vocabulary: %r from %r", prefix, uri)
 
     def load_vocabulary(self, transform_manager, prefix, uri):
         overrides = getattr(settings, 'VOCABULARY_URL_OVERRIDES', {})
