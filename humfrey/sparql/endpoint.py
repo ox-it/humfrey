@@ -130,7 +130,7 @@ class Endpoint(object):
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
         }))
-        request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml, text/plain'
+        request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml'
         request.headers['User-Agent'] = 'humfrey (%s; https://github.com/oucs/humfrey; %s)' % (__version__, settings.DEFAULT_FROM_EMAIL)
         if timeout:
             request.headers['Timeout'] = str(timeout)
