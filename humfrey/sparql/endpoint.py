@@ -7,6 +7,7 @@ import sys
 import time
 import urllib
 import urllib2
+import urlparse
 import weakref
 
 from lxml import etree
@@ -299,6 +300,13 @@ class EndpointView(View):
     def get_types(self, uri):
         if ' ' in uri:
             return set()
+        parsed = urlparse.urlparse(uri)
+        if parsed.scheme == 'mailto':
+            if parsed.netloc or not parsed.path:
+                return set()
+        else:
+            if not (parsed.scheme and parsed.netloc):
+                return set()
         key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
         types = cache.get(key_name)
         if False and types:
