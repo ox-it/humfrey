@@ -1,4 +1,5 @@
 import logging
+import re
 import urlparse
 
 import rdflib
@@ -7,9 +8,11 @@ from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
+from django.core.urlresolvers import resolve, Resolver404
 
-from django_conneg.views import HTMLView
-from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect
+from django_conneg import decorators
+from django_conneg.views import HTMLView, ContentNegotiatedView
+from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect, MediaType
 
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 
@@ -20,7 +23,13 @@ from humfrey.utils.namespaces import NS
 
 logger = logging.getLogger(__name__)
 
-class IdView(EndpointView):
+class IdView(EndpointView, ContentNegotiatedView):
+    id_mapping_redirects = tuple((re.compile(a), b, frozenset(c)) for a,b,c in getattr(settings, 'ID_MAPPING_REDIRECTS', ()))
+
+    if 'django_hosts' in settings.INSTALLED_APPS:
+        from django_hosts.middleware import HostsMiddleware
+        hosts_middleware = HostsMiddleware()
+
     def get(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
         if not IRI.match(uri):
@@ -30,7 +39,34 @@ class IdView(EndpointView):
 
         description_url = doc_forward(uri, described=True)
 
+        for pattern, target, mimetypes in self.id_mapping_redirects:
+            match = pattern.match(str(uri))
+            if match and self.override_redirect(request, description_url, mimetypes):
+                description_url = target % match.groupdict()
+                break
+
         return HttpResponseSeeOther(description_url)
+
+    def override_redirect(self, request, description_url, mimetypes):
+        url = urlparse.urlparse(description_url)
+        if 'django_hosts' in settings.INSTALLED_APPS:
+            host, _ = self.hosts_middleware.get_host(url.netloc)
+            urlconf = host.urlconf
+        else:
+            urlconf = None
+
+        try:
+            view, _, _ = resolve(url.path, urlconf)
+        except Resolver404:
+            return False
+
+        should_redirect = lambda: True
+        renderer = decorators.renderer(None, mimetypes, float('inf'), None)(should_redirect)
+
+        accepts = self.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
+        renderers = MediaType.resolve(accepts, (renderer,) + view._renderers)
+
+        return renderers and renderers[0] is should_redirect
 
 class DescView(EndpointView):
     """
