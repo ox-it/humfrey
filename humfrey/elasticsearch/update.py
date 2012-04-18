@@ -32,19 +32,23 @@ class IndexUpdater(object):
         return hash(json.dumps(recursive_sort(value)))
 
     def update(self, index):
-        hash_key = 'humfrey:elasticsearch:indices:%s' % index.slug
-        endpoint = Endpoint(index.store.query_endpoint)
+        for store in index.stores.all():
+            self.update_for_store(index, store)
+
+    def update_for_store(self, index, store):
+        hash_key = 'humfrey:elasticsearch:indices:%s:%s' % (index.slug, store.slug)
+        endpoint = Endpoint(store.query_endpoint)
         results = endpoint.query(index.query)
 
         try:
-            urllib2.urlopen(index.mapping_url)
+            urllib2.urlopen(index.get_index_status_url(store))
             index_exists = True
         except urllib2.HTTPError, e:
             if e.code == httplib.NOT_FOUND:
                 index_exists = False
                 index.update_mapping = True
 
-                request = urllib2.Request(index.index_url.rsplit('/', 1)[0])
+                request = urllib2.Request(index.get_index_url(store))
                 request.get_method = lambda: 'PUT'
                 urllib2.urlopen(request)
             else:
@@ -53,12 +57,12 @@ class IndexUpdater(object):
         if index.update_mapping:
             index.update_mapping = False
             if index_exists:
-                request = urllib2.Request(index.index_url)
+                request = urllib2.Request(index.get_type_url(store))
                 request.get_method = lambda : 'DELETE'
                 urllib2.urlopen(request)
 
             if index.mapping:
-                request = urllib2.Request(index.mapping_url, index.mapping)
+                request = urllib2.Request(index.get_mapping_url(store), index.mapping)
                 request.get_method = lambda : 'PUT'
                 urllib2.urlopen(request)
 
@@ -93,7 +97,7 @@ class IndexUpdater(object):
             conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
 
-            conn.putrequest('POST', '/%s/_bulk' % index.slug)
+            conn.putrequest('POST', index.get_bulk_url(store, path=True))
             conn.putheader("User-Agent", "humfrey")
             conn.putheader("Content-Length", str(f.tell()))
             conn.endheaders()

@@ -22,7 +22,7 @@ class Index(models.Model):
 
     slug = models.CharField(max_length=50, primary_key=True)
 
-    store = models.ForeignKey(Store, null=True)
+    stores = models.ManyToManyField(Store, null=True)
 
     title = models.CharField(max_length=128)
     query = models.TextField()
@@ -54,20 +54,28 @@ class Index(models.Model):
             self.update_mapping = True
         return super(Index, self).save(*args, **kwargs) 
 
-    @property
-    def index_url(self):
-        params = settings.ELASTICSEARCH_SERVER.copy()
-        params['slug'] = self.slug
-        return 'http://%(host)s:%(port)d/%(slug)s' % params
+    def _get_url(self, store, path, pattern):
+        params = {'slug': self.slug,
+                  'store': store.slug}
+        params.update(settings.ELASTICSEARCH_SERVER)
+        if not path:
+            pattern = 'http://%(host)s:%(port)d' + pattern
+        return pattern % params
 
-    @property
-    def mapping_url(self):
-        print self.index_url
-        return self.index_url + '/_mapping'
+    def get_index_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s')
 
-    @property
-    def status_url(self):
-        return self.index_url + '/_status'
+    def get_index_status_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/_status')
+
+    def get_type_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/%(slug)s')
+
+    def get_bulk_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/%(slug)s/_bulk')
+
+    def get_mapping_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/%(slug)s/_mapping')
 
     class Meta:
         verbose_name_plural = 'indexes'
