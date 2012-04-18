@@ -5,6 +5,7 @@ from django.conf import settings
 from django_conneg.views import HTMLView
 
 from humfrey.sparql.endpoint import EndpointView, SparqlResultList, SparqlResultBool, SparqlResultGraph
+from humfrey.utils.resource import BaseResource
 
 # Only create FeedView class if feedparser and pytz are importable.
 # This will make feedparser and pytz optional dependencies if one
@@ -62,6 +63,12 @@ class CannedQueryView(EndpointView):
         """
         return None, None
 
+    def get_subjects(self, request, result, *args, **kwargs):
+        return ()
+
+    def get_additional_context(self, request, *args, **kwargs):
+        return {}
+
     def get(self, request, *args, **kwargs):
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
@@ -72,11 +79,15 @@ class CannedQueryView(EndpointView):
             context = {'result': result}
         elif isinstance(result, SparqlResultGraph):
             context = {'graph': result}
+            subjects = self.get_subjects(request, result, *args, **kwargs)
+            context['subjects'] = [BaseResource(s, result, self.endpoint) for s in subjects]
 
         if self.content_location:
             context['additional_headers'] = {'Content-location': self.content_location}
 
-        if 'format' in kwargs:
-            self.render_to_format(request, context, self.template_name, kwargs['format'])
+        context.update(self.get_additional_context(request, *args, **kwargs))
+
+        if 'format' in request.GET:
+            return self.render_to_format(request, context, self.template_name, request.GET['format'])
         else:
             return self.render(request, context, self.template_name)
