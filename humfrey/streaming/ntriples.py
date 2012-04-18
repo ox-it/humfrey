@@ -1,5 +1,9 @@
-from rdflib.plugins.parsers.ntriples import NTriplesParser, ParseError
-from rdflib.plugins.serializers.nt import NTSerializer
+try: # rdflib 3.0
+    from rdflib.plugins.parsers.ntriples import NTriplesParser, ParseError
+    from rdflib.plugins.serializers.nt import NTSerializer
+except ImportError: # rdflib 2.4.x
+    from rdflib.syntax.parsers.ntriples import NTriplesParser, ParseError
+    from rdflib.syntax.serializers.NTSerializer import NTSerializer
 
 __all__ = ['NTriplesSource', 'NTriplesSink']
 

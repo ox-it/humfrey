@@ -3,10 +3,10 @@ import re
 import threading
 from xml.sax.saxutils import quoteattr, escape
 
-from rdflib.plugins.parsers.rdfxml import RDFXMLParser
-from rdflib.plugins.serializers.rdfxml import XMLSerializer
-from rdflib.store import Store
-from rdflib.namespace import NamespaceManager
+try: # rdflib 3.0
+    from rdflib.plugins.parsers.rdfxml import RDFXMLParser
+except ImportError: # rdflib 2.4.x
+    from rdflib.syntax.parsers.RDFXMLParser import RDFXMLParser
 from rdflib import Graph, URIRef, Literal, BNode
 
 #from rdflib.plugins.memory.IOMemory
