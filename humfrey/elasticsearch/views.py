@@ -13,6 +13,7 @@ from rdflib import URIRef
 
 from humfrey.sparql.utils import get_labels
 from humfrey.utils.namespaces import expand, contract
+from humfrey.linkeddata.uri import doc_forwards
 
 from .forms import SearchForm
 
@@ -125,6 +126,12 @@ class SearchView(HTMLView, JSONPView, ErrorCatchingView):
                     uri = URIRef(term['term'])
                     if uri in labels:
                         term['label'] = unicode(labels[uri])
+
+        for hit in results['hits']['hits']:
+            try:
+                hit['_url'] = doc_forwards(hit['_source']['uri'])[None]
+            except KeyError:
+                raise
 
         return results
 

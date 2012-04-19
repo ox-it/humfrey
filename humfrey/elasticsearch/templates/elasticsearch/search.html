@@ -49,7 +49,7 @@
   <ol start="{{ start }}">
   {% for hit in hits.hits %}{% block hit %}
     <li style="line-height:1.1em; margin-bottom:1em; clear:right">
-      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.source.uri|doc_url }}">
+      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.url }}">
       {% if hit.source.image %}
       <img style="float:right; margin-bottom:1em" src="{% host_url resized-image on data %}?url={{ hit.source.image }}&amp;width=200&amp;height=120" alt=""/>
       {% endif %}
