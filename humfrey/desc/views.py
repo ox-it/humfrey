@@ -92,6 +92,7 @@ class DescView(EndpointView):
             raise Http404
 
 class DocView(RDFView, HTMLView):
+    check_canonical = True
 
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None
@@ -107,14 +108,13 @@ class DocView(RDFView, HTMLView):
             raise Http404
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
-        expected_doc_url = urlparse.urljoin(doc_url, expected_doc_url)
 
         types = self.get_types(uri)
         if not types:
             logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
             raise Http404
 
-        if expected_doc_url != doc_url:
+        if self.check_canonical and expected_doc_url != doc_url:
             logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
             return HttpResponsePermanentRedirect(expected_doc_url)
 
