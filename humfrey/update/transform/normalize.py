@@ -34,10 +34,11 @@ class TimezoneNormalization(Normalization):
         self.done = True
 
 class NotationNormalization(Normalization):
-    def __init__(self, datatypes):
+    def __init__(self, datatypes, safe_predicates=None):
         self.datatypes = set(map(expand, datatypes))
         self.notations = defaultdict(set)
         self.pass_function = self.find_notations
+        self.safe_predicates = frozenset(map(expand, (safe_predicates or ())))
     def __call__(self, source):
         for triple in self.pass_function(source):
             yield triple
@@ -78,7 +79,7 @@ class NotationNormalization(Normalization):
             if o in mapping:
                 yield (s, p, mapping[o])
             elif s in mapping:
-                if isinstance(o, (BNode, URIRef)):
+                if p not in self.safe_predicates and isinstance(o, (BNode, URIRef)):
                     self.to_remove.add(o)
             else:
                 yield (s, p, o)
