@@ -17,7 +17,8 @@ from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
 
-from humfrey.sparql.endpoint import Endpoint, EndpointView, SparqlResultList, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.endpoint import Endpoint, EndpointView
+from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store, UserPrivileges
 
@@ -244,7 +245,7 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
                 context['queries'] = [results.query]
                 context['duration'] = results.duration
 
-                if isinstance(results, SparqlResultList):
+                if isinstance(results, SparqlResultSet):
                     context['results'] = results
                     return self._resultset_view(request, context)
                 elif isinstance(results, SparqlResultBool):

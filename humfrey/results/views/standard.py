@@ -16,7 +16,9 @@ from django.http import HttpResponse
 
 from django_conneg.decorators import renderer
 
-from humfrey.sparql.endpoint import EndpointView, SparqlResultList, SparqlResultBool
+from humfrey.sparql.endpoint import EndpointView
+from humfrey.sparql.results import SparqlResultList, SparqlResultBool
+from humfrey.streaming import srx
 
 # Register the RDF/JSON and JSON-LD serializer plugins if available
 try:
@@ -68,45 +70,6 @@ class RDFView(EndpointView):
 
 
 class ResultSetView(EndpointView):
-    def _spool_srx_boolean(self, result):
-        yield '<?xml version="1.0"?>\n'
-        yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
-        yield '  <head/>\n'
-        yield '  <boolean>%s</boolean>\n' % ('true' if result else 'false')
-        yield '</sparql>\n'
-
-    def _spool_srx_resultset(self, results):
-        yield '<?xml version="1.0"?>\n'
-        yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
-        yield '  <head>\n'
-        for binding in results.fields:
-            yield '    <variable name="%s"/>\n' % escape(binding)
-        yield '  </head>\n'
-        yield '  <results>\n'
-        for result in results:
-            yield '    <result>\n'
-            for field in result._fields:
-                value = getattr(result, field)
-                if value is None:
-                    continue
-                yield '      <binding name="%s">\n' % escape(field)
-                yield ' ' * 8
-                if isinstance(value, rdflib.URIRef):
-                    yield '<uri>%s</uri>' % escape(value).encode('utf-8')
-                elif isinstance(value, rdflib.BNode):
-                    yield '<bnode>%s</bnode>' % escape(value).encode('utf-8')
-                elif isinstance(value, rdflib.Literal):
-                    yield '<literal'
-                    if value.datatype:
-                        yield ' datatype="%s"' % escape(value.datatype).encode('utf-8')
-                    if value.language:
-                        yield ' xml:lang="%s"' % escape(value.language).encode('utf-8')
-                    yield '>%s</literal>' % escape(value).encode('utf-8')
-                yield '\n      </binding>\n'
-            yield '    </result>\n'
-        yield '  </results>\n'
-        yield '</sparql>\n'
-
     def _spool_srj_boolean(self, result):
         yield '{\n'
         yield '  "head": {},\n'
@@ -172,10 +135,9 @@ class ResultSetView(EndpointView):
 
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
     def render_srx(self, request, context, template_name):
-        return self.render_resultset(request, context,
-                                     self._spool_srx_boolean,
-                                     self._spool_srx_resultset,
-                                     'application/sparql-results+xml')
+        results = context.get('results') or context.get('result')
+        return HttpResponse(srx.SRXSerializer(results),
+                            mimetype='application/sparql-results+xml')
 
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):

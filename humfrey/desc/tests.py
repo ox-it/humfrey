@@ -13,7 +13,8 @@ from django.test.client import Client, RequestFactory
 from django.http import HttpResponse
 
 from humfrey.desc import rdf_processors, views
-from humfrey.utils import sparql, resource
+from humfrey.utils import resource
+import humfrey.sparql.endpoint
 from humfrey.tests.stubs import patch_id_mapping
 
 class GraphTestMixin(object):
@@ -37,7 +38,7 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
     @patch_id_mapping
     def testAll(self):
         for rdf_processor in self._ALL:
-            endpoint = mock.Mock(spec=sparql.Endpoint)
+            endpoint = mock.Mock(spec=humfrey.sparql.endpoint.Endpoint)
             graph = rdflib.ConjunctiveGraph()
             doc_uri = rdflib.URIRef('http://example.org/doc/Foo')
             subject_uri = rdflib.URIRef('http://example.org/id/Foo')

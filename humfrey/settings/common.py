@@ -99,6 +99,7 @@ INSTALLED_APPS = (
     'humfrey.desc',
     'humfrey.linkeddata',
     'humfrey.sparql',
+    'humfrey.streaming',
     'humfrey.results',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',

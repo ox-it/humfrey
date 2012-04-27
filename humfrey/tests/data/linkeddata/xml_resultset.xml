@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+  <head>
+    <variable name="one"/>
+    <variable name="two"/>
+  </head>
+  <results>
+    <result>
+      <binding name="one">
+        <uri>http://example.org/one</uri>
+      </binding>
+      <binding name="two">
+        <bnode>first</bnode>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <literal>hello</literal>
+      </binding>
+      <binding name="two">
+        <literal xml:lang="en">hello</literal>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <literal>foo&quot;bar</literal>
+      </binding>
+      <binding name="two">
+        <literal>foo
+bar</literal>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <literal>foo,bar</literal>
+      </binding>
+      <binding name="two">
+        <literal>foo;bar</literal>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <literal>foo bar</literal>
+      </binding>
+      <binding name="two">
+        <literal>foo	bar</literal>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <literal datatype="http://www.w3.org/2001/XMLSchema#integer">1</literal>
+      </binding>
+      <binding name="two">
+        <literal datatype="http://www.w3.org/2001/XMLSchema#timeDate">2011-01-02T12:34:56Z</literal>
+      </binding>
+    </result>
+    <result/>
+    <result>
+      <binding name="one">
+        <bnode>first</bnode>
+      </binding>
+      <binding name="two">
+        <bnode>second</bnode>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <uri>http://example.org/</uri>
+      </binding>
+      <binding name="two">
+        <uri>mailto:alice@example.org</uri>
+      </binding>
+    </result>
+    <result>
+      <binding name="one">
+        <uri>urn:isbn:9781449306595</uri>
+      </binding>
+      <binding name="two">
+        <uri>tag:bob@example.org,2011:foo</uri>
+      </binding>
+    </result>
+  </results>
+</sparql>

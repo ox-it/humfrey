@@ -14,11 +14,12 @@ import unittest2
 import rdflib
 
 from humfrey.results.views import standard as standard_views
-from humfrey.utils import sparql, namespaces
+from humfrey.utils import namespaces
+import humfrey.sparql.results
 
 _TEST_BNODE = rdflib.BNode()
 TEST_RESULTSET_RESULT = collections.namedtuple('Result', 'one two')
-TEST_RESULTSET = sparql.SparqlResultList(list(itertools.starmap(TEST_RESULTSET_RESULT, [
+TEST_RESULTSET = humfrey.sparql.results.SparqlResultList(list(itertools.starmap(TEST_RESULTSET_RESULT, [
     (rdflib.URIRef('http://example.org/one'), _TEST_BNODE),
     (rdflib.Literal('hello'), rdflib.Literal('hello', lang='en')),
     (rdflib.Literal('foo"bar'), rdflib.Literal('foo\nbar')),

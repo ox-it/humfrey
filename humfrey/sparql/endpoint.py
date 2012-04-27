@@ -9,6 +9,7 @@ import urllib
 import urllib2
 import urlparse
 import weakref
+import xml.sax
 
 from lxml import etree
 import rdflib
@@ -24,27 +25,12 @@ from django.core.cache import cache
 from humfrey import __version__
 from humfrey.utils.namespaces import NS
 from humfrey.utils.resource import Resource
+from humfrey.streaming import srx
+from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
 
-class SparqlResult(object):
-    pass
-
-class SparqlResultGraph(SparqlResult, rdflib.ConjunctiveGraph):
-    pass
-
-class SparqlResultList(SparqlResult, list):
-    def __init__(self, fields, arg=None):
-        self.fields = fields
-        if arg:
-            list.__init__(self, arg)
-
-class SparqlResultBool(SparqlResult, object):
-    def __init__(self, value):
-        self._value = bool(value)
-    def __nonzero__(self):
-        return self._value
 
 logger = logging.getLogger(__name__)
 
@@ -74,40 +60,6 @@ def trim_indentation(s):
     # Return a single string:
     return '\n'.join(trimmed)
 
-class SparqlResultBinding(dict):
-    def __init__(self, bindings):
-        if isinstance(bindings, list):
-            bindings = dict(zip(self._fields, bindings))
-        for field in self._fields:
-            if field not in bindings:
-                bindings[field] = None
-        super(SparqlResultBinding, self).__init__(bindings)
-    def __iter__(self):
-        return (self[field] for field in self._fields)
-    def __getattr__(self, name):
-        return self[name]
-    @property
-    def fields(self):
-        return self._fields
-    def __reduce__(self):
-        return (Result, (self._fields, self._asdict()))
-    def _asdict(self):
-        return dict(self)
-
-def Result(fields, bindings=None):
-    fields = tuple(fields)
-    if fields in Result._memo:
-        cls = Result._memo[fields]
-    else:
-        class cls(SparqlResultBinding):
-            _fields = fields
-        Result._memo[fields] = cls
-    if bindings:
-        return cls(bindings)
-    else:
-        return cls
-Result._memo = weakref.WeakValueDictionary()
-
 class Endpoint(object):
     def __init__(self, url, update_url=None, namespaces={}):
         self._url, self._update_url = url, update_url
@@ -127,7 +79,6 @@ class Endpoint(object):
             prefixes = ['PREFIX %s: <%s>\n' % i for i in prefixes]
             query = ''.join(prefixes + q)
 
-        print "URL", self._url
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
         }))
@@ -149,10 +100,10 @@ class Endpoint(object):
                 for param in params_.split(';'):
                     if '=' in param:
                         params.__setitem__(*param.split('=', 1))
-            charset = params.get('charset', 'UTF-8')
+            encoding = params.get('charset', 'UTF-8')
 
             if content_type == 'application/sparql-results+xml':
-                result = self.parse_results(response)
+                result = srx.SRXSource(response, encoding)
             elif content_type == 'application/sparql-results+json':
                 result = self.parse_json_results(response)
             else: # response.headers['Content-Type'] == 'application/rdf+xml':
@@ -225,37 +176,6 @@ class Endpoint(object):
             return uri
         else:
             return '<%s>' % uri
-
-    def parse_results(self, response):
-        xml = etree.parse(response).getroot()
-
-        if len(xml.xpath('srx:boolean', namespaces=NS)):
-            return SparqlResultBool(xml.xpath('srx:boolean', namespaces=NS)[0].text.strip() == 'true')
-
-        fields = [e.attrib['name'] for e in xml.xpath('srx:head/srx:variable', namespaces=NS)]
-        empty_results_dict = dict((f, None) for f in fields)
-        ResultClass = Result(fields)
-
-        g = rdflib.ConjunctiveGraph()
-
-        results = SparqlResultList(fields)
-        for result_xml in xml.xpath('srx:results/srx:result', namespaces=NS):
-            result = empty_results_dict.copy()
-            for binding in result_xml.xpath('srx:binding', namespaces=NS):
-                result[binding.attrib['name']] = self.parse_binding(binding[0], g)
-            results.append(ResultClass(result))
-
-        return results
-
-    def parse_binding(self, binding, graph):
-        if binding.tag.endswith('}bnode'):
-            return Resource(rdflib.BNode(binding.text), graph, self)
-        elif binding.tag.endswith('}uri'):
-            return Resource(rdflib.URIRef(binding.text), graph, self)
-        elif binding.tag.endswith('}literal'):
-            return rdflib.Literal(binding.text, datatype=binding.attrib.get('datatype'), lang=binding.attrib.get('xml:lang'))
-        else:
-            raise AssertionError("Unexpected binding type")
 
     def __contains__(self, obj):
         if isinstance(obj, tuple):
