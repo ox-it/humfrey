@@ -8,10 +8,7 @@ import time
 import urllib
 import urllib2
 import urlparse
-import weakref
-import xml.sax
 
-from lxml import etree
 import rdflib
 try:
     import json
