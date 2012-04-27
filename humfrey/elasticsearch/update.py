@@ -70,7 +70,10 @@ class IndexUpdater(object):
 
         with tempfile.TemporaryFile() as f:
             result_ids = set()
+            result_count = 0
             for result in results:
+                result_count += 1
+
                 result_id = sha1(result['uri']).hexdigest()[:8]
                 result_ids.add(result_id)
                 result_hash = self.hash_result(result)
@@ -111,7 +114,7 @@ class IndexUpdater(object):
             print response.read()
             conn.close()
 
-        return len(results)
+        return result_count
 
     @classmethod
     def dictify(cls, groups, src):
