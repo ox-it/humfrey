@@ -10,6 +10,10 @@ from humfrey.settings.common import *
 # Directory for variable files
 VAR_DIR = tempfile.mkdtemp()
 
+INSTALLED_APPS += (
+    'humfrey.elasticsearch',
+)
+
 def register_atexit(VAR_DIR):
     @atexit.register
     def remove_var_dir():

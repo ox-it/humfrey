@@ -38,7 +38,7 @@ class ResultsParserTestCase(unittest.TestCase):
         Result(TEST_FIELDS, {'uri': TEST_URI_B,
                              'appearance_number': 'S01E10',
                              'appearance_label': 'War Stories'})])
-    TEST_META = {'group': ['altLabel', 'appearance']}
+    TEST_META = type('', (), {'groups': 'altLabel appearance'})()
 
     EXPECTED_RESULT = [{'uri': TEST_URI_A,
                        'label': 'Malcolm Reynolds',
@@ -100,12 +100,8 @@ class ResultsParserTestCase(unittest.TestCase):
     @mock.patch('humfrey.elasticsearch.update.get_redis_client', lambda:None)
     def testResultParsing(self):
         index_updater = update.IndexUpdater()
-        results = index_updater.parse_results(self.TEST_META, self.TEST_RESULTS)
+        results = list(index_updater.parse_results(self.TEST_META, self.TEST_RESULTS))
 
-        import pprint
-        pprint.pprint(self.EXPECTED_RESULT)
-        pprint.pprint(results)
-
-        self.assertEqual(results, self.EXPECTED_RESULT)
+        self.assertEqual(list(results), self.EXPECTED_RESULT)
 
 

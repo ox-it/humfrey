@@ -205,16 +205,21 @@ class IndexUpdater(object):
 
     @classmethod
     def parse_results(cls, index, results):
-        fields = results.fields
         groups = index.groups.split()
         groups = tuple(g.split('_') for g in groups)
         groups = tuple(sorted(groups, key=len, reverse=True))
 
-        out = {}
+        out = None
+        current_uri = None
 
         for result in results:
-            result = Result(fields, [r._identifier if isinstance(r, resource.BaseResource) else r for r in result])
+            if result['uri'] != current_uri:
+                if out:
+                    yield cls.flatten_result(out)[0]
+                out = {}
+                current_uri = result['uri']
             result = cls.dictify(groups, result)
             cls.merge_dicts(groups, out, result)
 
-        return cls.flatten_result(out)
+        if out:
+            yield cls.flatten_result(out)[0]
