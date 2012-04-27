@@ -203,7 +203,8 @@ class IndexUpdater(object):
         results[:] = filter(bool, results)
         return results
 
-    def parse_results(self, index, results):
+    @classmethod
+    def parse_results(cls, index, results):
         fields = results.fields
         groups = index.groups.split()
         groups = tuple(g.split('_') for g in groups)
@@ -213,7 +214,7 @@ class IndexUpdater(object):
 
         for result in results:
             result = Result(fields, [r._identifier if isinstance(r, resource.BaseResource) else r for r in result])
-            result = self.dictify(groups, result)
-            self.merge_dicts(groups, out, result)
+            result = cls.dictify(groups, result)
+            cls.merge_dicts(groups, out, result)
 
-        return self.flatten_result(out)
+        return cls.flatten_result(out)
