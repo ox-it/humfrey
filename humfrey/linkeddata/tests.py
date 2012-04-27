@@ -4,10 +4,17 @@ import mock
 import unittest2
 import rdflib
 
+from django.core.urlresolvers import set_urlconf
+from django_hosts.reverse import get_host
+
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.tests.stubs import patch_id_mapping
 
+
 class URITestCase(unittest2.TestCase):
+    def setUp(self):
+        set_urlconf(get_host('data').urlconf)
+
     @patch_id_mapping
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
@@ -85,6 +92,9 @@ class UnicodeURITestCase(unittest2.TestCase):
         ('http://id.example.org/fu\xc3\x9f', 'http://data.example.org/doc/fu%C3%9F'),
         ('http://id.example.org/\xce\xb2\xce\xae\xcf\x84\xce\xb1', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
     ]
+
+    def setUp(self):
+        set_urlconf(get_host('data').urlconf)
 
     @patch_id_mapping
     def testUnicodeForward(self):
