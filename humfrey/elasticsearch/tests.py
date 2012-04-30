@@ -1,3 +1,4 @@
+import copy
 import mock
 import unittest
 
@@ -96,12 +97,25 @@ class ResultsParserTestCase(unittest.TestCase):
 
         self.assertEqual(update.IndexUpdater.merge_dicts(groups, one, two), expected)
 
-
     @mock.patch('humfrey.elasticsearch.update.get_redis_client', lambda:None)
     def testResultParsing(self):
         index_updater = update.IndexUpdater()
-        results = list(index_updater.parse_results(self.TEST_META, self.TEST_RESULTS))
 
-        self.assertEqual(list(results), self.EXPECTED_RESULT)
+        actual = list(index_updater.parse_results(self.TEST_META, self.TEST_RESULTS))
+        expected = copy.deepcopy(self.EXPECTED_RESULT)
+
+        def sort_recursive(value):
+            if isinstance(value, list):
+                for subvalue in value:
+                    sort_recursive(subvalue)
+                value.sort()
+            elif isinstance(value, dict):
+                for subvalue in value.itervalues():
+                    sort_recursive(subvalue)
+
+        sort_recursive(actual)
+        sort_recursive(expected)
+
+        self.assertEqual(actual, expected)
 
 
