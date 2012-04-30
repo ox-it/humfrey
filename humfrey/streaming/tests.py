@@ -1,7 +1,7 @@
-import collections
 import itertools
 import os
-import unittest
+
+from django.utils import unittest
 
 import rdflib
 
