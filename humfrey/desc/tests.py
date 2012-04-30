@@ -95,15 +95,11 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
         endpoint.query.return_value = graph
 
         url_tests = [
+            # Test that percent-encoded URLs get decoded as UTF-8
             ('/doc/fu%C3%9F', u'http://id.example.org/fuß', False),
-            ('/doc/fu%c3%9F', '/doc/fu%C3%9F', True),
         ]
 
         for url, uri, redirect in url_tests:
-            print '='*80
-            print 'TESTING', url, uri, redirect
-            import urlparse
-            print "GP", repr(self.client._get_path(urlparse.urlparse(url)))
             response = self.client.get(url, HTTP_HOST=self._HTTP_HOST)
             self.assertEqual(response.status_code, 301 if redirect else 200)
             if redirect:
