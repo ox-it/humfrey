@@ -3,7 +3,7 @@ import unittest
 
 import rdflib
 
-from humfrey.utils.sparql import SparqlResultList, Result
+from humfrey.sparql.results import SparqlResultList, Result
 
 from . import update
 
