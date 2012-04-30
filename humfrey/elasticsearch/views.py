@@ -19,7 +19,7 @@ from .forms import SearchForm
 
 
 class SearchView(HTMLView, JSONPView, ErrorCatchingView):
-    index_name = 'search'
+    index_name = 'public'
     page_size = 10
 
     facets = {'type': {'terms': {'field': 'type.uri',
