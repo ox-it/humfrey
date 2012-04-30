@@ -19,7 +19,7 @@ import humfrey.sparql.results
 
 _TEST_BNODE = rdflib.BNode()
 TEST_RESULTSET_RESULT = collections.namedtuple('Result', 'one two')
-TEST_RESULTSET = humfrey.sparql.results.SparqlResultList(list(itertools.starmap(TEST_RESULTSET_RESULT, [
+TEST_RESULTSET = humfrey.sparql.results.SparqlResultList(('one', 'two'), itertools.starmap(TEST_RESULTSET_RESULT, [
     (rdflib.URIRef('http://example.org/one'), _TEST_BNODE),
     (rdflib.Literal('hello'), rdflib.Literal('hello', lang='en')),
     (rdflib.Literal('foo"bar'), rdflib.Literal('foo\nbar')),
@@ -30,7 +30,7 @@ TEST_RESULTSET = humfrey.sparql.results.SparqlResultList(list(itertools.starmap(
     (_TEST_BNODE, rdflib.BNode()),
     (rdflib.URIRef('http://example.org/'), rdflib.URIRef('mailto:alice@example.org')),
     (rdflib.URIRef('urn:isbn:9781449306595'), rdflib.URIRef('tag:bob@example.org,2011:foo')),
-])))
+]))
 del _TEST_BNODE
 TEST_RESULTSET.fields = ('one', 'two')
 TEST_RESULTSET.query = 'The query that was run'
@@ -77,7 +77,6 @@ class SRJRendererTestCase(unittest2.TestCase):
             except Exception, e:
                 raise AssertionError(e)
             self.assertEqual(data, {'head': {}, 'boolean': value})
-
 
 class CSVRendererTestCase(unittest2.TestCase):
     def testValidCSVResultSet(self):
