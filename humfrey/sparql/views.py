@@ -279,3 +279,20 @@ class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
             return self.render(request, context, 'sparql/query')
 
     post = get
+
+class GraphStoreView(ErrorCatchingView, StoreView, PassThroughView):
+    def get_target_url(self, request, path):
+        if not path and 'graph' in request.GET:
+            graph_url = request.GET['graph']
+        else:
+            graph_url = request.build_absolute_uri()
+        return '%s?%s' % (self.store.graph_store_endpoint,
+                          urllib.urlencode({'graph': graph_url.decode('utf-8')}))
+    def get_method(self, request, path):
+        if request.method in ('HEAD', 'GET'):
+            permission_check = self.store.can_query
+        else:
+            permission_check = self.store.can_update
+        if not permission_check(request.user):
+            raise PermissionDenied
+        return request.method
