@@ -281,14 +281,14 @@ class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
     post = get
 
 class GraphStoreView(ErrorCatchingView, StoreView, PassThroughView):
-    def get_target_url(self, request, path):
+    def get_target_url(self, request, path=None, store=None):
         if not path and 'graph' in request.GET:
             graph_url = request.GET['graph']
         else:
             graph_url = request.build_absolute_uri()
         return '%s?%s' % (self.store.graph_store_endpoint,
                           urllib.urlencode({'graph': graph_url.decode('utf-8')}))
-    def get_method(self, request, path):
+    def get_method(self, request, path=None, store=None):
         if request.method in ('HEAD', 'GET'):
             permission_check = self.store.can_query
         else:
