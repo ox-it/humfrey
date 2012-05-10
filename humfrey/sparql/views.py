@@ -1,5 +1,6 @@
 import datetime
 import time
+import urllib
 import urllib2
 
 from lxml import etree
@@ -10,6 +11,7 @@ from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, Text
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 
+from humfrey.misc.views import PassThroughView
 from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
 from humfrey.results.views.spreadsheet import SpreadsheetView
@@ -17,10 +19,12 @@ from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
 
-from humfrey.sparql.endpoint import Endpoint, EndpointView
+from humfrey.sparql.endpoint import Endpoint
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store, UserPrivileges
+
+DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
 
 class IndexView(HTMLView, JSONPView):
     def get(self, request):
@@ -53,10 +57,25 @@ class SparqlErrorView(HTMLView, TextView):
         return self.render(request, context, 'sparql/error')
     post = get
 
-class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
+class StoreView(object):
+    default_store = DEFAULT_STORE_NAME # Use the default store
+
+    @property
+    def store(self):
+        if not hasattr(self, '_store'):
+            store = self.kwargs.get('store') or self.default_store
+            self._store = get_object_or_404(Store, slug=store)
+        return self._store
+    
+    @property
+    def endpoint(self):
+        if not hasattr(self, '_endpoint'):
+            self._endpoint = Endpoint(self.store.query_endpoint)
+        return self._endpoint
+
+class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
-    store = None # Use the default store
     default_timeout = None # Override this with some number of seconds
     maximum_timeout = None # Override this with some number of seconds
     allow_concurrent_queries = False
@@ -195,12 +214,8 @@ class QueryView(EndpointView, RedisView, HTMLView, ErrorCatchingView):
         )
 
     def get(self, request, store=None):
-        store = store or self.store
-        if store is not None:
-            store = get_object_or_404(Store, slug=store)
-            if not store.can_query(request.user):
-                raise PermissionDenied
-            self.endpoint = Endpoint(store.query_endpoint)
+        if not self.store.can_query(request.user):
+            raise PermissionDenied
 
         privileges = self.get_user_privileges(request)
 
