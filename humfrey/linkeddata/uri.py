@@ -19,6 +19,8 @@ else:
         return reverse(*args, **kwargs)
     with_hosts = False
 
+from .mappingconf import get_id_mapping, get_doc_view, get_desc_view
+
 class DocURLs(object):
     def __init__(self, base, format_pattern):
         self._base = base
@@ -42,7 +44,7 @@ def doc_forwards(uri, graph=None, described=None):
     else:
         encoded_uri = urllib.unquote(uri)
 
-    for id_prefix, doc_prefix, _ in settings.ID_MAPPING:
+    for id_prefix, doc_prefix, _ in get_id_mapping():
         if uri.startswith(id_prefix):
             base = doc_prefix + urllib.quote(encoded_uri[len(id_prefix):])
             pattern = base.replace('%', '%%') + '.%(format)s'
@@ -54,12 +56,9 @@ def doc_forwards(uri, graph=None, described=None):
     if described == False:
         return DocURLs(encoded_uri, encoded_uri.replace('%', '%%'))
 
-    if described == True:
-        view_name = 'doc-generic'
-    else:
-        view_name = 'desc'
+    view_name = get_doc_view() if described else get_desc_view()
 
-    base = 'http:%s?%s' % (reverse_full('data', view_name),
+    base = 'http:%s?%s' % (reverse_full(*view_name),
                            urllib.urlencode((('uri', encoded_uri),)))
 
     return DocURLs(base,
@@ -94,7 +93,7 @@ def doc_backward(url, formats=None):
     else:
         url_part = urlparse.urlparse(url).path
 
-    for id_prefix, doc_prefix, is_local in settings.ID_MAPPING:
+    for id_prefix, doc_prefix, is_local in get_id_mapping():
         doc_prefix = urlparse.urljoin(url, doc_prefix)
         if url_part.startswith(doc_prefix):
             url_part = id_prefix + url_part[len(doc_prefix):]

@@ -95,6 +95,9 @@ class DescView(MappingView, StoreView):
 class DocView(MappingView, StoreView, RDFView, HTMLView):
     check_canonical = True
 
+    doc_rdf_processors = getattr(settings, 'DOC_RDF_PROCESSORS', ())
+    template_name = 'doc/base'
+
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None
         super(DocView, self).__init__(*args, **kwargs)
@@ -191,7 +194,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
 
         if context['format']:
             try:
-                return self.render_to_format(request, context, subject.template_name, format)
+                return self.render_to_format(request, context, subject.template_name or self.template_name, format)
             except KeyError:
                 raise Http404
         else:

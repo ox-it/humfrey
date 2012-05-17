@@ -25,6 +25,8 @@ from humfrey.utils.resource import Resource
 from humfrey.streaming import srx
 from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
 
+from humfrey.linkeddata.mappingconf import set_id_mapping, set_doc_view, set_desc_view
+
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
 

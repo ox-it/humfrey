@@ -66,13 +66,13 @@ class SparqlErrorView(HTMLView, TextView):
         return self.render(request, context, 'sparql/error')
     post = get
 
-class StoreView(object):
-    default_store = DEFAULT_STORE_NAME # Use the default store
+class StoreView(View):
+    store_name = DEFAULT_STORE_NAME # Use the default store
 
     @property
     def store(self):
         if not hasattr(self, '_store'):
-            store = self.kwargs.get('store') or self.default_store
+            store = self.kwargs.get('store') or self.store_name
             self._store = get_object_or_404(Store, slug=store)
         return self._store
     

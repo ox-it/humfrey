@@ -66,7 +66,7 @@ class Resource(object):
 
 class BaseResource(object):
     _priority = -1
-    template_name = 'doc/base'
+    template_name = None
 
     def __new__(cls, identifier, graph, endpoint):
         return super(BaseResource, cls).__new__(cls, identifier)
