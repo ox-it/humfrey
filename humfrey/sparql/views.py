@@ -1,15 +1,23 @@
+import base64
 import datetime
+import hashlib
+import pickle
 import time
 import urllib
 import urllib2
+import urlparse
 
 from lxml import etree
 import pytz
+import rdflib
 
 from django.conf import settings
-from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView, ErrorCatchingView
-from django.shortcuts import get_object_or_404
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+from django.views.generic import View
+
+from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView, ErrorCatchingView
 
 from humfrey.misc.views import PassThroughView
 from humfrey.results.views.standard import RDFView, ResultSetView
@@ -18,9 +26,10 @@ from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
+from humfrey.utils.resource import BaseResource
 
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.results import SparqlResultList, SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store, UserPrivileges
 
@@ -72,6 +81,69 @@ class StoreView(object):
         if not hasattr(self, '_endpoint'):
             self._endpoint = Endpoint(self.store.query_endpoint)
         return self._endpoint
+
+    def get_types(self, uri):
+        if ' ' in uri:
+            return set()
+        parsed = urlparse.urlparse(uri)
+        if parsed.scheme == 'mailto':
+            if parsed.netloc or not parsed.path:
+                return set()
+        else:
+            if not (parsed.scheme and parsed.netloc):
+                return set()
+        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
+        types = cache.get(key_name)
+        if False and types:
+            types = pickle.loads(base64.b64decode(types))
+        else:
+            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3()))
+            cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
+        return types
+
+class CannedQueryView(StoreView):
+    query = None
+    template_name = None
+
+    def get_query(self, request, *args, **kwargs):
+        return self.query
+
+    def get_locations(self, request, *args, **kwargs):
+        """
+        Override to provide the canonical and format-specific locations for this resource.
+        
+        Example return value: ('http://example.com/data', 'http://example.org/data.rss')
+        """
+        return None, None
+
+    def get_subjects(self, request, result, *args, **kwargs):
+        return ()
+
+    def get_additional_context(self, request, *args, **kwargs):
+        return {}
+
+    def get(self, request, *args, **kwargs):
+        self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
+        query = self.get_query(request, *args, **kwargs)
+        result = self.endpoint.query(query)
+        if isinstance(result, SparqlResultList):
+            context = {'results': result}
+        elif isinstance(result, SparqlResultBool):
+            context = {'result': result}
+        elif isinstance(result, SparqlResultGraph):
+            context = {'graph': result}
+            subjects = self.get_subjects(request, result, *args, **kwargs)
+            context['subjects'] = [BaseResource(s, result, self.endpoint) for s in subjects]
+
+        if self.content_location:
+            context['additional_headers'] = {'Content-location': self.content_location}
+
+        context.update(self.get_additional_context(request, *args, **kwargs))
+
+        if 'format' in request.GET:
+            return self.render_to_format(request, context, self.template_name, request.GET['format'])
+        else:
+            return self.render(request, context, self.template_name)
 
 class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'

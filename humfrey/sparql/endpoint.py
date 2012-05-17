@@ -211,24 +211,3 @@ class Endpoint(object):
         else:
             raise AssertionError("Unexpected binding type")
 
-class EndpointView(View):
-    endpoint = Endpoint(settings.ENDPOINT_QUERY)
-
-    def get_types(self, uri):
-        if ' ' in uri:
-            return set()
-        parsed = urlparse.urlparse(uri)
-        if parsed.scheme == 'mailto':
-            if parsed.netloc or not parsed.path:
-                return set()
-        else:
-            if not (parsed.scheme and parsed.netloc):
-                return set()
-        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
-        types = cache.get(key_name)
-        if False and types:
-            types = pickle.loads(base64.b64decode(types))
-        else:
-            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3()))
-            cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
-        return types

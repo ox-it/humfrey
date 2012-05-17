@@ -2,11 +2,12 @@ import rdflib
 import types
 from datetime import datetime
 
-from django_conneg.decorators import renderer
 from django.utils.feedgenerator import RssUserland091Feed, Rss201rev2Feed, Atom1Feed, rfc2822_date
 from django.http import HttpResponse
 
-from humfrey.sparql.endpoint import EndpointView
+from django_conneg.decorators import renderer
+from django_conneg.views import ContentNegotiatedView
+
 from humfrey.utils.namespaces import NS
 
 
@@ -27,7 +28,8 @@ def extractFeedDetails(request):
     if 'feedlink' in request.GET:
         link = request.GET['feedlink']       
     return (title, desc, link)
-class FeedView(EndpointView):
+
+class FeedView(ContentNegotiatedView):
                              
     # obj._DESCRIPTION_PROPERTIES
     # obj._LABEL_PROPERTIES

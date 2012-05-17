@@ -11,10 +11,10 @@ from PIL import Image
 from django.http import HttpResponse, Http404
 from django.conf import settings
 
-from humfrey.desc.views import EndpointView
+from humfrey.sparql.views import StoreView
 from humfrey.utils.namespaces import expand
 
-class ResizedImageView(EndpointView):
+class ResizedImageView(StoreView):
     _image_types = set(map(expand, settings.IMAGE_TYPES))
     def get(self, request):
         try:

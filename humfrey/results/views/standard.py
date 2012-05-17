@@ -15,8 +15,8 @@ except ImportError:
 from django.http import HttpResponse
 
 from django_conneg.decorators import renderer
+from django_conneg.views import ContentNegotiatedView
 
-from humfrey.sparql.endpoint import EndpointView
 from humfrey.sparql.results import SparqlResultList, SparqlResultBool
 from humfrey.streaming import srx
 
@@ -54,7 +54,7 @@ class _RDFViewMetaclass(type):
 
         return super(_RDFViewMetaclass, mcs).__new__(mcs, name, bases, dict)
 
-class RDFView(EndpointView):
+class RDFView(ContentNegotiatedView):
     __metaclass__ = _RDFViewMetaclass
 
     RDF_SERIALIZATIONS = (
@@ -69,7 +69,7 @@ class RDFView(EndpointView):
         RDF_SERIALIZATIONS += (('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),)
 
 
-class ResultSetView(EndpointView):
+class ResultSetView(ContentNegotiatedView):
     def _spool_srj_boolean(self, result):
         yield '{\n'
         yield '  "head": {},\n'

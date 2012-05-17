@@ -15,15 +15,16 @@ from django_conneg.views import HTMLView, ContentNegotiatedView
 from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect, MediaType
 
 from humfrey.linkeddata.uri import doc_forward, doc_backward
+from humfrey.linkeddata.views import MappingView
 
 from humfrey.results.views.standard import RDFView
-from humfrey.sparql.endpoint import EndpointView
+from humfrey.sparql.views import StoreView
 from humfrey.utils.resource import Resource, IRI
 from humfrey.utils.namespaces import NS
 
 logger = logging.getLogger(__name__)
 
-class IdView(EndpointView, ContentNegotiatedView):
+class IdView(MappingView, StoreView, ContentNegotiatedView):
     id_mapping_redirects = tuple((re.compile(a), b, frozenset(c)) for a,b,c in getattr(settings, 'ID_MAPPING_REDIRECTS', ()))
 
     if 'django_hosts' in settings.INSTALLED_APPS:
@@ -68,7 +69,7 @@ class IdView(EndpointView, ContentNegotiatedView):
 
         return renderers and renderers[0] is should_redirect
 
-class DescView(EndpointView):
+class DescView(MappingView, StoreView):
     """
     Will redirect to DocView if described by endpoint, otherwise to the URI given.
 
@@ -91,7 +92,7 @@ class DescView(EndpointView):
         else:
             raise Http404
 
-class DocView(RDFView, HTMLView):
+class DocView(MappingView, StoreView, RDFView, HTMLView):
     check_canonical = True
 
     def __init__(self, *args, **kwargs):

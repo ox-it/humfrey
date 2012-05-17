@@ -14,11 +14,12 @@ from rdflib import URIRef
 from humfrey.sparql.utils import get_labels
 from humfrey.utils.namespaces import expand, contract
 from humfrey.linkeddata.uri import doc_forwards
+from humfrey.linkeddata.views import MappingView
 
 from .forms import SearchForm
 
 
-class SearchView(HTMLView, JSONPView, ErrorCatchingView):
+class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
     index_name = 'public'
     page_size = 10
 

@@ -4,11 +4,11 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 from django_conneg.decorators import renderer
+from django_conneg.views import ContentNegotiatedView
 
-from humfrey.sparql.endpoint import EndpointView
 from humfrey.utils.resource import Resource
 
-class KMLView(EndpointView):
+class KMLView(ContentNegotiatedView):
     @renderer(format='kml', mimetypes=('application/vnd.google-earth.kml+xml',), name='KML')
     def render_kml(self, request, context, template_name):
         if not isinstance(context.get('graph'), rdflib.ConjunctiveGraph):
