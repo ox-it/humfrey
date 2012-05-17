@@ -1,3 +1,5 @@
+reports
+.tox
 *.pyc
 build
 dist
