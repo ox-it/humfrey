@@ -91,7 +91,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
                 if not parameter:
                     filter = {'missing': {'field': key[7:]}}
                 else:
-                    if key.endswith('.uri'):
+                    if key.endswith('.uri') and ':' in parameter:
                         parameter = expand(parameter)
                     filter = {'term': {key[7:]: parameter}}
                 query['filter']['and'].append(filter)
