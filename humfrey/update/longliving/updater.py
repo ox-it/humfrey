@@ -14,7 +14,7 @@ import pytz
 from django.conf import settings
 
 from django_longliving.base import LonglivingThread
-from humfrey.update.models import UpdateDefinition
+from humfrey.update.models import UpdateDefinition, UpdateLogRecord
 from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
 
@@ -30,7 +30,6 @@ class _TransformHandler(logging.Handler):
     ignore_loggers = frozenset(['django.db.backends'])
 
     def __init__(self, update_log):
-        self.records = []
         self.ignore = False
         self.update_log = update_log
         logging.Handler.__init__(self)
@@ -43,9 +42,9 @@ class _TransformHandler(logging.Handler):
         if record.get('exc_info'):
             exc_info = record['exc_info']
             record['exc_info'] = exc_info[:2] + (traceback.format_tb(exc_info[2]),)
-        previous = self.update_log.max_log_level
+        previous = self.update_log.log_level
         if not previous or record['levelno'] > previous:
-            self.update_log.max_log_level = record['levelno']
+            self.update_log.log_level = record['levelno']
         record['time'] = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(pytz.timezone(settings.TIME_ZONE))
 
         try:
@@ -57,13 +56,12 @@ class _TransformHandler(logging.Handler):
                 except Exception:
                     del record[key]
 
-        self.records.append(record)
-
         # Ignore all log messages while attempting to save.
         self.ignore = True
         try:
-            self.update_log.log = base64.b64encode(pickle.dumps(self.records))
-            self.update_log.save()
+            update_log_record = UpdateLogRecord(update_log = self.update_log)
+            update_log_record.record = record
+            update_log_record.save()
         finally:
             self.ignore = False
 

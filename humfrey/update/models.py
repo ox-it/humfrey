@@ -95,39 +95,19 @@ register(['update.administer_updatedefinition',
           'update.notifications_updatedefinition'],
          UpdateDefinition, 'update')
 
-class UpdateLog(models.Model):
-    update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
-    user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
-    forced = models.BooleanField()
-
-    trigger = models.CharField(max_length=80)
-    log = models.TextField(blank=True)
-    max_log_level = models.SmallIntegerField(null=True, blank=True)
-
-    queued = models.DateTimeField(null=True, blank=True)
-    started = models.DateTimeField(null=True, blank=True)
-    completed = models.DateTimeField(null=True, blank=True)
-
-    def get_absolute_url(self):
-        return reverse('update:log-detail', args=[self.update_definition.slug, self.id])
-
-    outcomes = {'errors': {'label': 'errors',
-                           'icon': 'gnome-icons/32x32/dialog-error.png'},
-                'warnings': {'label': 'warnings',
-                             'icon': 'gnome-icons/32x32/dialog-warning.png'},
-                'success': {'label': 'success',
-                            'icon': 'gnome-icons/32x32/emblem-default.png'},
-                'inprogress': {'label': 'in progress',
-                               'icon': 'gnome-icons/32x32/system-run.png'}}
+class WithLevels(object):
+    levels = {'errors': {'label': 'errors',
+                         'icon': 'gnome-icons/32x32/dialog-error.png'},
+              'warnings': {'label': 'warnings',
+                           'icon': 'gnome-icons/32x32/dialog-warning.png'},
+              'success': {'label': 'success',
+                          'icon': 'gnome-icons/32x32/emblem-default.png'},
+              'inprogress': {'label': 'in progress',
+                             'icon': 'gnome-icons/32x32/system-run.png'}}
 
     @property
-    def records(self):
-        if self.log:
-            return pickle.loads(base64.b64decode(self.log))
-
-    @property
-    def outcome(self):
-        level = self.max_log_level
+    def level(self):
+        level = self.log_level
         if level >= logging.ERROR:
             return 'errors'
         elif level >= logging.WARNING:
@@ -137,15 +117,50 @@ class UpdateLog(models.Model):
         else:
             return 'inprogress'
 
+    def get_level_display(self):
+        return self.levels[self.level]['label']
 
-    def get_outcome_display(self):
-        return self.outcomes[self.outcome]['label']
+    def get_level_icon(self):
+        return self.levels[self.level]['icon']
 
-    def get_outcome_icon(self):
-        return self.outcomes[self.outcome]['icon']
+class UpdateLog(models.Model, WithLevels):
+    update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
+    user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
+    forced = models.BooleanField()
+
+    trigger = models.CharField(max_length=80)
+    log_level = models.SmallIntegerField(null=True, blank=True)
+
+    queued = models.DateTimeField(null=True, blank=True)
+    started = models.DateTimeField(null=True, blank=True)
+    completed = models.DateTimeField(null=True, blank=True)
+
+    def get_absolute_url(self):
+        return reverse('update:log-detail', args=[self.update_definition.slug, self.id])
+
+    @property
+    def records(self):
+        return self.updatelogrecord_set.all().order_by('when')
+
 
     def __unicode__(self):
         return '%s at %s' % (self.update_definition, self.queued)
+
+class UpdateLogRecord(models.Model, WithLevels):
+    update_log = models.ForeignKey(UpdateLog)
+    when = models.DateTimeField()
+    _record = models.TextField()
+    log_level = models.SmallIntegerField()
+
+    def _set_record(self, value):
+        self._record = base64.b64encode(pickle.dumps(value))
+        self.log_level = value['levelno']
+        self.when = value['time']
+    def _get_record(self):
+        if not hasattr(self, '_record_cache'):
+            self._record_cache = pickle.loads(base64.b64decode(self._record))
+        return self._record_cache
+    record = property(_get_record, _set_record)
 
 class UpdatePipeline(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines")

@@ -17,13 +17,13 @@
       </tr>
     </thead>
     <tbody>{% for log in logs %}
-      <tr class="outcome-{{ log.outcome }}">
+      <tr class="outcome-{{ log.level }}">
         <td>{{ log.trigger }}</td>
         <td>{{ log.user }}</td>
         <td>{{ log.queued }}</td>
         <td>{{ log.started }}</td>
         <td>{{ log.completed }}</td>
-        <td>{{ log.get_outcome_display }}</td>
+        <td>{{ log.get_level_display }}</td>
         <td><a href="{{ log.get_absolute_url }}">View</a></td>
       </tr>{% endfor %}
     </tbody>

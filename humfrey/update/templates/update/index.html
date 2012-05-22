@@ -53,10 +53,10 @@ ul.update-definitions li p {
           <th>Execute</th>
       <tbody>
     {% for definition in update_definitions %}
-        <tr class="outcome-{{ definition.last_log.outcome }}">
+        <tr class="outcome-{{ definition.last_log.level }}">
           <td>
             <a href="{{ definition.last_log.get_absolute_url }}">
-              <img src="{{ STATIC_URL }}{{ definition.last_log.get_outcome_icon }}" alt="{{ definition.last_log.get_outcome_display|capfirst }}" title="{{ definition.last_log.get_outcome_display|capfirst }}"/>
+              <img src="{{ STATIC_URL }}{{ definition.last_log.get_level_icon }}" alt="{{ definition.last_log.get_level_display|capfirst }}" title="{{ definition.last_log.get_outcome_display|capfirst }}"/>
             </a>
           </td>
           <td>{{ definition.slug }}</td>
