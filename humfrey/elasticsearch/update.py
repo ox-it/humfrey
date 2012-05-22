@@ -120,7 +120,7 @@ class IndexUpdater(object):
     def dictify(cls, groups, src):
         dst = {}
         for key, value in src.iteritems():
-            if not value:
+            if value is None:
                 continue
             if isinstance(value, rdflib.Literal):
                 try:
