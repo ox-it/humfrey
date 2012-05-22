@@ -12,9 +12,10 @@ from humfrey.update.transform.base import Transform, TransformException
 logger = logging.getLogger(__name__)
 
 class XSLT(Transform):
-    def __init__(self, template, extension='xml'):
+    def __init__(self, template, extension='xml', params=None):
         self.template = template
         self.extension = extension
+        self.params = params or {}
 
     @property
     def saxon_path(self):
@@ -31,8 +32,11 @@ class XSLT(Transform):
             with tempfile.TemporaryFile() as stderr:
                 transform_manager.start(self, [template_filename, input], type='xslt')
 
-                returncode = subprocess.call([self.saxon_path, input, template_filename],
-                                              stdout=output, stderr=stderr)
+                popen_args = [self.saxon_path, input, template_filename]
+                for item in self.params.iteritems():
+                    popen_args.append('{}={}'.format(*item))
+
+                returncode = subprocess.call(popen_args, stdout=output, stderr=stderr)
 
                 if stderr.tell():
                     stderr.seek(0)
