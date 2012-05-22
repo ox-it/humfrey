@@ -1,5 +1,6 @@
 import base64
 import datetime
+import functools
 import hashlib
 import pickle
 import time
@@ -122,6 +123,14 @@ class CannedQueryView(StoreView):
     def get_additional_context(self, request, *args, **kwargs):
         return {}
 
+    def finalize_context(self, request, context, *args, **kwargs):
+        """
+        This is passed the context just before it is rendered. Override to add
+        items to the context based on what is already there. This method should
+        return the context to be rendered.
+        """
+        return context
+
     def get(self, request, *args, **kwargs):
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
@@ -132,13 +141,15 @@ class CannedQueryView(StoreView):
             context = {'result': result}
         elif isinstance(result, SparqlResultGraph):
             context = {'graph': result}
+            self.resource = functools.partial(BaseResource, graph=result, endpoint=self.endpoint)
             subjects = self.get_subjects(request, result, *args, **kwargs)
-            context['subjects'] = [BaseResource(s, result, self.endpoint) for s in subjects]
+            context['subjects'] = map(self.resource, subjects)
 
         if self.content_location:
             context['additional_headers'] = {'Content-location': self.content_location}
 
         context.update(self.get_additional_context(request, *args, **kwargs))
+        context = self.finalize_context(request, context, *args, **kwargs)
 
         if 'format' in request.GET:
             return self.render_to_format(request, context, self.template_name, request.GET['format'])
