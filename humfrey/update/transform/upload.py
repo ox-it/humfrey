@@ -78,7 +78,7 @@ class Upload(Transform):
         if not created:
             logger.debug("Getting created date from %r", endpoint_query)
             endpoint = Endpoint(endpoint_query)
-            results = endpoint.query(self.created_query % {'graph': self.graph_name.n3()})
+            results = list(endpoint.query(self.created_query % {'graph': self.graph_name.n3()}))
             if results:
                 created = results[0].date
             else:
