@@ -1,6 +1,7 @@
 from __future__ import division
 
 import collections
+import copy
 import json
 import math
 import urllib2
@@ -11,6 +12,7 @@ from django_conneg.decorators import renderer
 from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
 from rdflib import URIRef
 
+from humfrey.sparql.views import StoreView
 from humfrey.sparql.utils import get_labels
 from humfrey.utils.namespaces import expand, contract
 from humfrey.linkeddata.uri import doc_forwards
@@ -19,7 +21,7 @@ from humfrey.linkeddata.views import MappingView
 from .forms import SearchForm
 
 
-class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
+class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView):
     index_name = 'public'
     page_size = 10
 
@@ -70,7 +72,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
         page_size = cleaned_data.get('page_size') or self.page_size
         start = (page - 1) * page_size
         url = urlparse.urlunsplit(('http',
-                                   '%s:%d' % (settings.ELASTICSEARCH_SERVER['host'], settings.ELASTICSEARCH_SERVER['port']),
+                                   '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
                                    '/%s/_search' % self.index_name,
                                    '',
                                    ''))
@@ -80,11 +82,11 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
                                        'default_operator': 'AND'}},
             'from': start,
             'size': page_size,
+            # A blank conjunctive filter. We'll remove this later if necessary.
             'filter': {'and': []},
         }
-        if self.facets:
-            query['facets'] = self.facets
 
+        # Parse query parameters of the form 'filter.FIELDNAME'.
         for key in parameters:
             parameter = parameters[key]
             if key.startswith('filter.'):
@@ -95,10 +97,28 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
                         parameter = expand(parameter)
                     filter = {'term': {key[7:]: parameter}}
                 query['filter']['and'].append(filter)
+
+        # If there aren't any filters defined, we don't want a filter part of
+        # our query.
         if not query['filter']['and']:
             del query['filter']['and']
         if not query['filter']:
             del query['filter']
+
+        if self.facets:
+            # Copy the facet definitions as we'll be playing with them shortly.
+            facets = copy.deepcopy(self.facets)
+
+            # Add facet filters for all active filters except any acting on this
+            # particular facet.
+            if 'filter' in query:
+                for facet in facets.itervalues():
+                    for filter in query['filter']['and']:
+                        if facet['terms']['field'] not in filter['term']:
+                            if 'facet_filter' not in facet:
+                                facet['facet_filter'] = {'and': []}
+                            facet['facet_filter']['and'].append(filter)
+            query['facets'] = facets
 
         response = urllib2.urlopen(url, json.dumps(query))
         results = self.Deunderscorer(json.load(response))
@@ -120,7 +140,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView):
                 for term in results['facets'][key]['terms']:
                     term['value'] = term['term']
         
-        labels = get_labels(facet_labels)
+        labels = get_labels(facet_labels, endpoint=self.endpoint)
         for key in query['facets']:
             if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
                 for term in results['facets'][key]['terms']:

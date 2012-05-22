@@ -42,12 +42,9 @@ def get_labels(subjects, endpoint=None):
     
     graph = endpoint.query(query)
     
-    print len(graph)
-    
     labels = {}
     for subject in subjects:
         subject_labels = sorted(graph.objects(subject), key=language_key)
-        print subject, subject_labels
         if subject_labels:
             labels[subject] = subject_labels[0]
         else:

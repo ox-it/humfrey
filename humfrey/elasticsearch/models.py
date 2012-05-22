@@ -71,6 +71,9 @@ class Index(models.Model):
     def get_type_url(self, store, path=False):
         return self._get_url(store, path, '/%(store)s/%(slug)s')
 
+    def get_type_status_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/%(slug)s/_status')
+
     def get_bulk_url(self, store, path=False):
         return self._get_url(store, path, '/%(store)s/%(slug)s/_bulk')
 
