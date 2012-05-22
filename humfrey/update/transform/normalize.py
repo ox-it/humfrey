@@ -54,7 +54,8 @@ class NotationNormalization(Normalization):
     def substitute_notations(self, source):
         if self.notations:
             query = """SELECT ?notation ?thing WHERE {
-                ?thing skos:notation ?notation
+                ?thing skos:notation ?notation .
+                FILTER (isuri(?thing))
             } BINDINGS ?notation {
                 %s
             }"""
