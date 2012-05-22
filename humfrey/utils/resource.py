@@ -93,7 +93,7 @@ class BaseResource(object):
         return doc_forward(self._identifier, graph=self._graph)
 
     def __repr__(self):
-        return '%s("%s")' % (self.__class__.__name__, self)
+        return '%s("%s")' % (self.__class__.__name__, self._identifier)
 
     def replace(self, *args, **kwargs):
         return unicode(self).replace(*args, **kwargs)
