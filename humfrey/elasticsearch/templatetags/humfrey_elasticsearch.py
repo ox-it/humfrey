@@ -3,6 +3,8 @@ import urlparse
 
 from django import template
 
+from humfrey.desc.templatetags.humfrey_desc import sanitize_html
+
 register = template.Library()
 
 def munge_parameter(context, prefix, name, value):
@@ -28,3 +30,8 @@ def set_parameter(context, prefix, name, value):
 def remove_parameter(context, prefix, name):
     return munge_parameter(context, prefix, name, None)
 
+@register.filter
+def search_html(value):
+    if isinstance(value, basestring) and value.startswith('<') and value.endswith('>'):
+        return sanitize_html(value)
+    return value
