@@ -34,7 +34,7 @@ class XSLT(Transform):
 
                 popen_args = [self.saxon_path, input, template_filename]
                 for item in self.params.iteritems():
-                    popen_args.append('{}={}'.format(*item))
+                    popen_args.append('{0}={1}'.format(*item))
 
                 returncode = subprocess.call(popen_args, stdout=output, stderr=stderr)
 
