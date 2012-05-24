@@ -39,7 +39,10 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             try:
                 value = self.obj[key]
             except KeyError:
-                value = self.obj['_' + key]
+                try:
+                    value = self.obj['_' + key]
+                except KeyError:
+                    return None
             if isinstance(value, (dict, list)):
                 value = SearchView.Deunderscorer(value)
             return value
