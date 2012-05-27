@@ -1,25 +1,14 @@
-import base64
 import datetime
 from functools import partial
-import hashlib
-import pickle
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
-
-import redis
-
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.views.generic import View
 
-from humfrey.utils.views import RedisView
-from humfrey.pingback.longliving.pingback_server import NewPingbackHandler, RetrievedPingbackHandler
-from django_conneg.views import HTMLView, JSONPView
-from django_conneg.http import HttpResponseSeeOther
+from humfrey.sparql.views import StoreView
 
 from .models import InboundPingback
 
-class PingbackView(RedisView):
+class PingbackView(StoreView):
 
     class PingbackError(Exception): pass
     class AlreadyRegisteredError(PingbackError): pass
@@ -42,6 +31,7 @@ class PingbackView(RedisView):
         pingback.user_agent = request.META.get('HTTP_USER_AGENT')
         pingback.remote_addr = request.META['REMOTE_ADDR']
         pingback.user = request.user if request.user.is_authenticated() else None
+        pingback.store = self.store
 
         pingback.queue()
 
@@ -87,40 +77,3 @@ class RESTfulPingbackView(PingbackView):
             response = HttpResponse()
             response.status_code = 202
             return response
-
-class ModerationView(HTMLView, JSONPView, RedisView):
-    def common(self, request):
-        client = self.get_redis_client()
-        pingback_hashes = ['pingback:item:%s' % s for s in client.smembers(RetrievedPingbackHandler.QUEUE_NAME)]
-        if pingback_hashes:
-            pingbacks = client.mget(pingback_hashes)
-            pingbacks = [pickle.loads(base64.b64decode(p)) for p in pingbacks]
-            pingbacks.sort(key=lambda d: d['date'])
-        else:
-            pingbacks = []
-        return {
-            'client': client,
-            'pingbacks': pingbacks,
-        }
-
-    def get(self, request):
-        context = self.common(request)
-        return self.render(request, context, 'pingback/moderation')
-
-    def post(self, request):
-        context = self.common(request)
-        client = context['client']
-        for k in request.POST:
-            ping_hash, action = k.split(':')[-1], request.POST[k]
-            key_name = 'pingback:item:%s' % ping_hash
-            if action in ('accept', 'reject') and not (k.startswith('action:') and client.srem('pingback.pending', ping_hash)):
-                continue
-            data = pickle.loads(base64.b64decode(client.get(key_name)))
-            if action == 'accept':
-                data['state'] = 'accepted'
-                client.rpush('pingback:accepted', ping_hash)
-            else:
-                data['state'] = 'rejected'
-            client.set(key_name, base64.b64encode(pickle.dumps(data)))
-            client.expire(key_name, 3600 * 24 * 7)
-        return HttpResponseSeeOther(reverse('pingback:moderation'))

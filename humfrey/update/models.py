@@ -3,12 +3,18 @@ import datetime
 import logging
 import pickle
 
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
+from celery.execute import send_task
+from djcelery.models import PeriodicTask, CrontabSchedule
+
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.template.base import mark_safe
-from django_longliving.util import pack, get_redis_client
 from object_permissions import register
 
 from humfrey.update.utils import evaluate_pipeline
@@ -26,7 +32,6 @@ def permission_check(model, perm):
     return f
 
 class UpdateDefinition(models.Model):
-    UPDATE_QUEUE = 'humfrey:update:update-queue'
 
     class AlreadyQueued(AssertionError):
         pass
@@ -38,6 +43,7 @@ class UpdateDefinition(models.Model):
     owner = models.ForeignKey(User, related_name='owned_updates')
 
     cron_schedule = models.TextField(blank=True)
+    periodic_task = models.ForeignKey(PeriodicTask, null=True, blank=True)
 
     status = models.CharField(max_length=10, choices=DEFINITION_STATUS_CHOICES, default='idle')
     last_log = models.ForeignKey('UpdateLog', null=True, blank=True)
@@ -45,6 +51,8 @@ class UpdateDefinition(models.Model):
     last_queued = models.DateTimeField(null=True, blank=True)
     last_started = models.DateTimeField(null=True, blank=True)
     last_completed = models.DateTimeField(null=True, blank=True)
+    
+    depends_on = models.ManyToManyField('self', symmetrical=False, blank=True)
 
     class Meta:
         ordering = ('title',)
@@ -61,31 +69,76 @@ class UpdateDefinition(models.Model):
     can_delete = permission_check('updatedefinition', 'delete')
     can_administer = permission_check('updatedefinition', 'administer')
     receives_notifications = permission_check('updatedefinition', 'notifications')
-
-    def queue(self, trigger, user=None, silent=False):
+    
+    def queue(self, silent=False, trigger=None, user=None):
         if self.status != 'idle':
             if silent:
                 return
             raise self.AlreadyQueued()
         self.status = 'queued'
         self.last_queued = datetime.datetime.now()
-
+    
         update_log = UpdateLog.objects.create(update_definition=self,
                                               user=user,
-                                              trigger=trigger,
+                                              trigger=trigger or '',
                                               queued=self.last_queued)
-
+    
         self.last_log = update_log
         self.save()
-
-        redis_client = get_redis_client()
-        redis_client.lpush(self.UPDATE_QUEUE, pack(update_log))
+        
+        send_task('humfrey.update.update', kwargs={'update_log': update_log})
 
     def __unicode__(self):
         return self.title
 
     def get_absolute_url(self):
         return reverse('update:definition-detail', args=[self.slug])
+    
+    def __init__(self, *args, **kwargs):
+        super(UpdateDefinition, self).__init__(*args, **kwargs)
+        self._original_cron_schedule = self.cron_schedule
+    
+    def save(self, *args, **kwargs):
+        if self.cron_schedule != self._original_cron_schedule and self.cron_schedule:
+            minute, hour, day_of_week = self.cron_schedule.split()[:3]
+            
+            if not self.periodic_task:
+                periodic_task = PeriodicTask(task='humfrey.update.update',
+                                                  kwargs=json.dumps({'slug': self.slug,
+                                                                     'trigger': 'crontab'}),
+                                                  name='Update definition: {0}'.format(self.slug),
+                                                  enabled=True)
+                periodic_task.save()
+                self.periodic_task = periodic_task
+                
+            crontab = self.periodic_task.crontab or CrontabSchedule()
+            crontab.minute = minute
+            crontab.hour = hour
+            crontab.day_of_week = day_of_week
+            crontab.save()
+            
+            self.periodic_task.crontab = crontab
+            self.periodic_task.save()
+            
+            super(UpdateDefinition, self).save(*args, **kwargs)
+            
+        elif self.cron_schedule != self._original_cron_schedule and self.periodic_task:
+            periodic_task, self.periodic_task = self.periodic_task, None
+            
+            super(UpdateDefinition, self).save(*args, **kwargs)
+            
+            periodic_task.crontab.delete()
+            periodic_task.delete()
+        else:
+            super(UpdateDefinition, self).save(*args, **kwargs)
+        
+    
+    def delete(self, *args, **kwargs):
+        super(UpdateDefinition, self).delete(*args, **kwargs)
+        if self.periodic_task:
+            self.periodic_task.crontab.delete()
+            self.periodic_task.delete()
+        
 
 register(['update.administer_updatedefinition',
           'update.view_updatedefinition',
@@ -128,7 +181,7 @@ class UpdateLog(models.Model, WithLevels):
     user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
     forced = models.BooleanField()
 
-    trigger = models.CharField(max_length=80)
+    trigger = models.CharField(max_length=80, blank=True)
     log_level = models.SmallIntegerField(null=True, blank=True)
 
     queued = models.DateTimeField(null=True, blank=True)

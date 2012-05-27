@@ -1,7 +1,9 @@
-import base64
+from celery.task import task
+from celery.execute import send_task
+
+import collections
 import contextlib
 import datetime
-import functools
 import logging
 import os
 import pickle
@@ -13,7 +15,6 @@ import pytz
 
 from django.conf import settings
 
-from django_longliving.base import LonglivingThread
 from humfrey.update.models import UpdateDefinition, UpdateLogRecord
 from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
@@ -66,7 +67,7 @@ class _TransformHandler(logging.Handler):
             self.ignore = False
 
 class TransformManager(object):
-    def __init__(self, update_log, output_directory, parameters, force=False):
+    def __init__(self, update_log, output_directory, parameters, force, graphs_touched):
         self.update_log = update_log
         self.owner = update_log.update_definition.owner
         self.output_directory = output_directory
@@ -75,7 +76,7 @@ class TransformManager(object):
 
         self.counter = 0
         self.transforms = []
-        self.graphs_touched = set()
+        self.graphs_touched = graphs_touched
 
     def __call__(self, extension=None, name=None):
         if not name:
@@ -94,71 +95,67 @@ class TransformManager(object):
         self.current['outputs'] = outputs
         self.transforms.append(self.current)
         del self.current
-    def touched_graph(self, graph_name):
-        self.graphs_touched.add(graph_name)
+    def touched_graph(self, store, graph_name):
+        self.graphs_touched[store.slug].add(graph_name)
     def not_changed(self):
         if not self.force:
             raise NotChanged()
 
-class Updater(LonglivingThread):
-    UPDATED_CHANNEL = 'humfrey:updater:updated-channel'
+_time_zone = pytz.timezone(settings.TIME_ZONE)
 
-    time_zone = pytz.timezone(settings.TIME_ZONE)
+@contextlib.contextmanager
+def logged(update_log):
+    update_log.started = datetime.datetime.now()
+    update_log.save()
 
-    def run(self):
-        client = self.get_redis_client()
+    logger = logging.getLogger()
+    handler = _TransformHandler(update_log)
+    handler.addFilter(_SameThreadFilter())
 
-        for _, update_log in self.watch_queue(client, UpdateDefinition.UPDATE_QUEUE, True):
-            logger.info("Item received: %r" % update_log.update_definition.slug)
-            try:
-                with self.logged(update_log):
-                    self.process_item(client, update_log)
-            except Exception:
-                logger.exception("Exception when processing item")
-            logger.info("Item processed: %r" % update_log.update_definition.slug)
+    UpdateDefinition.objects \
+                    .filter(slug=update_log.update_definition.slug) \
+                    .update(status='active', last_started=update_log.started)
 
-    @contextlib.contextmanager
-    def logged(self, update_log):
-        update_log.started = datetime.datetime.now()
+    logger.addHandler(handler)
+    try:
+        yield
+    finally:
+        logger.removeHandler(handler)
+        update_log.completed = datetime.datetime.now()
+        update_log.log_level = update_log.log_level or 0
         update_log.save()
-
-        logger = logging.getLogger()
-        handler = _TransformHandler(update_log)
-        handler.addFilter(_SameThreadFilter())
-
         UpdateDefinition.objects \
                         .filter(slug=update_log.update_definition.slug) \
-                        .update(status='active', last_started=update_log.started)
+                        .update(status='idle', last_completed=update_log.completed)
 
-        logger.addHandler(handler)
-        try:
-            yield
-        finally:
-            logger.removeHandler(handler)
-            update_log.completed = datetime.datetime.now()
-            update_log.save()
-            UpdateDefinition.objects \
-                            .filter(slug=update_log.update_definition.slug) \
-                            .update(status='idle', last_completed=update_log.completed)
+@task(name='humfrey.update.update')
+def update(update_log=None, slug=None, trigger=None):
+    if slug:
+        update_definition = UpdateDefinition.objects.get(slug=slug)
+        update_definition.queue(silent=True, trigger=trigger)
+        return
+    elif not update_log:
+        raise ValueError("One of update_log and slug needs to be provided.")
+    
+    graphs_touched = collections.defaultdict(set)
 
-    def process_item(self, client, update_log):
-        graphs_touched = set()
+    variables = update_log.update_definition.variables.all()
+    variables = dict((v.name, v.value) for v in variables)
 
-        variables = update_log.update_definition.variables.all()
-        variables = dict((v.name, v.value) for v in variables)
-
+    with logged(update_log):
         for pipeline in update_log.update_definition.pipelines.all():
             output_directory = tempfile.mkdtemp()
             transform_manager = TransformManager(update_log,
                                                  output_directory,
                                                  variables,
-                                                 force=update_log.forced)
-
+                                                 force=update_log.forced,
+                                                 graphs_touched=graphs_touched)
+    
             try:
                 pipeline = evaluate_pipeline(pipeline.value.strip())
             except SyntaxError:
                 raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
-
+    
             try:
                 pipeline(transform_manager)
             except NotChanged:
@@ -170,11 +167,10 @@ class Updater(LonglivingThread):
             finally:
                 pass #shutil.rmtree(output_directory)
 
-            graphs_touched |= transform_manager.graphs_touched
+    updated = _time_zone.localize(datetime.datetime.now())
 
-        updated = self.time_zone.localize(datetime.datetime.now())
-
-        client.publish(self.UPDATED_CHANNEL,
-                       self.pack({'slug': update_log.update_definition.slug,
-                                  'graphs': graphs_touched,
-                                  'updated': updated}))
+    for t in getattr(settings, 'DEPENDENT_TASKS', {}).get('humfrey.update.update', ()):
+        
+        send_task(t, kwargs={'update_log': update_log,
+                             'graphs': graphs_touched,
+                             'updated': updated})

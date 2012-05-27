@@ -3,9 +3,11 @@ import hashlib
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
-from django_longliving.util import get_redis_client
 
+from celery.execute import send_task
 import rdflib
+
+from humfrey.sparql.models import Store
 
 STATE_CHOICES = (
     ('new', 'New'),
@@ -45,6 +47,8 @@ class InboundPingback(models.Model):
     slug = models.CharField(max_length=40, primary_key=True)
     source = models.URLField()
     target = models.URLField()
+    
+    store = models.ForeignKey(Store)
 
     user_agent = models.TextField(blank=True)
     remote_addr = models.IPAddressField()
@@ -71,12 +75,12 @@ class InboundPingback(models.Model):
     def queue(self):
         self.state, self.invalid_reason = 'queued', ''
         self.save()
-        get_redis_client().lpush(self.PROCESS_QUEUE, self.slug)
+        send_task('humfrey.pingback.process_new_pingback', kwargs={'pingback': self})
 
     def accept(self):
         self.state, self.invalid_reason = 'accepted', ''
         self.save()
-        get_redis_client().lpush(self.ACCEPTED_QUEUE, self.slug)
+        send_task('humfrey.pingback.accept_pingback', kwargs={'pingback': self})
 
     def reject(self, save=True):
         self.state, self.invalid_reason = 'rejected', ''

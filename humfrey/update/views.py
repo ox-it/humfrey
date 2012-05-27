@@ -10,31 +10,24 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.core.files.base import ContentFile
 
-from django_conneg.views import HTMLView, JSONView, TextView
+from django_conneg.views import HTMLView, JSONView
 from django_conneg.http import HttpResponseSeeOther
 
 from object_permissions import get_users_any
 from object_permissions.views.permissions import view_permissions
 
-from humfrey.utils.views import RedisView
-from humfrey.update.longliving.uploader import Uploader
-from humfrey.update.longliving.updater import Updater
-
 from humfrey.update.models import UpdateDefinition, LocalFile, UpdateLog
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset, CreateFileForm
 
-class IndexView(HTMLView, RedisView):
+class IndexView(HTMLView):
     @method_decorator(login_required)
     def get(self, request):
-        client = self.get_redis_client()
-
         definitions = UpdateDefinition.objects.all().order_by('title')
         definitions = [d for d in definitions if d.can_view(request.user)]
 
         context = {
             'update_definitions': definitions,
-            'update_queue': map(self.unpack, client.lrange(UpdateDefinition.UPDATE_QUEUE, 0, 100)),
-            'upload_queue': map(self.unpack, client.lrange(Uploader.QUEUE_NAME, 0, 100)),
+            #'update_queue': map(self.unpack, client.lrange(UpdateDefinition.UPDATE_QUEUE, 0, 100)),
         }
 
         return self.render(request, context, 'update/index')

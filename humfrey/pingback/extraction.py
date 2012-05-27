@@ -23,16 +23,16 @@ class InvalidPingback(Exception):
     def __init__(self, reason):
         self.reason = reason
 
-def _extract_from_rdf(graph, url, filename, source, target, format):
+def _extract_from_rdf(graph, response, filename, source, target, format):
     pass
 
-def _extract_from_html(graph, url, filename, source, target):
+def _extract_from_html(graph, response, filename, source, target):
     try:
-        with open(filename, 'r') as f:
-            html = lxml.etree.parse(f, parser=lxml.etree.HTMLParser())
+        html = lxml.etree.parse(response, parser=lxml.etree.HTMLParser())
     except:
         raise InvalidPingback('invalid-html')
 
+    url = response['content-location']
 
     for anchor in html.xpath(".//a"):
         href = urlparse.urlparse(urlparse.urljoin(url, anchor.get('href')))
@@ -57,19 +57,22 @@ extractors = {'application/rdf+xml': functools.partial(_extract_from_rdf, format
               'text/html': _extract_from_html,
               }
 
-def extract(pingback, url, filename, headers):
-    content_type = headers.get('content-type', '').split(';')[0].lower()
+def extract(pingback, response):
+    content_type = response.get('content-type', '').split(';')[0].lower()
 
     graph = rdflib.ConjunctiveGraph()
     graph_name = pingback.graph_name
 
     date = lambda x: rdflib.Literal(pytz.timezone(settings.TIME_ZONE).localize(x))
+    
+    url = response['content-location']
+    uri = rdflib.URIRef(url)
 
     graph += (
-        (rdflib.URIRef(url), NS.sioc.links_to, rdflib.URIRef(pingback.target)),
+        (uri, NS.sioc.links_to, rdflib.URIRef(pingback.target)),
         (graph_name, NS.dcterms.created, date(pingback.created)),
         (graph_name, NS.dcterms.modified, date(pingback.updated)),
-        (graph_name, NS.dcterms.source, rdflib.URIRef(url)),
+        (graph_name, NS.dcterms.source, uri),
         (graph_name, NS.void.inDataset, settings.PINGBACK_DATASET),
         (graph_name, NS.dcterms['title'], rdflib.Literal(u'Pingback from %s to %s' % (unicode(pingback.source), unicode(pingback.target)))),
     )
@@ -80,7 +83,7 @@ def extract(pingback, url, filename, headers):
         raise InvalidPingback('unexpected-media-type')
 
     try:
-        extractor(graph, url, filename, pingback.source, pingback.target)
+        extractor(graph, response, pingback.source, pingback.target)
     except NoLinkFoundError:
         raise InvalidPingback('no-link-found')
 

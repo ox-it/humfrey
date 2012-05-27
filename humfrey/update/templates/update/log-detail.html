@@ -43,9 +43,11 @@
       <tr class="outcome-{{ record.level }}">
         <td colspan="3">{{ record.record.message|linebreaksbr }}</td>
       </tr>
-      {% if record.exc_info %}
+      {% if record.record.exc_info %}
       <tr class="outcome-{{ record.level }}">
-        <td colspan="3"><pre>{% for line in record.record.exc_info.2 %}{{ line }}{% endfor %}</pre></td>
+        <td colspan="3"><pre>{% for line in record.record.exc_info.2 %}{{ line }}{% endfor %}
+
+{{ record.record.exc_info.1 }}</pre></td>
       </tr>
               {% endif %}
       {% endfor %}

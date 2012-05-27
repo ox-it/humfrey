@@ -12,7 +12,7 @@ import redis
 from django.conf import settings
 
 from humfrey.update.transform.base import Transform
-from humfrey.update.longliving.uploader import Uploader
+from humfrey.update.uploader import Uploader
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.utils.namespaces import NS
 
@@ -95,31 +95,13 @@ class Upload(Transform):
         with open(output, 'w') as f:
             graph.serialize(f)
 
-        pubsub = client.pubsub()
-        pubsub.subscribe(Uploader.UPLOADED_PUBSUB)
-
-
-        client.rpush(Uploader.QUEUE_NAME,
-                     base64.b64encode(pickle.dumps({
-            'filename': output,
-            'stores': self.stores,
-            'graph_name': self.graph_name,
-            'method': self.method,
-            'queued_at': datetime.datetime.now(),
-            'mimetype': 'application/rdf+xml',
-        })))
-
-        logger.info("Queued %r for upload", output)
-
-        for message in pubsub.listen():
-            message = pickle.loads(base64.b64decode(message['data']))
-            if message['filename'] == output:
-                break
-
-        logger.info("%r accepted for upload", output)
-
-        pubsub.unsubscribe(Uploader.UPLOADED_PUBSUB)
+        uploader = Uploader()
+        uploader.upload(stores=self.stores,
+                        graph_name=self.graph_name,
+                        filename=output,
+                        method=self.method,
+                        mimetype='application/rdf+xml')
 
         transform_manager.end([self.graph_name])
         for store in self.stores:
-            transform_manager.touched_graph((store, self.graph_name))
+            transform_manager.touched_graph(store, self.graph_name)

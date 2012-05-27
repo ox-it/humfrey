@@ -4,21 +4,21 @@ import functools
 import itertools
 import logging
 
+from celery.task import task
+import ckanclient
 from django.conf import settings
 from django_hosts.reverse import reverse_full
-from django_longliving.decorators import pubsub_watcher
+import rdflib
 
-from humfrey.update.longliving.updater import Updater
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.utils.namespaces import NS, HUMFREY, expand
 from humfrey.utils.resource import Resource
 
 from humfrey.linkeddata.uri import doc_forward
 
-import ckanclient
-import rdflib
-
 logger = logging.getLogger(__name__)
+
+DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
 
 _dataset_query = """
     DESCRIBE ?dataset ?publisher ?contact WHERE {
@@ -42,6 +42,7 @@ _licenses = {
     'http://creativecommons.org/licenses/by/2.5/': 'cc-by',
     'http://creativecommons.org/licenses/by/3.0/': 'cc-by',
     'http://creativecommons.org/licenses/by-sa/2.0/': 'cc-by-sa',
+    'http://www.nationalarchives.gov.uk/doc/open-government-licence/': 'uk-ogl',
 }
 
 # TODO: Picking local language
@@ -85,10 +86,14 @@ def _find(graph, subject, path, datatypes=None, all=False):
     elif objects:
         return iter(objects).next()
 
-@pubsub_watcher(channel=Updater.UPDATED_CHANNEL, priority=100)
-def update_ckan_dataset(channel, data):
-    if not data['graphs']:
-        logger.debug("No graphs updated for %r; aborting", data['slug'])
+@task(name='humfrey.ckan.upload_dataset_metadata')
+def upload_dataset_metadata(update_log, graphs, updated):
+    slug = update_log.update_definition.slug
+    
+    graphs = graphs.get(DEFAULT_STORE_NAME)
+
+    if not graphs:
+        logger.debug("No graphs updated for %r; aborting", slug)
         return
 
     if not getattr(settings, 'CKAN_API_KEY', None):
@@ -98,12 +103,12 @@ def update_ckan_dataset(channel, data):
     client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
 
     endpoint = Endpoint(settings.ENDPOINT_QUERY)
-    query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for g in data['graphs'])
+    query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for s, g in graphs)
     graph = endpoint.query(query)
 
     datasets = list(graph.subjects(NS.rdf.type, NS.void.Dataset))
     if len(datasets) != 1:
-        logger.debug("Expected one dataset for %r, got %d", data['slug'], len(datasets))
+        logger.debug("Expected one dataset for %r, got %d", slug, len(datasets))
         return
     dataset = Resource(datasets[0], graph, endpoint)
 
@@ -113,7 +118,7 @@ def update_ckan_dataset(channel, data):
 
     package_name = find('skos:notation', HUMFREY.theDataHubDatasetName)
     if not package_name:
-        package_name = patterns.get('name', '%s') % data['slug']
+        package_name = patterns.get('name', '%s') % slug
 
     package_title = patterns.get('title', '%s') % dataset.label
 
