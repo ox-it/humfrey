@@ -96,7 +96,7 @@ class TransformManager(object):
         self.transforms.append(self.current)
         del self.current
     def touched_graph(self, store, graph_name):
-        self.graphs_touched[store.slug].add(graph_name)
+        self.graphs_touched[store].add(graph_name)
     def not_changed(self):
         if not self.force:
             raise NotChanged()
