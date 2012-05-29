@@ -8,16 +8,16 @@ except ImportError:
     import simplejson as json
 
 import rdflib
+import redis
 
 from django.conf import settings
-from django_longliving.util import get_redis_client
 
 from humfrey.utils import resource
 from humfrey.sparql.endpoint import Endpoint, Result
 
 class IndexUpdater(object):
     def __init__(self):
-        self.client = get_redis_client()
+        self.client = redis.client.Redis(**settings.REDIS_PARAMS)
 
     @classmethod
     def hash_result(cls, value):

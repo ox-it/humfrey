@@ -7,7 +7,6 @@ except ImportError:
 from celery.execute import send_task
 from django.conf import settings
 from django.db import models
-from django_longliving.util import get_redis_client, pack
 
 from humfrey.sparql.models import Store
 from humfrey.update.models import UpdateDefinition

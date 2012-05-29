@@ -107,12 +107,6 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
-LONGLIVING_CLASSES = set([
-    'django_longliving.longliving.pubsub.PubSubDispatcherThread',
-])
-
-LONGLIVING_PUBSUB_WATCHERS = ('humfrey.archive.pubsub.update_dataset_archives',)
-
 IMAGE_TYPES = ('foaf:Image',)
 IMAGE_PROPERTIES = ('foaf:depiction',)
 
@@ -191,18 +185,13 @@ DOC_RDF_PROCESSORS = (
 # Load pingback functionality if specified in the config.
 if config.get('pingback:enabled') == 'true':
     MIDDLEWARE_CLASSES += ('humfrey.pingback.middleware.PingbackMiddleware',)
-    INSTALLED_APPS += ('humfrey.pingback', 'django_longliving')
+    INSTALLED_APPS += ('humfrey.pingback',)
     DOC_RDF_PROCESSORS += ('humfrey.pingback.rdf_processors.pingback',)
-    LONGLIVING_CLASSES |= set(['humfrey.pingback.longliving.pingback_server.PingbackServer',
-                               'humfrey.update.longliving.downloader.Downloader',
-                               'humfrey.update.longliving.uploader.Uploader',
-                               ])
     PINGBACK_TARGET_DOMAINS = (config.get('pingback:target_domains') or '').split()
     PINGBACK_DATASET = rdflib.URIRef(config['pingback:dataset'])
 
 if config.get('update:enabled') == 'true':
     INSTALLED_APPS += ('humfrey.update',)
-    LONGLIVING_CLASSES |= set(['humfrey.update.longliving.updater.Updater'])
     UPDATE_TRANSFORMS = (
         'humfrey.update.transform.base.Requires',
         'humfrey.update.transform.construct.Construct',
@@ -220,7 +209,6 @@ if config.get('update:enabled') == 'true':
     UPDATE_TRANSFORM_REPOSITORY = config.get('update:transform_repository')
 
 if config.get('ckan:enabled') == 'true':
-    LONGLIVING_PUBSUB_WATCHERS += ('humfrey.ckan.pubsub.update_ckan_dataset',)
     CKAN_API_KEY = config.get('ckan:api_key')
     CKAN_GROUPS = set()
     CKAN_TAGS = set()
