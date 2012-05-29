@@ -81,8 +81,13 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                 return HttpResponseSeeOther('{path}?{query}'.format(path=request.path,
                                                                     query=query))
 
+        context = self.finalize_context(request, context)
+
 
         return self.render(request, context, self.template_name)
+
+    def finalize_context(self, request, context):
+        return context
     
     def get_results(self, parameters, cleaned_data):
         page = cleaned_data.get('page') or 1
