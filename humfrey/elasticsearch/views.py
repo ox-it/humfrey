@@ -117,6 +117,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             if key.startswith('filter.'):
                 if not parameter:
                     del parameters[key]
+                    continue
                 elif parameter == '-':
                     filter = {'missing': {'field': key[7:]}}
                 else:
