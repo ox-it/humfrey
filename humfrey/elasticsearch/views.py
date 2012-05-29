@@ -4,11 +4,13 @@ import collections
 import copy
 import json
 import math
+import urllib
 import urllib2
 import urlparse
 
 from django.conf import settings
 from django_conneg.decorators import renderer
+from django_conneg.http import HttpResponseSeeOther
 from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
 from rdflib import URIRef
 
@@ -70,7 +72,15 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                    'dependent_parameters': self.dependent_parameters}
         
         if form.is_valid():
-            context.update(self.get_results(request.GET, form.cleaned_data))
+            context.update(self.get_results(dict((k, request.GET[k]) for k in request.GET),
+                                            form.cleaned_data))
+            if context['page'] > context['page_count']:
+                query = copy.copy(request.GET)
+                query['page'] = context['page_count']
+                query = urllib.urlencode(query)
+                return HttpResponseSeeOther('{path}?{query}'.format(path=request.path,
+                                                                    query=query))
+
 
         return self.render(request, context, self.template_name)
     
@@ -175,7 +185,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                 pages_out.append(None)
             pages_out.append(p)
         
-        return {'page_count': page_count,
+        return {'page_count': max(1, page_count),
                 'start': start + 1,
                 'pages': pages_out,
                 'page': page}
