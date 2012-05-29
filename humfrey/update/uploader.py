@@ -56,8 +56,12 @@ class Uploader(object):
 
         with open(filename, 'r') as f:
 
+            logger.debug("Opening connection to %s:%d", host, port)
+
             conn = httplib.HTTPConnection(host=host, port=port)
             conn.connect()
+
+            logger.debug("Connected")
 
             conn.putrequest(method, path)
             conn.putheader("User-Agent", "humfrey")
@@ -67,7 +71,11 @@ class Uploader(object):
 
             conn.send(f)
 
+            logger.debug("Response sent; getting response")
+
             response = conn.getresponse()
+
+            logger.debug("Response received: %r", response.status)
 
             if response.status not in (200, 201, 204):
                 logger.error("Upload failed. Code %r", response.status)

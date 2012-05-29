@@ -89,11 +89,13 @@ class Upload(Transform):
             (self.graph_name, NS['dcterms'].created, created),
         )
 
-        logger.debug("About to serialize and queue")
+        logger.debug("About to serialize")
 
         output = transform_manager('rdf')
         with open(output, 'w') as f:
             graph.serialize(f)
+
+        logger.debug("Serialization done; about to upload")
 
         uploader = Uploader()
         uploader.upload(stores=self.stores,
@@ -101,6 +103,8 @@ class Upload(Transform):
                         filename=output,
                         method=self.method,
                         mimetype='application/rdf+xml')
+
+        logger.debug("Upload complete")
 
         transform_manager.end([self.graph_name])
         for store in self.stores:
