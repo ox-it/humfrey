@@ -25,6 +25,9 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
     index_name = 'public'
     page_size = 10
 
+    # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
+    dependent_parameters = {}
+
     facets = {'type': {'terms': {'field': 'type.uri',
                                           'size': 20}}}
     template_name = 'elasticsearch/search'
@@ -63,7 +66,8 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                    'base_url': request.build_absolute_uri(),
                    'renderers': [{'name': r.name,
                                   'format': r.format,
-                                  'mimetypes': r.mimetypes} for r in self._renderers]}
+                                  'mimetypes': r.mimetypes} for r in self._renderers],
+                   'dependent_parameters': self.dependent_parameters}
         
         if form.is_valid():
             context.update(self.get_results(request.GET, form.cleaned_data))

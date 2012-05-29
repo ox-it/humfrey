@@ -15,10 +15,13 @@ def munge_parameter(context, prefix, name, value):
     
     url = urlparse.urlparse(context['base_url'])
     query = urlparse.parse_qsl(url.query, True)
-    query = [(k, v) for k, v in query if k != key]
+    query = dict((k, v) for k, v in query if k != key)
     if value is not None:
-        query.append((key, value))
-    query.sort()
+        query[key] = value
+    # Allows us to remove sub-filters when a super-filter is changed.
+    for subkey in context.get('dependent_parameters', {}).get(key, ()):
+        query.pop(subkey, None)
+    query = sorted(query.iteritems())
     return '?' + urllib.urlencode(query)
     #return urlparse.urlunparse(url)
 
