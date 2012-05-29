@@ -2,6 +2,7 @@ import urllib
 import urlparse
 
 from django import template
+from django.template.defaultfilters import linebreaksbr
 
 from humfrey.desc.templatetags.humfrey_desc import sanitize_html
 
@@ -37,4 +38,5 @@ def remove_parameter(context, prefix, name):
 def search_html(value):
     if isinstance(value, basestring) and value.startswith('<') and value.endswith('>'):
         return sanitize_html(value)
-    return value
+    else:
+        return linebreaksbr(value)
