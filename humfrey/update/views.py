@@ -136,7 +136,6 @@ class FileListView(HTMLView, JSONView):
             'files': list(files),
             'can_add': request.user.has_perm('update.add_localfile'),
         })
-        print request.user.has_perm('update.add_localfile')
         return self.render(request, context, 'update/file-list')
 
     @method_decorator(login_required)

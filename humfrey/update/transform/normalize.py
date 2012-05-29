@@ -60,9 +60,6 @@ class NotationNormalization(Normalization):
                 %s
             }"""
             query = query % '\n'.join('(%s)' % n.n3() for n in self.notations)
-            print '=' * 80
-            print query
-            print '=' * 80
             notation_mapping = dict(self.endpoint.query(query))
         else:
             notation_mapping = {}

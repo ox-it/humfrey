@@ -5,7 +5,6 @@ from .rdfxml import RDFXMLSource, RDFXMLSink
 
 def RDFSource(source):
     name, ext = os.path.splitext(source.name)
-    print name, ext
     if ext == '.nt':
         return NTriplesSource(source)
     elif ext == '.rdf':
