@@ -141,7 +141,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             if 'filter' in query:
                 for facet in facets.itervalues():
                     for filter in query['filter']['and']:
-                        if facet['terms']['field'] not in filter['term']:
+                        if facet['terms']['field'] not in (filter.get('term') or filter['missing']):
                             if 'facet_filter' not in facet:
                                 facet['facet_filter'] = {'and': []}
                             facet['facet_filter']['and'].append(filter)
