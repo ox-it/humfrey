@@ -12,5 +12,11 @@ def update_indexes_after_dataset_update(update_log, graphs, updated):
 def update_index(index):
     if isinstance(index, basestring):
         index = Index.objects.get(slug=index)
-    index_updater = IndexUpdater()
-    index_updater.update(index)
+    index.status = 'active'
+    index.save()
+    try:
+        index_updater = IndexUpdater()
+        index_updater.update(index)
+    finally:
+        index.status = 'idle'
+        index.save()

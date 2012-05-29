@@ -4,6 +4,7 @@ try:
 except ImportError:
     import simplejson
 
+from celery.execute import send_task
 from django.conf import settings
 from django.db import models
 from django_longliving.util import get_redis_client, pack
@@ -91,5 +92,4 @@ class Index(models.Model):
         self.last_queued = datetime.datetime.now()
         self.save()
 
-        redis_client = get_redis_client()
-        redis_client.lpush(self.UPDATE_QUEUE, pack(self))
+        send_task('humfrey.elasticsearch.update_index', kwargs={'index': self.slug})

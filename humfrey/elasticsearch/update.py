@@ -110,8 +110,6 @@ class IndexUpdater(object):
                 conn.send(line)
 
             response = conn.getresponse()
-            print response.status
-            print response.read()
             conn.close()
 
         return result_count
@@ -139,7 +137,6 @@ class IndexUpdater(object):
             for key in group[:-1]:
                 x = x.get(key, {})
             if group[-1] in x:
-                #print "GR", group[-1]
                 val = x[group[-1]]
                 x[group[-1]] = {cls.get_id(val): val}
                 if isinstance(val, dict):
