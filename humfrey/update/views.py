@@ -16,7 +16,7 @@ from django_conneg.http import HttpResponseSeeOther
 from object_permissions import get_users_any
 from object_permissions.views.permissions import view_permissions
 
-from humfrey.update.models import UpdateDefinition, LocalFile, UpdateLog
+from humfrey.update.models import UpdateDefinition, LocalFile, UpdateLog, UpdateLogRecord
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset, CreateFileForm
 
 class IndexView(HTMLView):
@@ -211,8 +211,10 @@ class UpdateLogView(HTMLView, JSONView):
                                   'id': value.id,
                                   'forced': value.forced,
                                   'trigger': value.trigger,
-                                  'max_log_level': value.max_log_level,
-                                  'log': value.log})
+                                  'log_level': value.log_level,
+                                  'records': list(value.records)})
+        elif isinstance(value, UpdateLogRecord):
+            return self.simplify(value.record)
         else:
             return super(UpdateLogView, self).simplify(value)
 
