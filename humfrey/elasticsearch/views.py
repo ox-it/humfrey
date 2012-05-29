@@ -112,10 +112,12 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
         }
 
         # Parse query parameters of the form 'filter.FIELDNAME'.
-        for key in parameters:
+        for key in list(parameters):
             parameter = parameters[key]
             if key.startswith('filter.'):
                 if not parameter:
+                    del parameters[key]
+                elif parameter == '-':
                     filter = {'missing': {'field': key[7:]}}
                 else:
                     if key.endswith('.uri') and ':' in parameter:
