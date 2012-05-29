@@ -89,15 +89,18 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
     def finalize_context(self, request, context):
         return context
     
+    @property
+    def search_url(self):
+        return urlparse.urlunsplit(('http',
+                                    '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
+                                    '/%s/_search' % self.index_name,
+                                    '',
+                                    ''))
+
     def get_results(self, parameters, cleaned_data):
         page = cleaned_data.get('page') or 1
         page_size = cleaned_data.get('page_size') or self.page_size
         start = (page - 1) * page_size
-        url = urlparse.urlunsplit(('http',
-                                   '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
-                                   '/%s/_search' % self.index_name,
-                                   '',
-                                   ''))
 
         query = {
             'query': {'query_string': {'query': cleaned_data['q'],
@@ -142,7 +145,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                             facet['facet_filter']['and'].append(filter)
             query['facets'] = facets
 
-        response = urllib2.urlopen(url, json.dumps(query))
+        response = urllib2.urlopen(self.search_url, json.dumps(query))
         results = self.Deunderscorer(json.load(response))
 
         results.update(self.get_pagination(page_size, page, start, results))
