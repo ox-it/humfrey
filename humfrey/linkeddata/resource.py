@@ -13,9 +13,11 @@ from rdflib import URIRef, BNode
 from django.core.cache import cache
 from django.conf import settings
 from django.utils.safestring import mark_safe
+from django.utils.importlib import import_module
 
 from humfrey.utils.namespaces import NS, expand
 from humfrey.linkeddata.uri import doc_forward
+from humfrey.linkeddata.mappingconf import get_resource_registry
 
 image_logger = logging.getLogger('humfrey.utils.resource.image')
 
@@ -23,10 +25,6 @@ TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
 IRI = re.compile(u'^([^\\<>"{}|^`\x00-\x20])*$')
-
-def register(cls, *types):
-    for t in types:
-        TYPE_REGISTRY[expand(t)] = cls
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
@@ -53,16 +51,49 @@ class SparqlQueryVars(dict):
 def is_resource(r):
     return isinstance(r, (URIRef, BNode))
 
-class Resource(object):
-    def __new__(cls, identifier, graph, endpoint):
+class ResourceRegistry(object):
+    def __init__(self, *args):
+        self._registry = defaultdict(set)
+        for arg in args:
+            if isinstance(arg, (list, tuple)):
+                klass, types = arg[0], arg[1:]
+            else:
+                klass, types = arg, None
+            klass = self._get_object(klass)
+            if types is None:
+                types = klass.types
+            for t in types:
+                self._registry[expand(t)].add(klass)
+    
+    def get_resource(self, identifier, graph, endpoint):
         classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
-            if t in TYPE_REGISTRY and TYPE_REGISTRY[t] not in classes:
-                classes.append(TYPE_REGISTRY[t])
+            if t in self._registry and self._registry[t] not in classes:
+                classes.extend(self._registry[t])
         classes.sort(key=lambda cls:-getattr(cls, '_priority', 0))
         cls = type(type(identifier).__name__ + classes[0].__name__, tuple(classes) + (type(identifier),), {})
         resource = cls(identifier, graph, endpoint)
         return resource
+
+    @classmethod
+    def _get_object(cls, class_path):
+        if isinstance(class_path, type):
+            return class_path
+        elif isinstance(class_path, str):
+            module_path, class_name = class_path.rsplit('.', 1)
+            return getattr(import_module(module_path), class_name)
+        else:
+            raise AssertionError("%r must be a type object or str, not %r", class_path, type(class_path))
+    
+    def __add__(self, other):
+        resource_registry = ResourceRegistry()
+        for rr in self, other:
+            for t in rr._registry:
+                resource_registry._registry[t] |= rr._registry[t]
+        return resource_registry
+
+def Resource(identifier, graph, endpoint):
+    return get_resource_registry().get_resource(identifier, graph, endpoint)
 
 class BaseResource(object):
     _priority = -1
@@ -292,6 +323,7 @@ class BaseResource(object):
         return hashlib.sha1(self._identifier).hexdigest()[:8]
 
 class Address(object):
+    types = ('v:Address',)
     def render(self):
         address = []
         for p in ('v:extended-address', 'v:street-address', 'v:locality', 'v:postal-code'):
@@ -299,9 +331,10 @@ class Address(object):
             if value:
                 address.append(value)
         return mark_safe('<br/>'.join(escape(v) for v in address))
-register(Address, 'v:Address')
 
 class Tel(object):
+    types = ('v:Tel', 'v:Voice', 'v:Fax')
+
     _TYPES = {'Voice': 'voice', 'Fax': 'fax'}
     _TYPES = dict((NS['v'][a], l) for a, l in _TYPES.iteritems())
     def render(self):
@@ -312,25 +345,24 @@ class Tel(object):
                 types.append(self._TYPES[t])
         types = ', '.join(escape(t) for t in types) if types else 'unknown'
         return mark_safe('<a href="tel:%s">%s</a> (%s)' % (escape(value), escape(value), types))
-register(Tel, 'v:Tel', 'v:Voice', 'v:Fax')
 
 class Class(object):
+    types = ('rdfs:Class', 'owl:Class')
+
     def things_of_type(self):
         graph = self._endpoint.query("DESCRIBE ?uri WHERE { ?uri a %s } LIMIT 20" % self._identifier.n3())
         resources = [Resource(s, graph, self._endpoint) for s in graph.subjects(NS['rdf'].type, self._identifier)]
         resources.sort(key=lambda r:r.label)
         return resources
-register(Class, 'rdfs:Class', 'owl:Class')
 
 class Image(object):
-    class HEADRequest(urllib2.Request):
-        def get_method(self):
-            return 'HEAD'
+    types = getattr(settings, 'IMAGE_TYPES', [])
 
     @property
     @cache_per_identifier
     def is_image(self):
-        request = Image.HEADRequest(self._identifier)
+        request = urllib2.Request(self._identifier)
+        request.get_method = lambda: 'HEAD'
         try:
             response = urllib2.urlopen(request)
             if 'content-type' not in response.headers:
@@ -342,10 +374,10 @@ class Image(object):
             logging.exception("HEAD request for image failed: %r", unicode(self._identifier))
             return False
         return True
-register(Image, *getattr(settings, 'IMAGE_TYPES', []))
 
 class Dataset(object):
     template_name = 'doc/dataset'
+    types = ('void:Dataset',)
 
     @classmethod
     def _describe_patterns(cls):
@@ -407,9 +439,9 @@ class Dataset(object):
         predicates.sort(key=lambda p:p.label)
         return predicates
 
-register(Dataset, 'void:Dataset')
-
 class License(object):
+    types = ('cc:License',)
+
     class C(set):
         def __getattr__(self, name):
             if ':' not in name:
@@ -426,10 +458,10 @@ class License(object):
     @property
     def requires(self):
         return License.C(self._graph.objects(self._identifier, NS['cc'].requires))
-register(License, 'cc:License')
 
 class Ontology(object):
     template_name = 'doc/ontology'
+    types = ('owl:Ontology',)
 
     @classmethod
     def _describe_patterns(cls):
@@ -446,4 +478,4 @@ class Ontology(object):
         properties = self.sorted_subjects(NS['rdf'].type, (NS['rdf'].Property, NS['owl'].AnnotationProperty, NS['owl'].ObjectProperty))
         return [p for p in properties if (p._identifier, NS['rdfs'].isDefinedBy, self._identifier) in self._graph]
 
-register(Ontology, 'owl:Ontology')
+base_resource_registry = ResourceRegistry(Address, Tel, Class, Image, Dataset, License, Ontology)

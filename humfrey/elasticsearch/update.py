@@ -12,7 +12,7 @@ import redis
 
 from django.conf import settings
 
-from humfrey.utils import resource
+from humfrey.linkeddata import resource
 from humfrey.sparql.endpoint import Endpoint, Result
 
 class IndexUpdater(object):

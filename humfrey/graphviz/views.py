@@ -10,7 +10,7 @@ from django.shortcuts import render_to_response
 from django_conneg.decorators import renderer
 
 from humfrey.results.views.standard import RDFView
-from humfrey.utils.resource import Resource
+from humfrey.linkeddata.resource import Resource
 from humfrey.utils.namespaces import expand, NS
 
 class GraphVizView(RDFView):

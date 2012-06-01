@@ -21,11 +21,9 @@ from django.core.cache import cache
 
 from humfrey import __version__
 from humfrey.utils.namespaces import NS
-from humfrey.utils.resource import Resource
+from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srx
 from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
-
-from humfrey.linkeddata.mappingconf import set_id_mapping, set_doc_view, set_desc_view
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
@@ -89,6 +87,7 @@ class Endpoint(object):
         start_time = time.time()
 
         try:
+            logging.debug("Querying %r", self._url)
             response = urllib2.urlopen(request)
 
             time_to_start = time.time() - start_time

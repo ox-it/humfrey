@@ -8,7 +8,7 @@ from django import template
 from django.utils.safestring import mark_safe
 
 from humfrey.linkeddata.uri import doc_forward
-from humfrey.utils.resource import BaseResource
+from humfrey.linkeddata.resource import BaseResource
 from humfrey.utils.namespaces import NS
 
 register = template.Library()

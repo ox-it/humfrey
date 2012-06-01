@@ -27,7 +27,7 @@ from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
-from humfrey.utils.resource import BaseResource
+from humfrey.linkeddata.resource import BaseResource
 
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.sparql.results import SparqlResultList, SparqlResultSet, SparqlResultGraph, SparqlResultBool

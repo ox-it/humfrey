@@ -14,13 +14,13 @@ from django_conneg import decorators
 from django_conneg.views import HTMLView, ContentNegotiatedView
 from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedirect, MediaType
 
+from humfrey.linkeddata.resource import Resource, IRI
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.linkeddata.views import MappingView
 
 from humfrey.results.views.standard import RDFView
 from humfrey.sparql.views import StoreView
-from humfrey.utils.resource import Resource, IRI
-from humfrey.utils.namespaces import NS
+from humfrey.utils.namespaces import NS, expand
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
 
     doc_rdf_processors = getattr(settings, 'DOC_RDF_PROCESSORS', ())
     template_name = 'doc/base'
+    template_overrides = ()
 
     def __init__(self, *args, **kwargs):
         self._doc_rdf_processors_cache = None
@@ -192,13 +193,21 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
             'template_name': subject.template_name,
         })
 
+        template_name = subject.template_name or self.template_name
+        for template_override in self.template_overrides:
+            tn, types = template_override[0], template_override[1:]
+            print tn, types, subject.get_all('rdf:type')
+            if set(subject._graph.objects(subject._identifier, NS.rdf.type)) & set(map(expand, types)):
+                template_name = tn
+                break
+
         if context['format']:
             try:
-                return self.render_to_format(request, context, subject.template_name or self.template_name, format)
+                return self.render_to_format(request, context, template_name, format)
             except KeyError:
                 raise Http404
         else:
-            return self.render(request, context, subject.template_name)
+            return self.render(request, context, template_name)
 
     @property
     def _doc_rdf_processors(self):

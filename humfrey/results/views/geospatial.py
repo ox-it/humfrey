@@ -6,7 +6,7 @@ from django.template import RequestContext
 from django_conneg.decorators import renderer
 from django_conneg.views import ContentNegotiatedView
 
-from humfrey.utils.resource import Resource
+from humfrey.linkeddata.resource import Resource
 
 class KMLView(ContentNegotiatedView):
     @renderer(format='kml', mimetypes=('application/vnd.google-earth.kml+xml',), name='KML')

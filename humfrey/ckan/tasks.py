@@ -12,8 +12,8 @@ import rdflib
 
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.utils.namespaces import NS, HUMFREY, expand
-from humfrey.utils.resource import Resource
 
+from humfrey.linkeddata.resource import Resource
 from humfrey.linkeddata.uri import doc_forward
 
 logger = logging.getLogger(__name__)
