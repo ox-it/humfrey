@@ -14,7 +14,7 @@ class PermissionDeniedToLocalFile(TransformException):
 class Construct(Transform):
     def __init__(self, query, store=None):
         self.query = query
-        self.store = None
+        self.store = store
     def execute(self, transform_manager):
         if self.store:
             store = self.get_store(transform_manager, self.store, query=True)

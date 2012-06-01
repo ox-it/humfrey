@@ -71,7 +71,7 @@ class Uploader(object):
 
             conn.send(f)
 
-            logger.debug("Response sent; getting response")
+            logger.debug("Request sent; getting response")
 
             response = conn.getresponse()
 
