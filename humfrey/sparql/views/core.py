@@ -1,6 +1,5 @@
 import base64
 import datetime
-import functools
 import hashlib
 import pickle
 import time
@@ -20,6 +19,7 @@ from django.views.generic import View
 
 from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView, ErrorCatchingView
 
+from humfrey.linkeddata.views import MappingView
 from humfrey.misc.views import PassThroughView
 from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
@@ -27,22 +27,13 @@ from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
-from humfrey.linkeddata.resource import BaseResource
 
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.sparql.results import SparqlResultList, SparqlResultSet, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store, UserPrivileges
 
 DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
-
-class IndexView(HTMLView, JSONPView):
-    def get(self, request):
-        stores = Store.objects.all().order_by('name')
-        if not request.user.is_superuser:
-            stores = [s for s in stores if request.user.has_any_perms(s)]
-        context = {'stores': stores}
-        return self.render(request, context, 'sparql/index')
 
 class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
     def get(self, request, context):
@@ -73,8 +64,7 @@ class StoreView(View):
     @property
     def store(self):
         if not hasattr(self, '_store'):
-            store = self.kwargs.get('store') or self.store_name
-            self._store = get_object_or_404(Store, slug=store)
+            self._store = get_object_or_404(Store, slug=self.store_name)
         return self._store
     
     @property
@@ -102,61 +92,8 @@ class StoreView(View):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
-class CannedQueryView(StoreView):
-    query = None
-    template_name = None
 
-    def get_query(self, request, *args, **kwargs):
-        return self.query
-
-    def get_locations(self, request, *args, **kwargs):
-        """
-        Override to provide the canonical and format-specific locations for this resource.
-        
-        Example return value: ('http://example.com/data', 'http://example.org/data.rss')
-        """
-        return None, None
-
-    def get_subjects(self, request, result, *args, **kwargs):
-        return ()
-
-    def get_additional_context(self, request, *args, **kwargs):
-        return {}
-
-    def finalize_context(self, request, context, *args, **kwargs):
-        """
-        This is passed the context just before it is rendered. Override to add
-        items to the context based on what is already there. This method should
-        return the context to be rendered.
-        """
-        return context
-
-    def get(self, request, *args, **kwargs):
-        self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
-        query = self.get_query(request, *args, **kwargs)
-        result = self.endpoint.query(query)
-        if isinstance(result, SparqlResultList):
-            context = {'results': result}
-        elif isinstance(result, SparqlResultBool):
-            context = {'result': result}
-        elif isinstance(result, SparqlResultGraph):
-            context = {'graph': result}
-            self.resource = functools.partial(BaseResource, graph=result, endpoint=self.endpoint)
-            subjects = self.get_subjects(request, result, *args, **kwargs)
-            context['subjects'] = map(self.resource, subjects)
-
-        if self.content_location:
-            context['additional_headers'] = {'Content-location': self.content_location}
-
-        context.update(self.get_additional_context(request, *args, **kwargs))
-        context = self.finalize_context(request, context, *args, **kwargs)
-
-        if 'format' in request.GET:
-            return self.render_to_format(request, context, self.template_name, request.GET['format'])
-        else:
-            return self.render(request, context, self.template_name)
-
-class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
+class QueryView(StoreView, MappingView, RedisView, HTMLView, ErrorCatchingView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
     default_timeout = None # Override this with some number of seconds
@@ -296,10 +233,7 @@ class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
              tuple((r.format, r.name) for r in sorted(self._boolean_view._renderers, key=lambda r:r.name))),
         )
 
-    def get(self, request, store=None):
-        if not self.store.can_query(request.user):
-            raise PermissionDenied
-
+    def get(self, request):
         privileges = self.get_user_privileges(request)
 
         query = request.REQUEST.get('query')
@@ -309,7 +243,7 @@ class QueryView(StoreView, RedisView, HTMLView, ErrorCatchingView):
         context = {
             'namespaces': sorted(NS.items()),
             'form': form,
-            'store': store,
+            'store': self.store,
         }
 
         if privileges['throttle']:
