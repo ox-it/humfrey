@@ -33,8 +33,15 @@ class XSLT(Transform):
                 transform_manager.start(self, [template_filename, input], type='xslt')
 
                 popen_args = [self.saxon_path, input, template_filename]
+
+                # Pass the parameters to the template.
                 for item in self.params.iteritems():
                     popen_args.append('{0}={1}'.format(*item))
+
+                # Pass the store name to the template, but only if 'store'
+                # hasn't been given as a parameter
+                if 'store' not in self.params:
+                    popen_args.append('store={0}'.format(transform_manager.store.slug))
 
                 returncode = subprocess.call(popen_args, stdout=output, stderr=stderr)
 
