@@ -1,14 +1,14 @@
 from xml.sax.saxutils import quoteattr, escape
 
 from lxml import etree
-from rdflib import Literal, URIRef
+from rdflib import Literal, URIRef, ConjunctiveGraph
 
 
 from django import template
 from django.utils.safestring import mark_safe
 
 from humfrey.linkeddata.uri import doc_forward
-from humfrey.linkeddata.resource import BaseResource
+from humfrey.linkeddata.resource import BaseResource, Resource
 from humfrey.utils.namespaces import NS
 
 register = template.Library()
@@ -17,6 +17,8 @@ register = template.Library()
 def node(obj):
     if isinstance(obj, BaseResource):
         return obj.render()
+    elif isinstance(obj, URIRef):
+        return Resource(obj, ConjunctiveGraph(), None).render()
     elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-HTML']:
         return sanitize_html(unicode(obj))
     elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
