@@ -24,7 +24,10 @@ from .forms import SearchForm
 
 
 class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView):
-    index_name = 'public'
+    @property
+    def index_name(self):
+        return self.store_name
+
     page_size = 10
 
     # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
