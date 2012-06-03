@@ -105,7 +105,6 @@ class Normalize(Transform):
                                 'notations': NotationNormalization}
 
     def __init__(self, **kwargs):
-        self.store = kwargs.pop('store', None)
         self.normalizations = []
         for key in kwargs:
             normalization = self.available_normalizations[key](**kwargs[key])
@@ -114,12 +113,7 @@ class Normalize(Transform):
     def execute(self, transform_manager, input):
         transform_manager.start(self, [])
 
-        if self.store:
-            store = self.get_store(transform_manager, self.store, update=True)
-            endpoint_query = store.query_endpoint
-        else:
-            endpoint_query = settings.ENDPOINT_QUERY
-        endpoint = Endpoint(endpoint_query)
+        endpoint = Endpoint(transform_manager.store.query_endpoint)
 
         for normalization in self.normalizations:
             normalization.endpoint = endpoint

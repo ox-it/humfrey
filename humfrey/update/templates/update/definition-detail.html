@@ -23,6 +23,7 @@
       <tr>
         <th>Remove</th>
         <th>Pipeline</th>
+        <th>Stores</th>
       </tr>
     </thead>
     <tbody>
@@ -30,7 +31,8 @@
       <tr>
         <td>{{ pipeline.DELETE }}{{ pipeline.id }}</td> 
         <td>{{ pipeline.value }}</td>
-        <td>{{ pipeline.errors.value.0 }}</td>
+        <td>{{ pipeline.stores }}</td>
+        <td>{{ pipeline.errors }}</td>
       </tr>
   {% endfor %}
     </tbody>

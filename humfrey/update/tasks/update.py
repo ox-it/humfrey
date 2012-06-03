@@ -67,7 +67,7 @@ class _TransformHandler(logging.Handler):
             self.ignore = False
 
 class TransformManager(object):
-    def __init__(self, update_log, output_directory, parameters, force, graphs_touched):
+    def __init__(self, update_log, output_directory, parameters, force, graphs_touched, store):
         self.update_log = update_log
         self.owner = update_log.update_definition.owner
         self.output_directory = output_directory
@@ -77,6 +77,7 @@ class TransformManager(object):
         self.counter = 0
         self.transforms = []
         self.graphs_touched = graphs_touched
+        self.store = store
 
     def __call__(self, extension=None, name=None):
         if not name:
@@ -95,8 +96,8 @@ class TransformManager(object):
         self.current['outputs'] = outputs
         self.transforms.append(self.current)
         del self.current
-    def touched_graph(self, store, graph_name):
-        self.graphs_touched[store].add(graph_name)
+    def touched_graph(self, graph_name):
+        self.graphs_touched[self.store.slug].add(graph_name)
     def not_changed(self):
         if not self.force:
             raise NotChanged()
@@ -144,28 +145,30 @@ def update(update_log=None, slug=None, trigger=None):
 
     with logged(update_log):
         for pipeline in update_log.update_definition.pipelines.all():
-            output_directory = tempfile.mkdtemp()
-            transform_manager = TransformManager(update_log,
-                                                 output_directory,
-                                                 variables,
-                                                 force=update_log.forced,
-                                                 graphs_touched=graphs_touched)
+            for store in pipeline.stores.all():
+                output_directory = tempfile.mkdtemp()
+                transform_manager = TransformManager(update_log,
+                                                     output_directory,
+                                                     variables,
+                                                     force=update_log.forced,
+                                                     graphs_touched=graphs_touched,
+                                                     store=store)
     
-            try:
-                pipeline = evaluate_pipeline(pipeline.value.strip())
-            except SyntaxError:
-                raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.text.strip())
-    
-            try:
-                pipeline(transform_manager)
-            except NotChanged:
-                logger.info("Aborted update as data hasn't changed")
-            except TransformException, e:
-                logger.exception("Transform failed.")
-            except Exception, e:
-                logger.exception("Transform failed, perhaps ungracefully.")
-            finally:
-                pass #shutil.rmtree(output_directory)
+                try:
+                    transform = evaluate_pipeline(pipeline.value.strip())
+                except SyntaxError:
+                    raise ValueError("Couldn't parse the given pipeline: %r" % pipeline.value.strip())
+        
+                try:
+                    transform(transform_manager)
+                except NotChanged:
+                    logger.info("Aborted update as data hasn't changed")
+                except TransformException, e:
+                    logger.exception("Transform failed.")
+                except Exception, e:
+                    logger.exception("Transform failed, perhaps ungracefully.")
+                finally:
+                    pass #shutil.rmtree(output_directory)
 
     updated = _time_zone.localize(datetime.datetime.now())
 

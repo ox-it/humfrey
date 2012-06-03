@@ -12,17 +12,11 @@ class PermissionDeniedToLocalFile(TransformException):
     pass
 
 class Construct(Transform):
-    def __init__(self, query, store=None):
+    def __init__(self, query):
         self.query = query
-        self.store = store
     def execute(self, transform_manager):
-        if self.store:
-            store = self.get_store(transform_manager, self.store, query=True)
-            endpoint_query = store.query_endpoint
-        else:
-            endpoint_query = settings.ENDPOINT_QUERY
 
-        endpoint = Endpoint(endpoint_query)
+        endpoint = Endpoint(transform_manager.store.query_endpoint)
 
         if isinstance(self.query, basestring):
             query = self.query

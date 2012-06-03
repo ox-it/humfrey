@@ -36,21 +36,11 @@ class Upload(Transform):
 
     site_timezone = pytz.timezone(settings.TIME_ZONE)
 
-    def __init__(self, graph_name, method='PUT', store=None, stores=None):
+    def __init__(self, graph_name, method='PUT'):
         self.graph_name = rdflib.URIRef(graph_name)
         self.method = method
-        self.stores = stores or []
-        if not stores:
-            self.stores.append(store)
 
     def execute(self, transform_manager, input):
-        for store in self.stores:
-            if store:
-                store = self.get_store(transform_manager, store, update=True)
-                endpoint_query = store.query_endpoint
-            else:
-                endpoint_query = settings.ENDPOINT_QUERY
-
         transform_manager.start(self, [input])
 
         logger.debug("Starting upload of %r", input)
@@ -76,8 +66,8 @@ class Upload(Transform):
                                default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
-            logger.debug("Getting created date from %r", endpoint_query)
-            endpoint = Endpoint(endpoint_query)
+            logger.debug("Getting created date from %r", transform_manager.store.query_endpoint)
+            endpoint = Endpoint(transform_manager.store.query_endpoint)
             results = list(endpoint.query(self.created_query % {'graph': self.graph_name.n3()}))
             if results:
                 created = results[0].date
@@ -98,7 +88,7 @@ class Upload(Transform):
         logger.debug("Serialization done; about to upload")
 
         uploader = Uploader()
-        uploader.upload(stores=self.stores,
+        uploader.upload(stores=(transform_manager.store,),
                         graph_name=self.graph_name,
                         filename=output,
                         method=self.method,
@@ -107,5 +97,4 @@ class Upload(Transform):
         logger.debug("Upload complete")
 
         transform_manager.end([self.graph_name])
-        for store in self.stores:
-            transform_manager.touched_graph(store, self.graph_name)
+        transform_manager.touched_graph(self.graph_name)

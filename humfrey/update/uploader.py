@@ -38,10 +38,12 @@ class Uploader(object):
 
     @classmethod
     def upload_to_store(cls, store, graph_name, method, filename, mimetype):
-        if store is not None:
+        if isinstance(store, Store):
+            graph_store_endpoint = store.graph_store_endpoint
+        elif isinstance(store, basestring):
             graph_store_endpoint = Store.objects.get(slug=store).graph_store_endpoint
         else:
-            graph_store_endpoint = settings.ENDPOINT_GRAPH
+            raise TypeError("store must be Store or basestring, not %r", type(store))
 
         graph_url = '%s?%s' % (graph_store_endpoint,
                                urllib.urlencode({'graph': graph_name}))

@@ -17,6 +17,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from object_permissions import register
 
+from humfrey.sparql.models import Store
 from humfrey.update.utils import evaluate_pipeline
 
 DEFINITION_STATUS_CHOICES = (
@@ -218,6 +219,7 @@ class UpdateLogRecord(models.Model, WithLevels):
 class UpdatePipeline(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines")
     value = models.TextField()
+    stores = models.ManyToManyField(Store)
 
     def save(self, *args, **kwargs):
         try:
