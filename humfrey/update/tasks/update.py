@@ -7,6 +7,7 @@ import datetime
 import logging
 import os
 import pickle
+import shutil
 import tempfile
 import thread
 import traceback
@@ -168,7 +169,7 @@ def update(update_log=None, slug=None, trigger=None):
                 except Exception, e:
                     logger.exception("Transform failed, perhaps ungracefully.")
                 finally:
-                    pass #shutil.rmtree(output_directory)
+                    shutil.rmtree(output_directory)
 
     updated = _time_zone.localize(datetime.datetime.now())
 
