@@ -80,7 +80,8 @@ BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 def doc_backward(url, formats=None):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
-    if parsed_url.path == reverse('doc-generic'):
+    host_path = '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)
+    if host_path == reverse_full(*get_desc_view()):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)
