@@ -8,16 +8,15 @@ import urllib
 import rdflib
 from PIL import Image
 
-from django.http import HttpResponse, Http404, HttpResponseBadRequest
 from django.conf import settings
+from django.http import HttpResponse, Http404, HttpResponseBadRequest
+from django.views.generic import View
 
-from humfrey.sparql.views import StoreView
-from humfrey.linkeddata.views import MappingView
 from humfrey.utils.namespaces import expand
 
 from .encoding import encode_parameters
 
-class ThumbnailView(StoreView, MappingView):
+class ThumbnailView(View):
     _image_types = set(map(expand, settings.IMAGE_TYPES))
     def get(self, request):
         try:
@@ -36,15 +35,8 @@ class ThumbnailView(StoreView, MappingView):
         if not (width or height):
             raise Http404
         
-        print request.META['QUERY_STRING']
-        print  encode_parameters(url, width, height)
         if request.META['QUERY_STRING'] != encode_parameters(url, width, height):
             return HttpResponseBadRequest()
-
-        # Check that we've got an image
-        types = self.get_types(url)
-        if not (types & self._image_types):
-            raise Http404
 
         filename = hashlib.sha1('%s:%s:%s' % (width, height, url)).hexdigest()
         filename = [filename[:2], filename[2:4], filename[4:6], filename[6:]]
@@ -64,7 +56,6 @@ class ThumbnailView(StoreView, MappingView):
                 except Exception:
                     raise Http404
                 size = im.size
-                ratio = size[1] / size[0]
 
                 factor = 1
                 if width and width < size[0]:
