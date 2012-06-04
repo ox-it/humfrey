@@ -98,9 +98,10 @@ INSTALLED_APPS = (
     'humfrey.base',
     'humfrey.desc',
     'humfrey.linkeddata',
+    'humfrey.results',
     'humfrey.sparql',
     'humfrey.streaming',
-    'humfrey.results',
+    'humfrey.thumbnail',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
@@ -144,9 +145,6 @@ SERVED_DOMAINS = ()
 
 ID_MAPPING = ()
 ADDITIONAL_NAMESPACES = {}
-
-THUMBNAIL_WIDTHS = tuple(int(w.strip()) for w in config.get('images:thumbnail_widths', '200').split(','))
-THUMBNAIL_HEIGHTS = tuple(int(w.strip()) for w in config.get('images:thumbnail_heights', '200').split(','))
 
 DOWNLOADER_DEFAULT_DIR = config.get('downloader:default_dir')
 if DOWNLOADER_DEFAULT_DIR:

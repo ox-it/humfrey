@@ -102,13 +102,13 @@
     <aside class="sidebar">
       {% if subject.foaf_img %}
         <a href="{{ subject.foaf_img.doc_url }}">
-          <img class="depiction" src="{% url resized-image %}?url={{ subject.foaf_img.uri|urlencode }}&amp;width=200" alt=""/>
+          <img class="depiction" src="{% thumbnail url=subect.foaf_img.uri width=200 %}" alt=""/>
         </a>
       {% endif %}
       {% for depiction in subject.depictions %}
         {% ifnotequal depiction.uri subject.foaf_img.uri %}
         <a href="{{ depiction.doc_url }}">
-          <img class="depiction" src="{% url resized-image %}?url={{ depiction.uri|urlencode }}&amp;width=200" alt=""/>
+          <img class="depiction" src="{% thumbnail url=depiction.uri width=200 %}" alt=""/>
         </a>
         {% endifnotequal %}
       {% endfor %}

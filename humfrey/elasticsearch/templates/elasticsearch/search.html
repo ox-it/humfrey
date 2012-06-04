@@ -1,4 +1,4 @@
-{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}{% load humfrey_elasticsearch %}{% load hosts %}
+{% extends "elasticsearch/base.html" %}{% load humfrey_desc %}{% load humfrey_elasticsearch %}{% load humfrey_thumbnail %}{% load hosts %}
 
 {% block extra_head %}{{ block.super }}
   <link rel="stylesheet" href="{{ STATIC_URL }}elasticsearch/base.css"/>
@@ -51,7 +51,7 @@
     <li style="line-height:1.1em; margin-bottom:1em; clear:right">
       <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.url }}">
       {% if hit.source.image %}
-      <img style="float:right; margin-bottom:1em" src="{% host_url resized-image on data %}?url={{ hit.source.image }}&amp;width=200&amp;height=120" alt=""/>
+      <img style="float:right; margin-bottom:1em" src="{% thumbnail hit.source.image width=200 height=120 %}" alt=""/>
       {% endif %}
 
       {{ hit.source.label|default:"<em>unnamed</em>" }}</a>

@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import *
 
 from humfrey.desc import views as desc_views
-from humfrey.images import views as images_views
+from humfrey.thumbnail import views as thumbnail_views
 from humfrey.sparql import views as sparql_views
 from humfrey.misc import views as misc_views
 
@@ -18,7 +18,7 @@ urlpatterns = patterns('',
 
     (r'^pingback/', include('humfrey.pingback.urls.public', 'pingback')),
 
-    (r'^external-image/$', images_views.ResizedImageView.as_view(), {}, 'resized-image'),
+    (r'^thumbnail/$', thumbnail_views.ThumbnailView.as_view(), {}, 'thumbnail'),
 
 )
 

@@ -8,14 +8,16 @@ import urllib
 import rdflib
 from PIL import Image
 
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseBadRequest
 from django.conf import settings
 
 from humfrey.sparql.views import StoreView
 from humfrey.linkeddata.views import MappingView
 from humfrey.utils.namespaces import expand
 
-class ResizedImageView(StoreView, MappingView):
+from .encoding import encode_parameters
+
+class ThumbnailView(StoreView, MappingView):
     _image_types = set(map(expand, settings.IMAGE_TYPES))
     def get(self, request):
         try:
@@ -33,9 +35,11 @@ class ResizedImageView(StoreView, MappingView):
             height = None
         if not (width or height):
             raise Http404
-        if width and width not in getattr(settings, 'THUMBNAIL_WIDTHS', ()) or \
-           height and height not in getattr(settings, 'THUMBNAIL_HEIGHTS', ()):
-            raise Http404
+        
+        print request.META['QUERY_STRING']
+        print  encode_parameters(url, width, height)
+        if request.META['QUERY_STRING'] != encode_parameters(url, width, height):
+            return HttpResponseBadRequest()
 
         # Check that we've got an image
         types = self.get_types(url)
