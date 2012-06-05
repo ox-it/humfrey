@@ -19,7 +19,7 @@ def node(obj):
         return obj.render()
     elif isinstance(obj, URIRef):
         return Resource(obj, ConjunctiveGraph(), None).render()
-    elif isinstance(obj, Literal) and obj.datatype in (NS.xtypes['Fragment-HTML'], NS.rdf['HTML'])
+    elif isinstance(obj, Literal) and obj.datatype in (NS.xtypes['Fragment-HTML'], NS.rdf['HTML']):
         return sanitize_html(unicode(obj))
     elif isinstance(obj, Literal) and obj.datatype == NS.xtypes['Fragment-XHTML']:
         return sanitize_html(unicode(obj), is_xhtml=True)
