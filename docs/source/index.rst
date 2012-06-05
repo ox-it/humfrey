@@ -28,6 +28,17 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   getting_started
+
+Application reference
+=====================
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   
+   ref/apps/*
+
 Indices and tables
 ==================
 
