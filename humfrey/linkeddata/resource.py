@@ -185,11 +185,13 @@ class BaseResource(object):
                 return value
         return None
 
-    def get_all(self, name):
-        if name.endswith('_inv'):
-            name, inverse = name[:-4], True
-        else:
-            inverse = False
+    def get_all(self, name, inverse=None):
+        if inverse is None:
+            if name.endswith('_inv'):
+                name, inverse = name[:-4], True
+            else:
+                inverse = False
+
         if ':' not in name:
             name = name.replace('_', ':', 1)
         if ':' not in name:
