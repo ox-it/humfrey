@@ -1,3 +1,11 @@
+python-django-humfrey (0.3.9) unstable; urgency=low
+
+  * Improved thumbnailing architecture
+  * Better support for multiple stores
+  * Better support for having view-specific mappings and resources
+
+ -- Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>  Tue, 12 Jun 2012 13:55:44 +0100
+
 python-django-humfrey (0.3) unstable; urgency=low
 
   * Included elasticsearch integration
