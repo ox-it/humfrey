@@ -48,6 +48,8 @@ Include the :class:`~humfrey.elasticsearch.views.SearchView` in your urlconf::
 Writing SPARQL queries for the indexes
 --------------------------------------
 
+You can add new queries to index using the Django admin interface. Head to *Indexes* under *Elasticsearch*.
+
 The queries you write should result in a resultset (i.e. they are SELECT queries), which are transformed into chunks
 of JSON which are then fed to ElasticSearch. How you name your variables is important in the following ways:
 
@@ -95,6 +97,9 @@ Which in turn will result in the following two JSON objects being indexed:
              "label": "organization"}}
 
 
+
+Mappings
+--------
 
 API reference
 -------------
