@@ -68,8 +68,20 @@ class ResourceRegistry(object):
     def get_resource(self, identifier, graph, endpoint):
         classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
-            if t in self._registry and self._registry[t] not in classes:
-                classes.extend(self._registry[t])
+            for new_class in self._registry.get(t, ()):
+                # This merry dance makes sure that we drop superclasses if
+                # we've got something more specific
+                for c in classes:
+                    if issubclass(c, new_class):
+                        # The class we're trying to add is a superclass of one
+                        # we already have, so we ignore it.
+                        break
+                    elif issubclass(new_class, c):
+                        # The new class is a subclass, and should override the
+                        # old one, hence we remove the old one from bases.
+                        classes.remove(c)
+                else:
+                    classes.append(new_class)
         classes.sort(key=lambda cls:-getattr(cls, '_priority', 0))
         cls = type(type(identifier).__name__ + classes[0].__name__, tuple(classes) + (type(identifier),), {})
         resource = cls(identifier, graph, endpoint)
