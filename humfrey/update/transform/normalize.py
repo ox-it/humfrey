@@ -2,6 +2,13 @@ from __future__ import with_statement
 
 from collections import defaultdict
 import logging
+import urllib2
+import urlparse
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 from django.conf import settings
 import pytz
@@ -9,7 +16,7 @@ from rdflib import Literal, BNode, URIRef
 
 from humfrey.update.transform.base import Transform
 from humfrey.streaming import RDFSource, RDFXMLSink
-from humfrey.utils.namespaces import NS, expand
+from humfrey.utils.namespaces import NS, expand, HUMFREY
 from humfrey.sparql.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
@@ -32,6 +39,90 @@ class TimezoneNormalization(Normalization):
                     logger.exception("Failed to parse datetime: %s", o)
             yield (s, p, o)
         self.done = True
+
+class SearchNormalization(Normalization):
+    def __init__(self, safe_predicates=None):
+        self.pass_function = self.find_searches
+        self.replacements = {}
+        self.mapping = {}
+        self.searches = defaultdict(dict)
+        self.safe_predicates = frozenset(map(expand, (safe_predicates or ())))
+
+    def __call__(self, source):
+        for triple in self.pass_function(source):
+            yield triple
+
+    def find_searches(self, source):
+        for s, p, o in source:
+            if p == HUMFREY.searchNormalization:
+                self.replacements[s] = o
+            elif p == HUMFREY.searchQuery:
+                self.searches[s]['query'] = unicode(o)
+            elif p == HUMFREY.searchType:
+                self.searches[s]['type'] = unicode(o)
+            else:
+                yield s, p, o
+
+        searches = defaultdict(set)
+        for s, search in self.searches.iteritems():
+            searches[(search.get('type'), search.get('query'))].add(s)
+
+        logger.debug("Performing searches (%d)", len(searches))
+
+        #conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
+        #conn.connect()
+        for (ptype, query_string), subjects in searches.iteritems():
+            if ptype:
+                path = '/{store}/{type}/_search'.format(store=self.store.slug,
+                                                       type=ptype)
+            else:
+                path = '/{store}/_search'.format(store=self.store_slug or self.store.slug)
+
+            elasticsearch_url = urlparse.urlunsplit(('http',
+                                                     '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
+                                                     path, '', ''))
+
+            query = {'query': {'query_string': {'query': query_string.replace('-', '')}}}
+
+            try:
+                response = urllib2.urlopen(elasticsearch_url, json.dumps(query))
+            except urllib2.HTTPError, e:
+                logger.error("HTTP error when searching",
+                             exc_info=1,
+                             extra={'body': e.read(),
+                                    'status': e.code})
+                continue
+
+            result = json.load(response)
+
+            if result['hits']['hits']:
+                hit = result['hits']['hits'][0]
+                logger.info('Mapped "%s" (%s) to "%s" (%s), from %d results',
+                            query_string,
+                            ptype,
+                            hit['_source']['uri'],
+                            hit['_source'].get('label'),
+                            len(result['hits']['hits']))
+                for subject in subjects:
+                    self.mapping[subject] = URIRef(hit['_source']['uri'])
+            else:
+                logger.warning('No match for "%s" (%s)', query_string, ptype)
+
+        logger.debug("Searches done")
+
+        self.pass_function = self.substitute_searches
+
+    def substitute_searches(self, source):
+        logger.debug("Substituting search results (%d things, %d matches)", len(self.replacements), len(self.mapping))
+        for s, p, o in source:
+            if s in self.replacements and self.replacements[s] in self.mapping:
+                s = self.mapping[self.replacements[s]]
+            if o in self.replacements and self.replacements[o] in self.mapping:
+                o = self.mapping[self.replacements[o]]
+            yield s, p, o
+        logger.debug("Substitutions done")
+        self.done = True
+
 
 class NotationNormalization(Normalization):
     def __init__(self, datatypes, safe_predicates=None):
@@ -102,7 +193,8 @@ class NotationNormalization(Normalization):
 
 class Normalize(Transform):
     available_normalizations = {'timezones': TimezoneNormalization,
-                                'notations': NotationNormalization}
+                                'notations': NotationNormalization,
+                                'search': SearchNormalization}
 
     def __init__(self, **kwargs):
         self.normalizations = []
@@ -117,6 +209,7 @@ class Normalize(Transform):
 
         for normalization in self.normalizations:
             normalization.endpoint = endpoint
+            normalization.store = transform_manager.store
 
         while self.normalizations:
             with open(input, 'r') as source:
