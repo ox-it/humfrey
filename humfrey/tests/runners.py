@@ -34,6 +34,7 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
        'object_permissions.tests.groups',
        'object_permissions.tests.permissions',
     ]
+    _ignore_test_modules.extend(getattr(settings, 'IGNORE_TEST_MODULES', ()))
     
     def _filter_suite(self, suite):
         tests = []
