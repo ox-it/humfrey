@@ -16,8 +16,10 @@ from humfrey.utils.namespaces import expand
 
 from .encoding import encode_parameters
 
+IMAGE_TYPES = set(map(expand, getattr(settings, 'IMAGE_TYPES', ('foaf:depiction',))))
+
 class ThumbnailView(View):
-    _image_types = set(map(expand, settings.IMAGE_TYPES))
+    _image_types = IMAGE_TYPES
     def get(self, request):
         try:
             url = rdflib.URIRef(request.GET['url'])
