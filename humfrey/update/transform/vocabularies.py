@@ -1,4 +1,6 @@
+import httplib
 import logging
+import os
 import shutil
 import urllib2
 
@@ -7,17 +9,19 @@ import rdflib
 
 from humfrey.utils.namespaces import NS
 from humfrey.update.transform.base import Transform
-from humfrey.update.transform.upload import Upload
+from humfrey.update.uploader import Uploader
+from humfrey.update.tasks import retrieve
 
 logger = logging.getLogger(__name__)
 
 class VocabularyLoader(Transform):
     def execute(self, transform_manager):
+
         for prefix, uri in NS.iteritems():
             try:
                 self.load_vocabulary(transform_manager, prefix, uri)
             except Exception, e:
-                logger.error("Failed to load vocabulary: %r from %r", prefix, uri)
+                logger.exception("Failed to load vocabulary: %r from %r", prefix, uri)
 
     def load_vocabulary(self, transform_manager, prefix, uri):
         overrides = getattr(settings, 'VOCABULARY_URL_OVERRIDES', {})
@@ -25,28 +29,29 @@ class VocabularyLoader(Transform):
         if not uri:
             return
 
-        request = urllib2.Request(uri)
-        request.headers['Accept'] = 'application/rdf+xml, text/n3, text/turtle, text/plain'
+        filename, headers = retrieve(uri)
 
-        logger.debug("About to fetch %r for vocabulary %r", uri, prefix)
+        if not filename:
+            logger.error("Unable to retrieve: %s", headers.get('message'))
+            return
 
         try:
-            response = urllib2.urlopen(request)
-        except (urllib2.URLError, urllib2.HTTPError):
-            logger.exception("Failed to retrieve %r for vocabulary %r", uri, prefix)
-            return
-        content_type = response.headers['Content-type'].split(';')[0]
-        if content_type == 'application/rdf+xml':
-            extension = 'rdf'
-        elif content_type in ('text/n3', 'text/plain', 'text/turtle'):
-            extension = 'ttl'
-        else:
-            logger.exception('Unexpected content-type: %r', content_type)
-            return
 
-        with open(transform_manager(extension), 'w') as output:
-            shutil.copyfileobj(response, output)
+            logger.debug("About to fetch %r for vocabulary %r", uri, prefix)
 
-        graph_name = settings.GRAPH_BASE + 'vocabulary/' + prefix
-        upload = Upload(graph_name, stores=(transform_manager.store,))
-        upload.execute(transform_manager, output.name)
+            if headers['status'] != httplib.OK:
+                logger.error("Failed to retrieve %r for vocabulary %r", uri, prefix, extra={'headers': headers})
+                return
+            content_type = headers['content-type'].split(';')[0]
+            if content_type not in ('application/rdf+xml', 'text/n3', 'text/plain', 'text/turtle'):
+                logger.error('Unexpected content-type: %r', content_type)
+                return
+
+            graph_name = settings.GRAPH_BASE + 'vocabulary/' + prefix
+            Uploader.upload(stores=(transform_manager.store,),
+                            graph_name=graph_name,
+                            filename=filename,
+                            mimetype=content_type)
+        finally:
+            if headers['delete-after']:
+                os.unlink(filename)
