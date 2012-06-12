@@ -13,9 +13,9 @@ from django.test.client import Client, RequestFactory
 from django.http import HttpResponse
 
 from humfrey.desc import rdf_processors, views
-from humfrey.utils import resource
+from humfrey.linkeddata import resource
 import humfrey.sparql.endpoint
-from humfrey.tests.stubs import patch_id_mapping
+from humfrey.linkeddata.tests import set_mappingconf, TEST_ID_MAPPING
 
 class GraphTestMixin(object):
     def check_valid_terms(self, graph):
@@ -35,7 +35,7 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
         rdf_processors.doc_meta,
     ]
 
-    @patch_id_mapping
+    @set_mappingconf
     def testAll(self):
         for rdf_processor in self._ALL:
             endpoint = mock.Mock(spec=humfrey.sparql.endpoint.Endpoint)
@@ -86,7 +86,7 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
     @mock.patch('humfrey.desc.views.DocView.endpoint')
-    @patch_id_mapping
+    @mock.patch('humfrey.linkeddata.views.MappingView.id_mapping', TEST_ID_MAPPING)
     def testUnicodeURLs(self, endpoint, get_types):
         get_types.return_value = (rdflib.URIRef('http://example.org/vocab/Thing'),)
 

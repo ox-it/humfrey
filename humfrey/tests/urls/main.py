@@ -14,7 +14,7 @@ urlpatterns = patterns('',
     (r'^doc/$', desc_views.DocView.as_view(), {}, 'doc-generic'),
     (r'^desc/$', desc_views.DescView.as_view(), {}, 'desc'),
 
-    (r'^sparql/$', sparql_views.EndpointView.as_view(), {}, 'sparql'),
+    (r'^sparql/$', sparql_views.QueryView.as_view(), {}, 'sparql'),
 
     (r'^pingback/', include('humfrey.pingback.urls.public', 'pingback')),
 

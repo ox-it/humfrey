@@ -58,7 +58,6 @@ class ResultsParserTestCase(unittest.TestCase):
                                        {'number': 'S01E10',
                                         'label': 'War Stories'}]}]
 
-    @mock.patch('humfrey.elasticsearch.update.get_redis_client', lambda:None)
     def testDictify(self):
         dictify = update.IndexUpdater.dictify
 
@@ -79,7 +78,6 @@ class ResultsParserTestCase(unittest.TestCase):
 
         self.assertEqual(dictify(groups, original), expected)
 
-    @mock.patch('humfrey.elasticsearch.update.get_redis_client', lambda:None)
     def testMergeResults(self):
         one = {'foo': {'a': 1,
                        'b': {'a': 2,
@@ -97,9 +95,9 @@ class ResultsParserTestCase(unittest.TestCase):
 
         self.assertEqual(update.IndexUpdater.merge_dicts(groups, one, two), expected)
 
-    @mock.patch('humfrey.elasticsearch.update.get_redis_client', lambda:None)
     def testResultParsing(self):
         index_updater = update.IndexUpdater()
+        index_updater.client = None
 
         actual = list(index_updater.parse_results(self.TEST_META, self.TEST_RESULTS))
         expected = copy.deepcopy(self.EXPECTED_RESULT)

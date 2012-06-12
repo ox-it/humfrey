@@ -81,7 +81,7 @@ def doc_backward(url, formats=None):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
     host_path = '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)
-    if host_path == reverse_full(*get_desc_view()):
+    if host_path == reverse_full(*get_doc_view()):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)

@@ -12,8 +12,8 @@ from rdflib import URIRef, BNode
 
 from django.core.cache import cache
 from django.conf import settings
-from django.utils.safestring import mark_safe
 from django.utils.importlib import import_module
+from django.utils.safestring import mark_safe
 
 from humfrey.utils.namespaces import NS, expand
 from humfrey.linkeddata.uri import doc_forward
@@ -21,7 +21,6 @@ from humfrey.linkeddata.mappingconf import get_resource_registry
 
 image_logger = logging.getLogger('humfrey.utils.resource.image')
 
-TYPE_REGISTRY = {}
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
 IRI = re.compile(u'^([^\\<>"{}|^`\x00-\x20])*$')

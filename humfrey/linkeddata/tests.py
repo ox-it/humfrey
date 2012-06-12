@@ -1,5 +1,6 @@
 # *-* coding: UTF-8 *-*
 
+import functools
 import mock
 import unittest2
 import rdflib
@@ -7,15 +8,38 @@ import rdflib
 from django.core.urlresolvers import set_urlconf
 from django_hosts.reverse import get_host
 
+from humfrey.linkeddata import mappingconf, resource
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.tests.stubs import patch_id_mapping
+
+TEST_ID_MAPPING = (
+    ('http://random.example.org/id/', 'http://data.example.org/doc:random/', False),
+    ('http://id.example.org/', 'http://data.example.org/doc/', True)
+)
+
+
+def set_mappingconf(func):
+    @functools.wraps(func)
+    def f(*args, **kwargs):
+        mappingconf.set_desc_view(('data', 'desc'))
+        mappingconf.set_doc_view(('data', 'doc-generic'))
+        mappingconf.set_id_mapping(TEST_ID_MAPPING)
+        mappingconf.set_resource_registry(resource.base_resource_registry)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            mappingconf.set_desc_view(None)
+            mappingconf.set_doc_view(None)
+            mappingconf.set_id_mapping(None)
+            mappingconf.set_resource_registry(None)
+    return f
 
 
 class URITestCase(unittest2.TestCase):
     def setUp(self):
         set_urlconf(get_host('data').urlconf)
 
-    @patch_id_mapping
+    @set_mappingconf
     def testDocLocal(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri, format='n3'),
@@ -25,7 +49,7 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc:random/foo')
 
-    @patch_id_mapping
+    @set_mappingconf
     def testDocRemote(self):
         uri = rdflib.URIRef('http://remote.example.org/foo')
         doc_root = 'http://data.example.org/doc/'
@@ -63,13 +87,13 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri, described=True, format='nt'),
                          doc_root + qs_with_format)
 
-    @patch_id_mapping
+    @set_mappingconf
     def testDocLocalNegotiate(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc/foo')
 
-    @patch_id_mapping
+    @set_mappingconf
     def testDocLocalNegotiateMissing(self):
         uri = rdflib.URIRef('http://id.example.org/foo')
         self.assertEqual(doc_forward(uri),
@@ -96,12 +120,12 @@ class UnicodeURITestCase(unittest2.TestCase):
     def setUp(self):
         set_urlconf(get_host('data').urlconf)
 
-    @patch_id_mapping
+    @set_mappingconf
     def testUnicodeForward(self):
         for uri, url in self.TESTS:
             self.assertEqual(doc_forward(uri, described=True), url)
 
-    @patch_id_mapping
+    @set_mappingconf
     def testUnicodeBackward(self):
         for uri, url in self.TESTS:
             if isinstance(uri, unicode):
