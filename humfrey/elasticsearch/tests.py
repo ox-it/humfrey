@@ -95,9 +95,10 @@ class ResultsParserTestCase(unittest.TestCase):
 
         self.assertEqual(update.IndexUpdater.merge_dicts(groups, one, two), expected)
 
+    @mock.patch('redis.client.Redis', lambda **kwargs: None)
+    @mock.patch('django.conf.settings.REDIS_PARAMS', {}, create=True)
     def testResultParsing(self):
         index_updater = update.IndexUpdater()
-        index_updater.client = None
 
         actual = list(index_updater.parse_results(self.TEST_META, self.TEST_RESULTS))
         expected = copy.deepcopy(self.EXPECTED_RESULT)
