@@ -5,15 +5,19 @@ import mimetypes
 import os
 import shutil
 
+from django.conf import settings
+
 from humfrey.update.transform.base import Transform, TransformException
 from humfrey.update.tasks import retrieve
 
 logger = logging.getLogger(__name__)
 
+MIMETYPE_OVERRIDES = {'application/xml': 'xml',
+                      'application/vnd.ms-excel.12': 'xlsx'}
+MIMETYPE_OVERRIDES.update(getattr(settings, 'MIMETYPE_OVERRIDES', {}))
+
 class Retrieve(Transform):
-    mimetype_overrides = {
-        'application/xml': 'xml',
-    }
+    mimetype_overrides = MIMETYPE_OVERRIDES
 
     def __init__(self, url, name=None, extension=None, username=None, password=None, auth_type=None):
         self.url, self.name, self.extension = url, name, extension
