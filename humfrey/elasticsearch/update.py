@@ -118,7 +118,10 @@ class IndexUpdater(object):
     def dictify(cls, groups, src):
         dst = {}
         for key, value in src.iteritems():
-            if value is None:
+            # Ignore unbound fields, and take those beginning with '_' to be
+            # things we don't want to appear in our results as they are e.g.
+            # intermediary variables.
+            if value is None or key.startswith('_'):
                 continue
             if isinstance(value, rdflib.Literal):
                 try:
