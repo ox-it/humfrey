@@ -15,7 +15,7 @@ from django.conf import settings
 from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
 
-from humfrey.utils.namespaces import NS, expand
+from humfrey.utils.namespaces import NS, expand, PINGBACK
 from humfrey.linkeddata.uri import doc_forward
 from humfrey.linkeddata.mappingconf import get_resource_registry
 
@@ -233,6 +233,8 @@ class BaseResource(object):
     def properties(self):
         data = defaultdict(set)
         for p, o in self._graph.predicate_objects(self._identifier):
+            if p.startswith(PINGBACK):
+                continue
             if isinstance(o, (URIRef, BNode)):
                 o = Resource(o, self._graph, self._endpoint)
             data[p].add(o)

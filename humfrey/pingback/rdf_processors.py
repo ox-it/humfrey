@@ -2,7 +2,7 @@ import rdflib
 
 from django_hosts.reverse import reverse_full
 
-PINGBACK = rdflib.Namespace('http://purl.org/net/pingback/')
+from humfrey.utils.namespaces import PINGBACK
 
 def pingback(request, graph, doc_uri, subject_uri, subject, endpoint, renderers):
     graph += [

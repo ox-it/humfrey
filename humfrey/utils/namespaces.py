@@ -43,7 +43,9 @@ NS = {
     'afn': 'http://jena.hpl.hp.com/ARQ/function#',
 }
 
+# These have internal meanings, and don't want serializing.
 HUMFREY = Namespace('http://purl.org/NET/humfrey/ns/')
+PINGBACK = Namespace('http://purl.org/net/pingback/')
 
 NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
 
