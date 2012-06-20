@@ -26,6 +26,11 @@ class Store(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        permissions = (('administer_store', 'can administer'),
+                       ('query_store', 'can query'),
+                       ('update_store', 'can update'))
+
 register(['sparql.administer_store',
           'sparql.query_store',
           'sparql.update_store'],

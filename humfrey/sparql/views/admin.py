@@ -14,8 +14,8 @@ from humfrey.sparql.models import Store
 class IndexView(HTMLView, JSONView):
     def get(self, request):
         stores = Store.objects.all().order_by('name')
-        if not request.user.is_superuser:
-            stores = [s for s in stores if request.user.has_any_perms(s)]
+        if not request.user.has_perm('sparql.query_store'):
+            stores = [s for s in stores if s.can_query(request.user)]
         context = {'stores': stores,
                    'with_elasticsearch': 'humfrey.elasticsearch' in settings.INSTALLED_APPS}
         return self.render(request, context, 'sparql/index')
