@@ -19,12 +19,16 @@ MIMETYPE_OVERRIDES.update(getattr(settings, 'MIMETYPE_OVERRIDES', {}))
 class Retrieve(Transform):
     mimetype_overrides = MIMETYPE_OVERRIDES
 
-    def __init__(self, url, name=None, extension=None, username=None, password=None, auth_type=None):
+    def __init__(self, url, name=None, extension=None, username=None, password=None, user_agent=None):
         self.url, self.name, self.extension = url, name, extension
-        self.username, self.password, self.auth_type = username, password, auth_type
+        self.username, self.password = username, password
+        self.user_agent = user_agent
 
     def execute(self, transform_manager):
-        filename, headers = retrieve(self.url, self.username, self.password)
+        filename, headers = retrieve(url=self.url,
+                                     username=self.username,
+                                     password=self.password,
+                                     user_agent=self.user_agent)
 
         try:
             if not filename:

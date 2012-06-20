@@ -10,9 +10,12 @@ import urllib2
 from celery.task import task
 from django.conf import settings
 
-from humfrey import __version__
+from humfrey import __version__, source_homepage
 
 DOWNLOAD_CACHE = getattr(settings, 'DOWNLOAD_CACHE', None)
+
+USER_AGENTS = {'agent': 'humfrey/{0} ({1}; {2})'.format(__version__, source_homepage, settings.DEFAULT_FROM_EMAIL),
+               'browser': 'Mozilla (compatible; humfrey/{0}; {1}; {2})'.format(__version__, source_homepage, settings.DEFAULT_FROM_EMAIL)}
 
 logger = logging.getLogger(__name__)
 
@@ -24,19 +27,19 @@ def get_opener(url, username, password):
     handlers = []
     if username and password:
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_manager.add_password(url, username, password)
+        password_manager.add_password(None, url, username, password)
         handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
         handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
     return urllib2.build_opener(*handlers)
 
 
 @task(name='humfrey.update.retrieve')
-def retrieve(url, headers=None, username=None, password=None):
+def retrieve(url, headers=None, username=None, password=None, user_agent=None):
     headers = headers or {}
     opener = get_opener(url, username, password)
 
     request = urllib2.Request(url)
-    request.add_header('User-Agent', "Mozilla (compatible; humfrey/{0}; {1})".format(__version__, settings.DEFAULT_FROM_EMAIL))
+    request.add_header('User-Agent', USER_AGENTS.get(user_agent or 'browser', user_agent))
     request.add_header('Accept', "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8")
     for key in headers:
         request.add_header(key, headers[key])

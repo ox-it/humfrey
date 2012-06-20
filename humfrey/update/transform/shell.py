@@ -11,9 +11,10 @@ SHELL_TRANSFORMS = getattr(settings, 'SHELL_TRANSFORMS', {})
 logger = logging.getLogger(__name__)
 
 class Shell(Transform):
-    def __init__(self, name, extension, params):
+    def __init__(self, name, extension, params=None):
         self.shell = SHELL_TRANSFORMS[name]
         self.extension = extension
+        self.params = params or {}
 
     def execute(self, transform_manager, input):
         params = self.params.copy()

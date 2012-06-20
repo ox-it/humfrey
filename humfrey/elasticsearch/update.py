@@ -1,6 +1,8 @@
 from hashlib import sha1
 import httplib
+import logging
 import tempfile
+import time
 import urllib2
 try:
     import json
@@ -12,10 +14,14 @@ import redis
 
 from django.conf import settings
 
-from humfrey.linkeddata import resource
-from humfrey.sparql.endpoint import Endpoint, Result
+from humfrey.sparql.endpoint import Endpoint
+from humfrey.update.tasks.retrieve import USER_AGENTS
+
+logger = logging.getLogger(__name__)
 
 class IndexUpdater(object):
+    _SEND_BLOCK_SIZE = 8096
+
     def __init__(self):
         self.client = redis.client.Redis(**settings.REDIS_PARAMS)
 
@@ -38,7 +44,10 @@ class IndexUpdater(object):
     def update_for_store(self, index, store):
         hash_key = 'humfrey:elasticsearch:indices:%s:%s' % (index.slug, store.slug)
         endpoint = Endpoint(store.query_endpoint)
+
+        logger.debug("Performing SPARQL query.", extra={'query': index.query})
         results = endpoint.query(index.query)
+        logger.debug("SPARQL server started returning results.")
 
         try:
             urllib2.urlopen(index.get_index_status_url(store))
@@ -67,52 +76,39 @@ class IndexUpdater(object):
                 urllib2.urlopen(request)
 
         results = self.parse_results(index, results)
+        results = self.serialize_results(hash_key, results)
 
-        with tempfile.TemporaryFile() as f:
-            result_ids = set()
-            result_count = 0
-            for result in results:
-                result_count += 1
+        # ElasticSearch can only deal with requests up to 100MiB in size,
+        # so we'll write about 50MiB into each of a series of temporary files,
+        # and then sent each file as a separate request to ElasticSearch.
+        request_body_files, request_body_file = [], None
+        for result in results:
+            if request_body_file is None or request_body_file.tell() >= 52428800:
+                request_body_file = tempfile.TemporaryFile()
+                request_body_files.append(request_body_file)
+            request_body_file.write(result)
 
-                result_id = sha1(result['uri']).hexdigest()[:8]
-                result_ids.add(result_id)
-                result_hash = self.hash_result(result)
 
-                cached_hash = self.client.hget(hash_key, result_id)
-                if cached_hash == result_hash:
-                    continue
-                self.client.hset(hash_key, result_id, result_hash)
-
-                f.write(json.dumps({'index': {'_id': result_id}}))
-                f.write('\n')
-                f.write(json.dumps(result))
-                f.write('\n')
-
-            result_ids = set(self.client.hkeys(hash_key)) - result_ids
-            for result_id in result_ids:
-                f.write(json.dumps({'delete': {'_id': result_id}}))
-                f.write('\n')
-
-            # If we've nothing to say, don't make a request.
-            if not f.tell():
-                return
-
+        for request_body_file in request_body_files:
             conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
 
             conn.putrequest('POST', index.get_bulk_url(store, path=True))
-            conn.putheader("User-Agent", "humfrey")
-            conn.putheader("Content-Length", str(f.tell()))
+            conn.putheader("User-Agent", USER_AGENTS['agent'])
+            conn.putheader("Content-Length", str(request_body_file.tell()))
             conn.endheaders()
 
-            f.seek(0)
-            for line in f:
-                conn.send(line)
+            request_body_file.seek(0)
 
-            response = conn.getresponse()
+            block = request_body_file.read(self._SEND_BLOCK_SIZE)
+            while block:
+                conn.send(block)
+                block = request_body_file.read(self._SEND_BLOCK_SIZE)
+
+            conn.getresponse()
             conn.close()
 
-        return result_count
+        logger.info("ElasticSearch update complete")
 
     @classmethod
     def dictify(cls, groups, src):
@@ -223,3 +219,37 @@ class IndexUpdater(object):
 
         if out:
             yield cls.flatten_result(out)[0]
+
+    def serialize_results(self, hash_key, results):
+        client = self.client
+
+        next_status = time.time() + 60
+
+        result_ids = set()
+        result_count = 0
+        for result in results:
+            result_count += 1
+
+            result_id = sha1(result['uri'].encode('utf-8')).hexdigest()[:8]
+            result_ids.add(result_id)
+            result_hash = self.hash_result(result)
+
+            cached_hash = client.hget(hash_key, result_id)
+            if cached_hash == result_hash:
+                continue
+            client.hset(hash_key, result_id, result_hash)
+
+            yield '{0}\n{1}\n'.format(json.dumps({'index': {'_id': result_id}}),
+                                      json.dumps(result))
+
+            if time.time() > next_status:
+                logger.info("Received %d results in SPARQL resultset", result_count)
+                next_status = time.time() + 60
+
+        result_ids = set(self.client.hkeys(hash_key)) - result_ids
+
+        logger.info("Processed %d results from SPARQL resultset", result_count)
+        logger.info("Deleting %d items", len(result_ids))
+
+        for result_id in result_ids:
+            yield '{0}\n'.format(json.dumps({'delete': {'_id': result_id}}))
