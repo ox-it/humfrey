@@ -144,14 +144,33 @@ class NotationNormalization(Normalization):
 
     def substitute_notations(self, source):
         if self.notations:
-            query = """SELECT ?notation ?thing WHERE {
+            queries = [("""
+            SELECT ?notation ?thing WHERE {{
+                VALUES ?notation {{
+                  {0}
+                }}
                 ?thing skos:notation ?notation .
                 FILTER (isuri(?thing))
-            } BINDINGS ?notation {
-                %s
-            }"""
-            query = query % '\n'.join('(%s)' % n.n3() for n in self.notations)
-            notation_mapping = dict(self.endpoint.query(query))
+            }}""", "\n                  ", "{0}"), ("""
+            SELECT ?notation ?thing WHERE {{
+                ?thing skos:notation ?notation .
+                FILTER (isuri(?thing))
+            }} BINDINGS ?notation {{
+                {0}
+            }}""", "\n                ", "({0})")]
+            for query, delimiter, term in queries:
+                query = query.format(delimiter.join(term.format(n.n3()) for n in self.notations))
+                try:
+                    notation_mapping = dict(self.endpoint.query(query, log_failure=False))
+                except urllib2.HTTPError, e:
+                    if e.code != 400:
+                        raise
+                else:
+                    break
+            else:
+                logger.error("SPARQL server doesn't support either VALUES or BINDINGS. Choose a different server platform or remove the 'notations' normalization.")
+                self.done = True
+                return
         else:
             notation_mapping = {}
         mapping = {}
