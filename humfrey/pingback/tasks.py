@@ -1,4 +1,3 @@
-import httplib2
 import logging
 import socket
 import urlparse
@@ -7,6 +6,7 @@ from celery.task import task
 from django.conf import settings
 from django.db.models import Q
 
+from humfrey.update.tasks import retrieve
 from humfrey.update.uploader import Uploader
 from . import extraction, models
 
@@ -34,12 +34,11 @@ def process_new_pingback(pingback):
     pingback.state = 'processing'
     pingback.save()
     
-    try:
-        http = httplib2.Http(download_cache)
-        response = http.request(uri=pingback.source,
-                                headers={'Accept': 'application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8'})
-    except httplib2.HttpLib2Error:
-        logger.warning("Failed to retrieve pingback source: %s", pingback.source, exc_info=True)
+    response, headers = retrieve(pingback.source,
+                                 headers={'Accept': 'application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8'})
+ 
+    if headers.get('error'):
+        logger.warning("Failed to retrieve pingback source (%s): %s", headers.get('status'), pingback.source)
         pingback.mark_invalid('http-error')
         return
 
