@@ -12,4 +12,5 @@ urlpatterns = patterns('',
 if admin_views.SearchView:
     urlpatterns += patterns('',
         url(r'^(?P<store>[a-z\-]+)/search/$', admin_views.SearchView.as_view(), name='search'),
+        url(r'^(?P<store>[a-z\-]+)/elasticsearch/(?:(?P<index>[a-z\-]+)/)?$', admin_views.ElasticSearchPassThroughView.as_view(), name='elasticsearch'),
     )
