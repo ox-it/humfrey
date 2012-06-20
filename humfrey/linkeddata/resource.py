@@ -211,14 +211,9 @@ class BaseResource(object):
 
     def _additional_queries(self):
         objects = set()
-        for p, o in self._graph.predicate_objects(self._identifier):
-            objects.add(p)
+        for o in itertools.chain(self._graph.subjects(), self._graph.predicates(), self._graph.objects()):
             if isinstance(o, URIRef):
                 objects.add(o)
-        for s in self._graph.subjects(NS.ov.describes):
-            for o in self._graph.objects(s):
-                if isinstance(o, URIRef):
-                    objects.add(o)
 
         return ["""
             CONSTRUCT {
@@ -226,7 +221,7 @@ class BaseResource(object):
             } WHERE {
               ?s ?p ?label .
               FILTER ( %s ) .
-              FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title )
+              FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title || ?p = gr:name )
             }
         """ % ' || '.join('?s = %s' % o.n3() for o in objects if IRI.match(o))]
 
