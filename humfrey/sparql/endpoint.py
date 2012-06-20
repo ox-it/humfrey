@@ -24,6 +24,7 @@ from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srx
 from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
+from humfrey.update.tasks.retrieve import USER_AGENTS
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
@@ -64,7 +65,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, common_prefixes=True, timeout=None):
+    def query(self, query, common_prefixes=True, timeout=None, log_failure=True):
         original_query = query
         if common_prefixes:
             q = ['\n', trim_indentation(query)]
@@ -80,7 +81,7 @@ class Endpoint(object):
             'query': query.encode('utf-8'),
         }))
         request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml'
-        request.headers['User-Agent'] = 'humfrey (%s; https://github.com/oucs/humfrey; %s)' % (__version__, settings.DEFAULT_FROM_EMAIL)
+        request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
             request.headers['Timeout'] = str(timeout)
 
@@ -111,7 +112,10 @@ class Endpoint(object):
             result.duration = time.time() - start_time
             return result
         except Exception:
-            logger.exception("Failed query: %r; took %.2f seconds", original_query, time.time() - start_time)
+
+            (logger.error if log_failure else logger.info)(
+                "Failed query: %r; took %.2f seconds", original_query, time.time() - start_time,
+                exc_info=1)
             raise
         finally:
             try:
