@@ -1,5 +1,6 @@
 import urllib
 import urlparse
+from xml.sax.saxutils import escape
 
 from django import template
 from django.template.defaultfilters import linebreaksbr
@@ -23,8 +24,7 @@ def munge_parameter(context, prefix, name, value):
     for subkey in context.get('dependent_parameters', {}).get(key, ()):
         query.pop(subkey, None)
     query = sorted(query.iteritems())
-    return '?' + urllib.urlencode(query)
-    #return urlparse.urlunparse(url)
+    return escape('?' + urllib.urlencode(query))
 
 @register.simple_tag(takes_context=True)
 def set_parameter(context, prefix, name, value):

@@ -2,7 +2,7 @@
 
 {% block extra_head %}{{ block.super }}
   <link rel="stylesheet" href="{{ STATIC_URL }}elasticsearch/base.css"/>
-  <script type="application/javascript" href="{{ STATIC_URL }}elasticsearch/base.js"></script>
+  <script type="application/javascript" src="{{ STATIC_URL }}elasticsearch/base.js"></script>
 {% endblock %}
   
 
@@ -22,7 +22,7 @@
   
   {% if facets and hits.total %}
   <div class="sidebar-item">
-    <h2>Refine by&hellip;</h2>
+    <h2>Refine by…</h2>
     {% if facets.type %}
       {% include "elasticsearch/facet.html" with facet=facets.type facet_name="type" %}
 	{% endif %}
