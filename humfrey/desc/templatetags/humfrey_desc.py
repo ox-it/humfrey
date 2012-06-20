@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 
 from humfrey.linkeddata.uri import doc_forward
 from humfrey.linkeddata.resource import BaseResource, Resource
-from humfrey.utils.namespaces import NS
+from humfrey.utils.namespaces import NS, expand
 
 register = template.Library()
 
@@ -94,3 +94,8 @@ def sanitize_html(html, is_xhtml=False):
 @register.filter
 def doc_url(uri):
     return doc_forward(uri)
+
+@register.filter
+def has_type(obj, value):
+    if isinstance(obj, BaseResource):
+        return expand(value) in obj.get_all('rdf:type')
