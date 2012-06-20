@@ -58,14 +58,18 @@ class PassThroughView(View):
     def get_headers(self, request, *args, **kwargs):
         headers = {}
         for name in request.META:
+            if name in ('HTTP_HOST', 'HTTP_CONNECTION', 'HTTP_COOKIE', 'HTTP_ACCEPT_ENCODING'):
+                continue
             if name.startswith('HTTP_'):
                 headers[name[5:].capitalize().replace('_', '-')] = request.META[name]
         return headers
+    def process_response(self, request, response, *args, **kwargs):
+        return response
 
     def get(self, request, *args, **kwargs):
         url = self.get_target_url(request, *args, **kwargs)
         url = urlparse.urlparse(url)
-        
+
         if ':' in url.netloc:
             host, port = url.netloc.split(':', 1)
             port = int(port)
@@ -76,17 +80,29 @@ class PassThroughView(View):
         connection_class = httplib.HTTPConnection if url.scheme == 'http' else httplib.HTTPSConnection
 
         conn = connection_class(host=host, port=port)
-        conn.request(method=self.get_method(request, *args, **kwargs),
-                     url=path,
-                     body=request,
-                     headers=self.get_headers(request, *args, **kwargs))
-        
+        conn.putrequest(method=self.get_method(request, *args, **kwargs),
+                        url=path)
+        for k, v in self.get_headers(request, *args, **kwargs).iteritems():
+            conn.putheader(k, v)
+        conn.endheaders(request.raw_post_data)
+
         http_response = conn.getresponse()
         
-        response = HttpResponse(http_response.fp)
+        # Wrap the httplib.HTTPResponse object in an iterator
+        def response_body():
+            chunk = http_response.read(4096)
+            while chunk:
+                yield chunk
+                chunk = http_response.read(4096)
+            http_response.close()
+
+        response = HttpResponse(response_body())
         response.status_code = http_response.status
         for key, value in http_response.getheaders():
             response[key] = value
-        return response
         
+        response = self.process_response(request, response, *args, **kwargs)
+
+        return response
+    post = put = delete = get
         
