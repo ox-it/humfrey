@@ -17,7 +17,7 @@ from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.views import ContentNegotiatedView
 
-from humfrey.sparql.results import SparqlResultList, SparqlResultBool
+from humfrey.sparql.results import SparqlResultSet, SparqlResultBool
 from humfrey.streaming import srx
 
 # Register the RDF/JSON and JSON-LD serializer plugins if available
@@ -127,7 +127,7 @@ class ResultSetView(ContentNegotiatedView):
     def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
         if isinstance(context.get('result'), SparqlResultBool):
             spool = spool_boolean(context['result'])
-        elif isinstance(context.get('results'), SparqlResultList):
+        elif isinstance(context.get('results'), SparqlResultSet):
             spool = spool_resultset(context['results'])
         else:
             return NotImplemented
