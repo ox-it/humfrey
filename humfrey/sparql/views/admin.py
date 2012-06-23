@@ -15,7 +15,7 @@ class IndexView(HTMLView, JSONView):
     def get(self, request):
         stores = Store.objects.all().order_by('name')
         if not request.user.has_perm('sparql.query_store'):
-            stores = [s for s in stores if s.can_query(request.user)]
+            stores = [s for s in stores if request.user.has_perm('sparql.query_store', s)]
         context = {'stores': stores,
                    'with_elasticsearch': 'humfrey.elasticsearch' in settings.INSTALLED_APPS}
         return self.render(request, context, 'sparql/index')
@@ -30,13 +30,13 @@ class StoreChooseMixin(object):
 
     id_mapping = ()
     resource_registry = ResourceRegistry()
-    
+
     def dispatch(self, request, *args, **kwargs):
         self.store_name = kwargs.pop('store')
         if not self.store.can_query(request.user):
             raise PermissionDenied
         return super(StoreChooseMixin, self).dispatch(request, *args, **kwargs)
-        
+
 class DocView(StoreChooseMixin, desc_views.DocView):
     pass
 
