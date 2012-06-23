@@ -189,7 +189,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
             'subject': subject,
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
-            'queries': queries,
+            'queries': map(self.endpoint.normalize_query, queries),
             'template_name': subject.template_name,
         })
 

@@ -65,10 +65,10 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-    def query(self, query, common_prefixes=True, timeout=None, log_failure=True):
-        original_query = query
+    def normalize_query(self, query, common_prefixes=True):
+        query = trim_indentation(query)
         if common_prefixes:
-            q = ['\n', trim_indentation(query)]
+            q = ['\n', query]
             prefixes = []
             for prefix, uri in self._namespaces.iteritems():
                 if '%s:' % prefix in query:
@@ -76,6 +76,11 @@ class Endpoint(object):
             prefixes.sort()
             prefixes = ['PREFIX %s: <%s>\n' % i for i in prefixes]
             query = ''.join(prefixes + q)
+        return query
+
+    def query(self, query, common_prefixes=True, timeout=None, log_failure=True):
+        original_query = query
+        query = self.normalize_query(query, common_prefixes)
 
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
