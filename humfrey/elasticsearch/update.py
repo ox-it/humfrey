@@ -38,8 +38,10 @@ class IndexUpdater(object):
         return hash(json.dumps(recursive_sort(value)))
 
     def update(self, index):
+        item_count = 0
         for store in index.stores.all():
-            self.update_for_store(index, store)
+            item_count += self.update_for_store(index, store)
+        index.item_count = item_count
 
     def update_for_store(self, index, store):
         hash_key = 'humfrey:elasticsearch:indices:%s:%s' % (index.slug, store.slug)
@@ -78,6 +80,8 @@ class IndexUpdater(object):
         results = self.parse_results(index, results)
         results = self.serialize_results(hash_key, results)
 
+        result_count = 0
+
         # ElasticSearch can only deal with requests up to 100MiB in size,
         # so we'll write about 50MiB into each of a series of temporary files,
         # and then sent each file as a separate request to ElasticSearch.
@@ -87,6 +91,7 @@ class IndexUpdater(object):
                 request_body_file = tempfile.TemporaryFile()
                 request_body_files.append(request_body_file)
             request_body_file.write(result)
+            result_count += 1
 
 
         for request_body_file in request_body_files:
@@ -109,6 +114,8 @@ class IndexUpdater(object):
             conn.close()
 
         logger.info("ElasticSearch update complete")
+
+        return result_count
 
     @classmethod
     def dictify(cls, groups, src):
