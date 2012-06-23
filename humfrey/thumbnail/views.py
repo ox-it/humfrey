@@ -13,13 +13,22 @@ from django.http import HttpResponse, Http404, HttpResponseBadRequest
 from django.views.generic import View
 
 from humfrey.utils.namespaces import expand
+from humfrey.sparql.views import StoreView
 
 from .encoding import encode_parameters
 
 IMAGE_TYPES = set(map(expand, getattr(settings, 'IMAGE_TYPES', ('foaf:depiction',))))
 
-class ThumbnailView(View):
-    _image_types = IMAGE_TYPES
+class ThumbnailView(StoreView):
+    image_types = IMAGE_TYPES
+
+    def dispatch(self, request):
+        if 'store' in request.GET:
+            self._store = get_object_or_404(Store, slug=request.GET['store'])
+            if not self._store.can_query(request.user):
+                raise Http404
+        return super(ThumbnailView, self).dispatch(request)
+
     def get(self, request):
         try:
             url = rdflib.URIRef(request.GET['url'])
@@ -37,8 +46,11 @@ class ThumbnailView(View):
         if not (width or height):
             raise Http404
         
-        if request.META['QUERY_STRING'] != encode_parameters(url, width, height):
-            return HttpResponseBadRequest()
+        if 's' in request.GET:
+            if request.META['QUERY_STRING'] != encode_parameters(url, width, height):
+                return HttpResponseBadRequest()
+        elif not self.image_types & self.get_types(url):
+                raise Http404
 
         filename = hashlib.sha1('%s:%s:%s' % (width, height, url)).hexdigest()
         filename = [filename[:2], filename[2:4], filename[4:6], filename[6:]]
