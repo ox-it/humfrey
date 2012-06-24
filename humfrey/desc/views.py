@@ -115,7 +115,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
         uri, format, is_local = doc_backward(doc_url, set(self._renderers_by_format))
         if not uri:
             logger.debug("Could not resolve URL to a URI: %r", doc_url)
-            raise Http404
+            raise Http404("Could not resolve URI to a URI")
 
         expected_doc_url = doc_forward(uri, request, format=format, described=True)
 
@@ -176,7 +176,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
 
         if not graph:
             logger.debug("Graph for %r was empty; 404ing", uri)
-            raise Http404
+            raise Http404("Graph was empty")
 
         for doc_rdf_processor in self._doc_rdf_processors:
             additional_context = doc_rdf_processor(request=request,
