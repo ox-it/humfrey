@@ -135,9 +135,9 @@ class ResultSetView(ContentNegotiatedView):
 
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
     def render_srx(self, request, context, template_name):
-        results = context.get('results') or context.get('result')
-        return HttpResponse(srx.SRXSerializer(results),
-                            mimetype='application/sparql-results+xml')
+        return self.render_resultset(request, context,
+                                     srx.SRXSerializer, srx.SRXSerializer,
+                                     'application/sparql-results+xml')
 
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):

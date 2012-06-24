@@ -139,7 +139,7 @@ class SRXSerializer(object):
         yield '<?xml version="1.0"?>\n'
         yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
 
-        if getattr(self, 'fields', None):
+        if getattr(self.results, 'fields', None):
             yield '  <head>\n'
             for binding in results.fields:
                 yield '    <variable name="%s"/>\n' % escape(binding)
