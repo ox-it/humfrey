@@ -57,11 +57,16 @@ class PassThroughView(View):
         return request.method
     def get_headers(self, request, *args, **kwargs):
         headers = {}
-        for name in request.META:
-            if name in ('HTTP_HOST', 'HTTP_CONNECTION', 'HTTP_COOKIE', 'HTTP_ACCEPT_ENCODING'):
+        for name, value in request.META.iteritems():
+            if name in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+                pass
+            elif name in ('HTTP_HOST', 'HTTP_CONNECTION', 'HTTP_COOKIE', 'HTTP_ACCEPT_ENCODING'):
                 continue
-            if name.startswith('HTTP_'):
-                headers[name[5:].capitalize().replace('_', '-')] = request.META[name]
+            elif name.startswith('HTTP_'):
+                name = name[5:]
+            else:
+                continue
+            headers[name.capitalize().replace('_', '-')] = value
         return headers
     def process_response(self, request, response, *args, **kwargs):
         return response
