@@ -105,7 +105,12 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
 
     def get(self, request):
         additional_headers = {}
-        doc_url = request.build_absolute_uri()
+
+        # Apache helpfully(!?) unescapes encoded hash characters. If we get one
+        # we know that the browser sent a '%23' (or else would have stripped it
+        # as a fragment identifier. We replace it with a '%23' so that our URI
+        # canonicalisation doesn't get stuck in an endless redirect loop.
+        doc_url = request.build_absolute_uri().replace('#', '%23')
 
         uri, format, is_local = doc_backward(doc_url, set(self._renderers_by_format))
         if not uri:
