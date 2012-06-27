@@ -130,6 +130,7 @@ class UnicodeURITestCase(unittest2.TestCase):
         for uri, url in self.TESTS:
             if isinstance(uri, unicode):
                 self.assertEqual(doc_backward(url)[0], rdflib.URIRef(uri))
+                self.assertEqual(doc_forward(doc_backward(url)[0], described=True), url)
 
 
 if __name__ == '__main__':
