@@ -122,7 +122,7 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
         types = self.get_types(uri)
         if not types:
             logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
-            raise Http404
+            raise Http404("Resource has no type, so is probably not known in these parts")
 
         if self.check_canonical and expected_doc_url != doc_url:
             logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
