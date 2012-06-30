@@ -1,7 +1,7 @@
 import functools
 
 from humfrey.linkeddata.resource import BaseResource
-from humfrey.sparql.results import SparqlResultList, SparqlResultSet, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from .core import StoreView
 
 class CannedQueryView(StoreView):
@@ -37,7 +37,7 @@ class CannedQueryView(StoreView):
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
         result = self.endpoint.query(query)
-        if isinstance(result, SparqlResultList):
+        if isinstance(result, SparqlResultSet):
             context = {'results': result}
         elif isinstance(result, SparqlResultBool):
             context = {'result': result}
