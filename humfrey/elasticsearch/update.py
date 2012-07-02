@@ -1,3 +1,4 @@
+import datetime
 from hashlib import sha1
 import httplib
 import logging
@@ -131,6 +132,8 @@ class IndexUpdater(object):
                     value = value.toPython()
                 except ValueError:
                     raise
+                if isinstance(value, datetime.datetime):
+                    value = value.isoformat()
             x = dst
             for i in key.split('_')[:-1]:
                 if i not in x:
