@@ -65,3 +65,28 @@ body.elasticsearch div.sidebar-item li.selected {
 body.elasticsearch div.results {
 	margin-left: 200px;
 }
+
+body.elasticsearch .search-item {
+	line-height: 1.2em;
+	margin: 0.5em 0 1.5em 0;
+	clear: right;
+}
+
+body.elasticsearch .search-item-image {
+	float: right;
+	padding-bottom: 1.5em;
+}
+
+body.elasticsearch .search-item-header {
+	margin-bottom: 0.5em;
+	line-height: 1.1em;
+}
+
+body.elasticsearch .search-item-header h3 {
+	margin-bottom: 0;
+	display: inline;
+}
+
+body.elasticsearch .search-item-type {
+	font-size:75%;
+}

@@ -36,6 +36,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
     facets = {'type': {'terms': {'field': 'type.uri',
                                           'size': 20}}}
     template_name = 'elasticsearch/search'
+    default_search_item_template_name = 'elasticsearch/search_item'
     
     class MissingQuery(Exception):
         pass
@@ -72,7 +73,8 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                    'renderers': [{'name': r.name,
                                   'format': r.format,
                                   'mimetypes': r.mimetypes} for r in self._renderers],
-                   'dependent_parameters': self.dependent_parameters}
+                   'dependent_parameters': self.dependent_parameters,
+                   'default_search_item_template_name': self.default_search_item_template_name}
         
         if form.is_valid():
             context.update(self.get_results(dict((k, request.GET[k]) for k in request.GET),

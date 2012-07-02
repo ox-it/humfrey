@@ -48,24 +48,8 @@
   
   <ol start="{{ start }}">
   {% for hit in hits.hits %}{% block hit %}
-    <li style="line-height:1.1em; margin-bottom:1em; clear:right">
-      <a style="font-size:120%; font-weight: bold; color:#0066AA" href="{{ hit.url }}">
-      {% if hit.source.image %}
-      <img style="float:right; margin-bottom:1em" src="{% thumbnail hit.source.image width=200 height=120 %}" alt=""/>
-      {% endif %}
-
-      {{ hit.source.label|default:"<em>unnamed</em>" }}</a>
-      {% if hit.source.type.label %}
-        <small>{{ hit.source.type.label|capfirst }}</small>
-      {% endif %}
-      
-      <br/>
-      <span style="color:#002147">{{ hit.source.uri }}</span>
-      {% if hit.source.description %}
-        <br/>
-        {{ hit.source.description|truncatewords:50 }}
-      {% endif %}
-      
+    <li class="search-item">
+      {% include hit|search_item_template:default_search_item_template_name %}
       </li>
   {% endblock %}{% endfor %}
   </ol>

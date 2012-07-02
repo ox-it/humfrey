@@ -1,0 +1,13 @@
+{% load humfrey_thumbnail %}{% load humfrey_elasticsearch %}
+<div class="search-item-header">
+  {% if hit.source.image %}
+    <img class="search-item-image" src="{% thumbnail hit.source.image width=200 height=120 %}" alt=""/>
+  {% endif %}
+  <h3><a href="{{ hit.url }}">{{ hit.source.label }}</a></h3>
+  {% if hit.source.type.label %}
+    <span class="search-item-type">{{ hit.source.type.label|capfirst }}</span>
+  {% endif %}
+</div>
+{% if hit.source.description %}
+  <div class="search-item-description">{{ hit.source.description|search_html|truncatewords_html:"50" }}</div>
+{% endif %}

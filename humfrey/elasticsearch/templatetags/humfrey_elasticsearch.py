@@ -4,8 +4,11 @@ from xml.sax.saxutils import escape
 
 from django import template
 from django.template.defaultfilters import linebreaksbr
+import rdflib
 
 from humfrey.desc.templatetags.humfrey_desc import sanitize_html
+from humfrey.linkeddata.resource import Resource
+from humfrey.utils.namespaces import NS
 
 register = template.Library()
 
@@ -40,3 +43,19 @@ def search_html(value):
         return sanitize_html(value)
     else:
         return linebreaksbr(value)
+
+@register.filter
+def search_item_template(hit, default_search_item_template_name):
+    types = set(t['uri'] for t in hit['_source'].get('allTypes', ()))
+    try:
+        types.add(hit['_source']['type']['uri'])
+    except KeyError:
+        pass
+    graph = rdflib.ConjunctiveGraph()
+    uri = rdflib.URIRef(hit['_source']['uri'])
+    for t in types:
+        graph.add((uri, NS.rdf.type, rdflib.URIRef(t)))
+    resource = Resource(uri, graph, None)
+    template_name = getattr(resource, 'search_item_template_name', None) \
+                 or default_search_item_template_name
+    return template_name + ".html"
