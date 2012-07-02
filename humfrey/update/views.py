@@ -108,14 +108,15 @@ class DefinitionDetailView(HTMLView):
             raise PermissionDenied
 
         try:
-            obj.queue('web', request.user)
+            update_log = obj.queue('web', request.user)
         except UpdateDefinition.AlreadyQueued:
             context = {'status_code': 409,
                        'success': False,
                        'object': obj}
         else:
             context = {'success': True,
-                       'object': obj}
+                       'object': obj,
+                       'update_log': update_log}
         return self.render(request, context, 'update/definition-queued')
 
 class FileListView(HTMLView, JSONView):

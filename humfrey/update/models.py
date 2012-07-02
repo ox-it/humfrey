@@ -88,6 +88,7 @@ class UpdateDefinition(models.Model):
         self.save()
         
         send_task('humfrey.update.update', kwargs={'update_log': update_log})
+        return update_log
 
     def __unicode__(self):
         return self.title
