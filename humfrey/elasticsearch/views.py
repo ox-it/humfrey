@@ -16,18 +16,14 @@ from rdflib import URIRef
 
 from humfrey.sparql.views import StoreView
 from humfrey.sparql.utils import get_labels
-from humfrey.utils.namespaces import expand, contract
 from humfrey.linkeddata.uri import doc_forwards
 from humfrey.linkeddata.views import MappingView
+from humfrey.utils.namespaces import expand, contract
 
 from .forms import SearchForm
-
+from .query import ElasticSearchEndpoint
 
 class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView):
-    @property
-    def index_name(self):
-        return self.store_name
-
     page_size = 10
 
     # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
@@ -153,8 +149,8 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                             facet['facet_filter']['and'].append(filter)
             query['facets'] = facets
 
-        response = urllib2.urlopen(self.search_url, json.dumps(query))
-        results = self.Deunderscorer(json.load(response))
+        endpoint = ElasticSearchEndpoint(self.store)
+        results = self.Deunderscorer(endpoint.query(query))
 
         results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
