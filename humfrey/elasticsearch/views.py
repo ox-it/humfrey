@@ -102,10 +102,14 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
         page = cleaned_data.get('page') or 1
         page_size = cleaned_data.get('page_size') or self.page_size
         start = (page - 1) * page_size
+        
+        default_operator = parameters.get('default_operator', '').upper()
+        if default_operator not in ('AND', 'OR'):
+            default_operator = 'AND'
 
         query = {
             'query': {'query_string': {'query': cleaned_data['q'],
-                                       'default_operator': 'AND'}},
+                                       'default_operator': default_operator}},
             'from': start,
             'size': page_size,
             # A blank conjunctive filter. We'll remove this later if necessary.
