@@ -74,7 +74,7 @@ def update_dataset_archive(dataset, store, graph_names, updated):
         sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
 
         with open(rdf_out, 'w') as sink:
-            RDFXMLSink(NTriplesSource(sort.stdout)).serialize(sink)
+            RDFXMLSink(sink, triples=NTriplesSource(sort.stdout))
         sort.wait()
         rdf_out.close()
 

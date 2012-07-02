@@ -236,8 +236,7 @@ class Normalize(Transform):
                 for normalization in self.normalizations:
                     pipeline = normalization(pipeline)
                 with open(transform_manager('rdf'), 'w') as target:
-                    sink = RDFXMLSink(pipeline)
-                    sink.serialize(target)
+                    RDFXMLSink(target, triples=pipeline)
 
             input = target.name
             self.normalizations = [n for n in self.normalizations if not n.done]

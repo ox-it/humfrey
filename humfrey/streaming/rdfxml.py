@@ -52,24 +52,36 @@ class RDFXMLSource(object):
 class RDFXMLSink(object):
     localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
 
-    def __init__(self, triples, namespaces=None, encoding='utf-8'):
-        self.triples = triples
+    def __init__(self, out, namespaces=None, encoding='utf-8', triples=None):
+        self.write = lambda s: out.write(s.encode(self.encoding))
         self.namespaces = sorted((namespaces or NS).items())
         self.encoding = encoding
         self.last_subject = None
-
-    def serialize(self, out):
-        write = lambda s: out.write(s.encode(self.encoding))
+        if triples:
+            self.serialize(triples)
+    
+    def start(self):
+        write = self.write
         write(u'<?xml version="1.0" encoding=%s?>\n' % quoteattr(self.encoding))
         write(u'<rdf:RDF')
         for prefix, uri in self.namespaces:
             write(u'\n    xmlns:%s=%s' % (prefix, quoteattr(uri)))
         write(u'>\n')
-        for triple in self.triples:
+
+    def triples(self, triples):
+        write = self.write
+        for triple in triples:
             self.triple(write, triple)
+    
+    def end(self):
         if self.last_subject:
-            write(u'  </rdf:Description>\n')
-        write(u'</rdf:RDF>\n')
+            self.write(u'  </rdf:Description>\n')
+        self.write(u'</rdf:RDF>\n')
+    
+    def serialize(self, triples):
+        self.start()
+        self.triples(triples)
+        self.end()
 
     def triple(self, write, (s, p, o)):
         if s != self.last_subject:
