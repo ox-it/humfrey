@@ -1,6 +1,6 @@
 import functools
 
-from humfrey.linkeddata.resource import BaseResource
+from humfrey.linkeddata.resource import Resource
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from .core import StoreView
 
@@ -43,7 +43,7 @@ class CannedQueryView(StoreView):
             context = {'result': result}
         elif isinstance(result, SparqlResultGraph):
             context = {'graph': result}
-            self.resource = functools.partial(BaseResource, graph=result, endpoint=self.endpoint)
+            self.resource = functools.partial(Resource, graph=result, endpoint=self.endpoint)
             subjects = self.get_subjects(request, result, *args, **kwargs)
             context['subjects'] = map(self.resource, subjects)
 
