@@ -65,6 +65,8 @@ class ResourceRegistry(object):
                 self._registry[expand(t)].add(klass)
     
     def get_resource(self, identifier, graph, endpoint):
+        if isinstance(identifier, BaseResource):
+            return identifier
         classes = [BaseResource]
         for t in graph.objects(identifier, NS['rdf'].type):
             for new_class in self._registry.get(t, ()):
