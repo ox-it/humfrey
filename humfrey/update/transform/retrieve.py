@@ -26,6 +26,7 @@ class Retrieve(Transform):
 
     def execute(self, transform_manager):
         filename, headers = retrieve(url=self.url,
+                                     user=transform_manager.owner,
                                      username=self.username,
                                      password=self.password,
                                      user_agent=self.user_agent)

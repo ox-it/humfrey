@@ -18,7 +18,9 @@ from django.core.urlresolvers import reverse
 from object_permissions import register
 
 from humfrey.sparql.models import Store
+from humfrey.update.fields import EncryptedCharField
 from humfrey.update.utils import evaluate_pipeline
+
 
 DEFINITION_STATUS_CHOICES = (
     ('idle', 'Idle'),
@@ -233,6 +235,12 @@ class UpdateVariable(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="variables")
     name = models.TextField()
     value = models.TextField()
+
+class Credential(models.Model):
+    user = models.ForeignKey(User)
+    url = models.CharField(max_length=4096, verbose_name="Base URL")
+    username = models.CharField(max_length=128)
+    password = EncryptedCharField(max_length=4096)
 
 class LocalFile(models.Model):
     name = models.CharField(max_length=255, unique=True, db_index=True)

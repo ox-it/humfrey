@@ -23,20 +23,23 @@ def get_filename(url):
     h = sha1(url).hexdigest()
     return os.path.join(DOWNLOAD_CACHE, h[:2], h[2:4], h)
 
-def get_opener(url, username, password):
+def get_opener(url, user, username, password):
     handlers = []
+    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
     if username and password:
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(None, url, username, password)
-        handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
-        handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
+    for credential in user.credential_set.all():
+        logger.debug("Adding credential %s %s %s", credential.url, credential.username, credential.password)
+        password_manager.add_password(None, credential.url, credential.username, credential.password)
+    handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
+    handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
     return urllib2.build_opener(*handlers)
 
 
 @task(name='humfrey.update.retrieve')
-def retrieve(url, headers=None, username=None, password=None, user_agent=None):
+def retrieve(url, headers=None, user=None, username=None, password=None, user_agent=None):
     headers = headers or {}
-    opener = get_opener(url, username, password)
+    opener = get_opener(url, user, username, password)
 
     request = urllib2.Request(url)
     request.add_header('User-Agent', USER_AGENTS.get(user_agent or 'browser', user_agent))
