@@ -32,6 +32,8 @@ class Retrieve(Transform):
                                      user_agent=self.user_agent)
 
         try:
+            if headers.get('error'):
+                raise TransformException("Failed to download %s", self.url)
             if not filename:
                 raise TransformException(headers.get('message'))
 

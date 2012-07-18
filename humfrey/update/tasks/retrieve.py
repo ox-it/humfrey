@@ -66,11 +66,14 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
     except urllib2.HTTPError, e:
         response = e
     except urllib2.URLError, e:
+        logger.exception("Couldn't retrieve %s: %s", url, e)
         return None, {'error': True,
-                      'message': str(e)}
+                      'message': str(e),
+                      'delete-after': False}
     headers = dict((k.lower(), response.headers[k]) for k in response.headers)
     headers['status'] = response.code
     headers['url'] = response.url
+    headers['error'] = response.code >= 400
 
     if response.code == httplib.OK:
         logger.debug("Cache miss: %s", url)
@@ -100,6 +103,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
         logger.debug("Cache hit: %s", url)
 
         previous_headers['from-cache'] = True
+        previous_headers['delete-after'] = False
         return filename, previous_headers
     else:
         logger.debug("Error: %d, %s", response.code, url)
