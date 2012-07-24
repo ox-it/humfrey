@@ -11,6 +11,11 @@ Features
 * Semantic pingback
 * SPARQL rate-limiting
 
+Documentation
+-------------
+
+Read the documentation at `humfrey.readthedocs.org <http://humfrey.readthedocs.org/>`_.
+
 Using
 -----
 
