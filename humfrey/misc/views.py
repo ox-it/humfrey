@@ -1,6 +1,7 @@
 import datetime
 import httplib
 import urlparse
+import wsgiref
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -58,16 +59,17 @@ class PassThroughView(View):
     def get_headers(self, request, *args, **kwargs):
         headers = {}
         for name, value in request.META.iteritems():
-            if name in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-                pass
+            if name in ('CONTENT_TYPE', 'CONTENT_LENGTH') and value:
+                pass # Good
             elif name in ('HTTP_HOST', 'HTTP_CONNECTION', 'HTTP_COOKIE', 'HTTP_ACCEPT_ENCODING'):
-                continue
+                continue # Bad
             elif name.startswith('HTTP_'):
-                name = name[5:]
+                name = name[5:] # Good (minus the 'HTTP_')
             else:
                 continue
             headers[name.capitalize().replace('_', '-')] = value
         return headers
+
     def process_response(self, request, response, *args, **kwargs):
         return response
 
@@ -105,7 +107,8 @@ class PassThroughView(View):
         response = HttpResponse(response_body())
         response.status_code = http_response.status
         for key, value in http_response.getheaders():
-            response[key] = value
+            if not wsgiref.util.is_hop_by_hop(key):
+                response[key] = value
         
         response = self.process_response(request, response, *args, **kwargs)
 
