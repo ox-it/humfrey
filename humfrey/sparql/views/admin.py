@@ -1,15 +1,19 @@
+import urllib
+
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django_conneg.views import HTMLView, JSONView
+from django_conneg.views import ContentNegotiatedView, HTMLView, JSONView
 
 from .core import StoreView, QueryView
 from humfrey.linkeddata.resource import ResourceRegistry
 from humfrey.linkeddata.views import MappingView
 from humfrey.desc import views as desc_views
 from humfrey.misc import views as misc_views
-from humfrey.sparql.views import StoreView
+from humfrey.results.views.standard import RDFView
+from humfrey.sparql.views import StoreView, CannedQueryView
 from humfrey.sparql.models import Store
+from humfrey.utils.namespaces import NS
 
 class IndexView(HTMLView, JSONView):
     def get(self, request):
@@ -42,6 +46,46 @@ class DocView(StoreChooseMixin, desc_views.DocView):
 
 class QueryView(StoreChooseMixin, QueryView):
     pass
+
+class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
+    def get_target_url(self, request):
+        if request.method != 'GET' and not self.store.can_update(request.user):
+            raise PermissionDenied
+        return "{0}?{1}".format(self.store.graph_store_endpoint,
+                                urllib.urlencode({'graph': request.GET['graph']}))
+
+class GraphListView(HTMLView, RDFView, StoreChooseMixin, CannedQueryView, MappingView):
+    query = """
+        CONSTRUCT {
+         ?g a sd:Graph ;
+           dcterms:publisher ?publisher ;
+           dcterms:license ?license
+        } WHERE {
+          GRAPH ?g { ?s ?p ?o } .
+          OPTIONAL { ?g rdfs:label ?label } .
+          OPTIONAL { ?g dcterms:publisher ?publisher } .
+          OPTIONAL { ?g dcterms:license ?license } .
+        }
+    """
+
+    template_name = 'sparql/graph-list'
+    def get_subjects(self, request, graph):
+        return sorted(graph.subjects(NS.rdf.type, NS.sd.Graph))
+    def get_additional_context(self, request):
+        return {'store': self.store}
+    def process_response(self, request, response):
+        response['X-URI-Lookup'] = reverse('sparql-admin:view', args=[self.store_name]) + '?uri='
+        response['X-SPARQL-Endpoint'] = reverse('sparql-admin:query', args=[self.store_name])
+        return response
+
+class GraphView(ContentNegotiatedView):
+    graph_data_view = staticmethod(GraphDataView.as_view())
+    graph_list_view = staticmethod(GraphListView.as_view())
+    def get(self, request, store):
+        if 'graph' in request.GET:
+            return self.graph_data_view(request, store=store)
+        else:
+            return self.graph_list_view(request, store=store)
 
 if 'humfrey.elasticsearch' in settings.INSTALLED_APPS:
     from humfrey.elasticsearch import views as elasticsearch_views

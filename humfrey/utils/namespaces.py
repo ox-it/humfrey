@@ -27,6 +27,7 @@ NS = {
     'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     'rdfs':   'http://www.w3.org/2000/01/rdf-schema#',
     'rooms': 'http://vocab.deri.ie/rooms#',
+    'sd': 'http://www.w3.org/ns/sparql-service-description#',
     'sdmxdim': 'http://purl.org/linked-data/sdmx/2009/dimension#',
     'skos':   'http://www.w3.org/2004/02/skos/core#',
     'sioc': 'http://rdfs.org/sioc/ns#',
