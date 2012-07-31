@@ -1,0 +1,26 @@
+{% extends "sparql/base.html" %}{% load humfrey_desc %}
+
+{% block title %}Graphs in {{ store.name }}{% endblock %}
+
+{% block content %}
+  <h1>Graphs in <em>{{ store.name }}</em></h1>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>URI</th>
+        <th>Label</th>
+        <th>Publisher</th>
+        <th>License</th>
+      </tr>
+    </thead>
+    <tbody>{% for subject in subjects %}
+      <tr>
+        <td><a href="?graph={{ subject.uri|urlencode }}">{{ subject.uri }}</a></td>
+        <td>{{ subject.rdfs_label|default:"" }}</td>
+        <td>{{ subject.dcterms_publisher|node|default:"" }}</td>
+        <td>{{ subject.dcterms_license|node|default:"" }}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
