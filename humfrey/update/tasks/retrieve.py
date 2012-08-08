@@ -29,7 +29,7 @@ def get_opener(url, user, username, password):
     if username and password:
         password_manager.add_password(None, url, username, password)
     for credential in user.credential_set.all():
-        logger.debug("Adding credential %s %s %s", credential.url, credential.username, credential.password)
+        logger.debug("Adding credential %s %s", credential.url, credential.username)
         password_manager.add_password(None, credential.url, credential.username, credential.password)
     handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
     handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
