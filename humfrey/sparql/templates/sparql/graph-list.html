@@ -19,6 +19,8 @@
         <th>URI</th>
         <th>Label</th>
         <th>Publisher</th>
+        <th>Created</th>
+        <th>Modified</th>
         <th>License</th>
       </tr>
     </thead>
@@ -28,6 +30,8 @@
         <td>{{ subject.rdfs_label|default:"" }}</td>
         <td>{{ subject.dcterms_publisher|node|default:"" }}</td>
         <td>{{ subject.dcterms_license|node|default:"" }}</td>
+        <td>{{ subject.dcterms_created|node|default:"" }}</td>
+        <td>{{ subject.dcterms_modified|node|default:"" }}</td>
       </tr>{% endfor %}
     </tbody>
   </table>

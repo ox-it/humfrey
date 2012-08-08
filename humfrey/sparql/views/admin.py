@@ -59,12 +59,16 @@ class GraphListView(HTMLView, RDFView, StoreChooseMixin, CannedQueryView, Mappin
         CONSTRUCT {
          ?g a sd:Graph ;
            dcterms:publisher ?publisher ;
-           dcterms:license ?license
+           dcterms:license ?license ;
+           dcterms:created ?created ;
+           dcterms:modified ?modified
         } WHERE {
           GRAPH ?g { ?s ?p ?o } .
           OPTIONAL { ?g rdfs:label ?label } .
           OPTIONAL { ?g dcterms:publisher ?publisher } .
           OPTIONAL { ?g dcterms:license ?license } .
+          OPTIONAL { ?g dcterms:created ?created } .
+          OPTIONAL { ?g dcterms:modified ?modified } .
         }
     """
 
