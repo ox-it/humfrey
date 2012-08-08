@@ -90,6 +90,7 @@ class GraphView(ContentNegotiatedView):
             return self.graph_data_view(request, store=store)
         else:
             return self.graph_list_view(request, store=store)
+    post = delete = put = get
 
 if 'humfrey.elasticsearch' in settings.INSTALLED_APPS:
     from humfrey.elasticsearch import views as elasticsearch_views
