@@ -71,6 +71,10 @@ class Chain(Transform):
 
 class Requires(Transform):
     def __init__(self, first, requirements):
+        try:
+            iter(requirements)
+        except TypeError:
+            requirements = (requirements,)
         self._first, self._requirements = first, requirements
 
     def execute(self, transform_manager, *args):

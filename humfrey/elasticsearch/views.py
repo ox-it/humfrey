@@ -98,10 +98,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                                     '',
                                     ''))
 
-    def get_results(self, parameters, cleaned_data):
-        page = cleaned_data.get('page') or 1
-        page_size = cleaned_data.get('page_size') or self.page_size
-        start = (page - 1) * page_size
+    def get_query(self, parameters, cleaned_data, start, page_size):
         
         default_operator = parameters.get('default_operator', '').upper()
         if default_operator not in ('AND', 'OR'):
@@ -131,13 +128,6 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                     filter = {'term': {key[7:]: parameter}}
                 query['filter']['and'].append(filter)
 
-        # If there aren't any filters defined, we don't want a filter part of
-        # our query.
-        if not query['filter']['and']:
-            del query['filter']['and']
-        if not query['filter']:
-            del query['filter']
-
         if self.facets:
             # Copy the facet definitions as we'll be playing with them shortly.
             facets = copy.deepcopy(self.facets)
@@ -152,6 +142,23 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
                                 facet['facet_filter'] = {'and': []}
                             facet['facet_filter']['and'].append(filter)
             query['facets'] = facets
+
+        return query
+
+    def get_results(self, parameters, cleaned_data):
+        page = cleaned_data.get('page') or 1
+        page_size = cleaned_data.get('page_size') or self.page_size
+        start = (page - 1) * page_size
+
+        query = self.get_query(parameters, cleaned_data, start, page_size)
+
+        # If there aren't any filters defined, we don't want a filter part of
+        # our query.
+        if 'filter' in query:
+            if 'and' in query['filter'] and not query['filter']['and']:
+                del query['filter']['and']
+            if not query['filter']:
+                del query['filter']
 
         endpoint = ElasticSearchEndpoint(self.store)
         results = self.Deunderscorer(endpoint.query(query))
