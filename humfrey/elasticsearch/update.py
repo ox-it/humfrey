@@ -67,7 +67,6 @@ class IndexUpdater(object):
                 raise
 
         if index.update_mapping:
-            index.update_mapping = False
             if index_exists:
                 request = urllib2.Request(index.get_type_url(store))
                 request.get_method = lambda : 'DELETE'

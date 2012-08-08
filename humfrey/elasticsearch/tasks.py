@@ -23,4 +23,5 @@ def update_index(index):
     finally:
         index.status = 'idle'
         index.last_completed = datetime.datetime.now()
+        index.update_mapping = False
         index.save()
