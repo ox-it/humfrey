@@ -29,7 +29,7 @@ class XSLT(Transform):
         template_filename = self.template.execute(transform_manager)
 
         with open(transform_manager(self.extension), 'w') as output:
-            with tempfile.TemporaryFile() as stderr:
+            with open(transform_manager('stderr'), 'w+b') as stderr:
                 transform_manager.start(self, [template_filename, input], type='xslt')
 
                 popen_args = [self.saxon_path, input, template_filename]
