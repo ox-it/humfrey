@@ -7,6 +7,7 @@ from .core import StoreView
 class CannedQueryView(StoreView):
     query = None
     template_name = None
+    with_labels = False
 
     def get_query(self, request, *args, **kwargs):
         return self.query
@@ -46,6 +47,11 @@ class CannedQueryView(StoreView):
             self.resource = functools.partial(Resource, graph=result, endpoint=self.endpoint)
             subjects = self.get_subjects(request, result, *args, **kwargs)
             context['subjects'] = map(self.resource, subjects)
+
+            if self.with_labels:
+                r = Resource(None, result, None)
+                for query in r._additional_queries():
+                    context['graph'] += self.endpoint.query(query)
 
         if self.content_location:
             context['additional_headers'] = {'Content-location': self.content_location}
