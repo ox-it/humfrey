@@ -1,11 +1,19 @@
-{% extends "sparql/base.html" %}{% load humfrey_desc %}
+{% extends "sparql/base.html" %}{% load humfrey_desc %}{% load humfrey_sparql %}
 
 {% block title %}Graphs in {{ store.name }}{% endblock %}
+
+{% block extra_head %}{{ block.super }}
+  <meta name="humfrey-store-name" content="{{ store.slug }}"/>
+  <meta name="humfrey-store-administer" content="{{ store|can_administer_store:user|yesno:"true,false" }}"/>
+  <meta name="humfrey-store-query" content="{{ store|can_query_store:user|yesno:"true,false" }}"/>
+  <meta name="humfrey-store-update" content="{{ store|can_update_store:user|yesno:"true,false" }}"/>
+  <script type="text/javascript" src="{{ STATIC_URL }}sparql/base.js"></script>
+{% endblock %}
 
 {% block content %}
   <h1>Graphs in <em>{{ store.name }}</em></h1>
   
-  <table>
+  <table id="graphs">
     <thead>
       <tr>
         <th>URI</th>
@@ -15,7 +23,7 @@
       </tr>
     </thead>
     <tbody>{% for subject in subjects %}
-      <tr>
+      <tr data-graph="{{ subject.uri }}" data-graph-url="?graph={{ subject.uri|urlencode }}">
         <td><a href="?graph={{ subject.uri|urlencode }}">{{ subject.uri }}</a></td>
         <td>{{ subject.rdfs_label|default:"" }}</td>
         <td>{{ subject.dcterms_publisher|node|default:"" }}</td>
