@@ -1,18 +1,21 @@
 from __future__ import division
 
-import collections
 import copy
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 import math
+import re
 import urllib
-import urllib2
 import urlparse
 
 from django.conf import settings
+from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.http import HttpResponseSeeOther
 from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
-from rdflib import URIRef
+import rdflib
 
 from humfrey.sparql.views import StoreView
 from humfrey.sparql.utils import get_labels
@@ -61,7 +64,16 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             return len(self.obj)
         def __repr__(self):
             return repr(self.obj)
-                
+
+    @property
+    def search_endpoint(self):
+        try:
+            return self._search_endpoint
+        except AttributeError:
+            type_name = self.request.GET['type'] if re.match(r'^[a-z\-\d]+$', self.request.GET.get('type', '')) else None
+            self._search_endpoint = ElasticSearchEndpoint(self.store, type_name)
+            return self._search_endpoint
+
     def get(self, request):
         form = SearchForm(request.GET or None)
         context = {'form': form,
@@ -89,14 +101,6 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
 
     def finalize_context(self, request, context):
         return context
-    
-    @property
-    def search_url(self):
-        return urlparse.urlunsplit(('http',
-                                    '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
-                                    '/%s/_search' % self.index_name,
-                                    '',
-                                    ''))
 
     def get_query(self, parameters, cleaned_data, start, page_size):
         
@@ -160,8 +164,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             if not query['filter']:
                 del query['filter']
 
-        endpoint = ElasticSearchEndpoint(self.store)
-        results = self.Deunderscorer(endpoint.query(query))
+        results = self.Deunderscorer(self.search_endpoint.query(query))
 
         results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
@@ -184,7 +187,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
         for key in query['facets']:
             if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
                 for term in results['facets'][key]['terms']:
-                    uri = URIRef(term['term'])
+                    uri = rdflib.URIRef(term['term'])
                     if uri in labels:
                         term['label'] = unicode(labels[uri])
 
