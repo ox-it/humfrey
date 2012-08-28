@@ -28,9 +28,10 @@ def get_opener(url, user, username, password):
     password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
     if username and password:
         password_manager.add_password(None, url, username, password)
-    for credential in user.credential_set.all():
-        logger.debug("Adding credential %s %s", credential.url, credential.username)
-        password_manager.add_password(None, credential.url, credential.username, credential.password)
+    if user and user.is_authenticated():
+        for credential in user.credential_set.all():
+            logger.debug("Adding credential %s %s", credential.url, credential.username)
+            password_manager.add_password(None, credential.url, credential.username, credential.password)
     handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
     handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
     return urllib2.build_opener(*handlers)
