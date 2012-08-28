@@ -3,8 +3,6 @@ from django.contrib.auth.models import User, Group
 
 from object_permissions import register
 
-from django.template.loaders.app_directories import Loader
-
 def permission_check(model, perm):
     name = 'sparql.%s_%s' % (perm, model)
     def f(self, user):
