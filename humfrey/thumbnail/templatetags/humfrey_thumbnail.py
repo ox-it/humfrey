@@ -9,7 +9,7 @@ from humfrey.thumbnail.encoding import encode_parameters
 register = template.Library()
 
 THUMBNAIL_URL = getattr(settings, 'THUMBNAIL_URL',
-                        ('data', 'thumbnail'))
+                        ('static', 'thumbnail'))
 
 #@register.simple_tag(takes_context=True)
 #def thumbnail(context, url, width=None, height=None):
