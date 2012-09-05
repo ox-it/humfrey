@@ -26,7 +26,7 @@ from humfrey.utils.namespaces import expand, contract
 from .forms import SearchForm
 from .query import ElasticSearchEndpoint
 
-class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView):
+class SearchView(HTMLView, JSONPView, MappingView, StoreView):
     page_size = 10
 
     # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
@@ -75,17 +75,15 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
             return self._search_endpoint
 
     def get(self, request):
+        context = self.context
         form = SearchForm(request.GET or None)
-        context = {'form': form,
-                   'base_url': request.build_absolute_uri(),
-                   'renderers': [{'name': r.name,
-                                  'format': r.format,
-                                  'mimetypes': r.mimetypes} for r in self._renderers],
-                   'dependent_parameters': self.dependent_parameters,
-                   'default_search_item_template_name': self.default_search_item_template_name}
+        context.update({'form': form,
+                        'base_url': request.build_absolute_uri(),
+                        'dependent_parameters': self.dependent_parameters,
+                        'default_search_item_template_name': self.default_search_item_template_name})
         
         if form.is_valid():
-            context.update(self.get_results(dict((k, request.GET[k]) for k in request.GET),
+            self.context.update(self.get_results(dict((k, request.GET[k]) for k in request.GET),
                                             form.cleaned_data))
             if context['page'] > context['page_count']:
                 query = copy.copy(request.GET)
@@ -96,8 +94,7 @@ class SearchView(HTMLView, JSONPView, MappingView, ErrorCatchingView, StoreView)
 
         context = self.finalize_context(request, context)
 
-
-        return self.render(request, context, self.template_name)
+        return self.render()
 
     def finalize_context(self, request, context):
         return context

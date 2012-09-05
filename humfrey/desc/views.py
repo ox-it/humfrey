@@ -65,7 +65,7 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
         renderer = decorators.renderer(None, mimetypes, float('inf'), None)(should_redirect)
 
         accepts = self.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
-        renderers = MediaType.resolve(accepts, (renderer,) + view._renderers)
+        renderers = MediaType.resolve(accepts, (renderer,) + view.conneg.renderers)
 
         return renderers and renderers[0] is should_redirect
 
@@ -112,35 +112,30 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
         # canonicalisation doesn't get stuck in an endless redirect loop.
         doc_url = request.build_absolute_uri().replace('#', '%23')
 
-        uri, format, is_local = doc_backward(doc_url, set(self._renderers_by_format))
-        if not uri:
-            logger.debug("Could not resolve URL to a URI: %r", doc_url)
-            raise Http404("Could not resolve URI to a URI")
-
-        expected_doc_url = doc_forward(uri, request, format=format, described=True)
-
-        types = self.get_types(uri)
-        if not types:
+        # Given a URL 'http://example.org/doc/foo.bar' we check whether 'foo',
+        # has a type (ergo 'bar' is a format), and if not we assume that
+        # 'foo.bar' is part of the URI
+        for formats in (None, ()):
+            uri, format, is_local = doc_backward(doc_url, formats)
+            if not uri:
+                logger.debug("Could not resolve URL to a URI: %r", doc_url)
+                raise Http404("Could not resolve URL to a URI")
+            types = self.get_types(uri)
+            if types:
+                break
+            doc_url = doc_url.rsplit('.', 1)[0]
+        else:
             logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
             raise Http404("Resource has no type, so is probably not known in these parts")
 
+        expected_doc_url = doc_forward(uri, request, format=format, described=True)
         if self.check_canonical and expected_doc_url != doc_url:
             logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
             return HttpResponsePermanentRedirect(expected_doc_url)
 
-        # If no format was given explicitly (i.e. format parameter or
-        # extension) we inspect the Content-Type header.
-        if not format:
-            renderers = self.get_renderers(request)
-            if renderers:
-                format = renderers[0].format
-                expected_doc_url = doc_forward(uri, request, format=format, described=True)
-        if expected_doc_url != doc_url:
-            additional_headers['Content-Location'] = expected_doc_url
-
         doc_uri = rdflib.URIRef(doc_forward(uri, request, format=None, described=True))
 
-        context = {
+        self.context.update({
             'subject_uri': uri,
             'doc_uri': doc_uri,
             'format': format,
@@ -148,10 +143,10 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
             'show_follow_link': not is_local,
             'no_index': not is_local,
             'additional_headers': additional_headers,
-        }
+        })
 
-        subject_uri, doc_uri = context['subject_uri'], context['doc_uri']
-        types = context['types']
+        subject_uri, doc_uri = self.context['subject_uri'], self.context['doc_uri']
+        types = self.context['types']
 
         queries, graph = [], rdflib.ConjunctiveGraph()
         for prefix, namespace_uri in NS.iteritems():
@@ -178,41 +173,45 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
             logger.debug("Graph for %r was empty; 404ing", uri)
             raise Http404("Graph was empty")
 
-        for doc_rdf_processor in self._doc_rdf_processors:
-            additional_context = doc_rdf_processor(request=request,
-                                                   graph=graph,
-                                                   doc_uri=doc_uri,
-                                                   subject_uri=subject_uri,
-                                                   subject=subject,
-                                                   endpoint=self.endpoint,
-                                                   renderers=self._renderers)
-            if additional_context:
-                context.update(additional_context)
+        self.template_name = subject.template_name or self.template_name
+        for template_override in self.template_overrides:
+            tn, types = template_override[0], template_override[1:]
+            if set(subject._graph.objects(subject._identifier, NS.rdf.type)) & set(map(expand, types)):
+                self.template_name = tn
+                break
 
-        context.update({
+        self.context.update({
             'graph': graph,
             'subject': subject,
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'queries': map(self.endpoint.normalize_query, queries),
-            'template_name': subject.template_name,
+            'template_name': self.template_name,
         })
 
-        template_name = subject.template_name or self.template_name
-        for template_override in self.template_overrides:
-            tn, types = template_override[0], template_override[1:]
-            print tn, types, subject.get_all('rdf:type')
-            if set(subject._graph.objects(subject._identifier, NS.rdf.type)) & set(map(expand, types)):
-                template_name = tn
-                break
+        self.set_renderers()
 
-        if context['format']:
+        for doc_rdf_processor in self._doc_rdf_processors:
+            additional_context = doc_rdf_processor(self.request, self.context)
+            if additional_context:
+                self.context.update(additional_context)
+
+        # If no format was given explicitly (i.e. format parameter or
+        # extension) we inspect the Content-Type header.
+        if not format:
+            if request.renderers:
+                format = request.renderers[0].format
+                expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        if expected_doc_url != doc_url:
+            additional_headers['Content-Location'] = expected_doc_url
+
+        if self.context['format']:
             try:
-                return self.render_to_format(request, context, template_name, format)
+                return self.render_to_format(format=format)
             except KeyError:
                 raise Http404
         else:
-            return self.render(request, context, template_name)
+            return self.render()
 
     @property
     def _doc_rdf_processors(self):
@@ -232,6 +231,11 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
         self._doc_rdf_processors_cache = tuple(processors)
         return self._doc_rdf_processors_cache
 
+    def url_for_format(self, request, format):
+        if 'subject_uri' in self.context:
+            return doc_forward(self.context['subject_uri'], described=True, format=format)
+        else:
+            return super(DocView, self).url_for_format(request, format)
 
 #class GraphView(BaseView):
 #    def handle_GET(self, request, context):

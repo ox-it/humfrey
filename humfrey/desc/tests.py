@@ -45,7 +45,7 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
             subject = resource.Resource(subject_uri, graph, endpoint)
 
             doc_view = views.DocView.as_view()
-            renderers = doc_view._renderers
+            renderers = doc_view.conneg.renderers
 
             request = self.factory.get('')
 

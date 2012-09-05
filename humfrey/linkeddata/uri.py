@@ -64,15 +64,7 @@ def doc_forwards(uri, graph=None, described=None):
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
 
-def get_format(view, request):
-    renderers = view.get_renderers(request)
-    if renderers:
-        return renderers[0].format
-
-def doc_forward(uri, view=None, request=None, graph=None, described=None, format=None):
-    if view and request and not format:
-        format = get_format(view, request)
-
+def doc_forward(uri, graph=None, described=None, format=None):
     return doc_forwards(uri, graph, described)[format]
 
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')

@@ -211,7 +211,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, ErrorCatchingView):
                                           'date': pytz.utc.localize(datetime.datetime.utcnow()),
                                           'remote_addr': request.META.get('REMOTE_ADDR'),
                                           'format_param': request.REQUEST.get('format'),
-                                          'formats': [r.format for r in self.get_renderers(request)],
+                                          'formats': [r.format for r in request.renderers],
                                           'intensity': new_intensity,
                                           'duration': results.duration,
                                           'user': request.user if request.user.is_authenticated() else None,
@@ -227,11 +227,11 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, ErrorCatchingView):
     def get_format_choices(self):
         return (
             ('Graph (DESCRIBE, CONSTRUCT)',
-             tuple((r.format, r.name) for r in sorted(self._graph_view._renderers, key=lambda r:r.name))),
+             tuple((r.format, r.name) for r in sorted(self._graph_view.conneg.renderers, key=lambda r:r.name))),
             ('Resultset (SELECT)',
-             tuple((r.format, r.name) for r in sorted(self._resultset_view._renderers, key=lambda r:r.name))),
+             tuple((r.format, r.name) for r in sorted(self._resultset_view.conneg.renderers, key=lambda r:r.name))),
             ('Boolean (ASK)',
-             tuple((r.format, r.name) for r in sorted(self._boolean_view._renderers, key=lambda r:r.name))),
+             tuple((r.format, r.name) for r in sorted(self._boolean_view.conneg.renderers, key=lambda r:r.name))),
         )
 
     def get(self, request):

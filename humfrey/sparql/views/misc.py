@@ -35,15 +35,16 @@ class CannedQueryView(StoreView):
         return context
 
     def get(self, request, *args, **kwargs):
+        context = self.context
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
         result = self.endpoint.query(query)
         if isinstance(result, SparqlResultSet):
-            context = {'results': result}
+            context['results'] = result
         elif isinstance(result, SparqlResultBool):
-            context = {'result': result}
+            context['result'] = result
         elif isinstance(result, SparqlResultGraph):
-            context = {'graph': result}
+            context['graph'] = result
             self.resource = functools.partial(Resource, graph=result, endpoint=self.endpoint)
             subjects = self.get_subjects(request, result, *args, **kwargs)
             context['subjects'] = map(self.resource, subjects)
