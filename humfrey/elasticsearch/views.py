@@ -36,6 +36,7 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
                                           'size': 20}}}
     template_name = 'elasticsearch/search'
     default_search_item_template_name = 'elasticsearch/search_item'
+    default_types = None
     
     class MissingQuery(Exception):
         pass
@@ -143,6 +144,10 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
                                 facet['facet_filter'] = {'and': []}
                             facet['facet_filter']['and'].append(filter)
             query['facets'] = facets
+
+        # If default_types set, add a filter to restrict the results.
+        if self.default_types and 'type' not in self.request.GET:
+            query['filter']['and'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
 
         return query
 
