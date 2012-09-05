@@ -58,8 +58,8 @@ def doc_forwards(uri, graph=None, described=None):
 
     view_name = get_doc_view() if described else get_desc_view()
 
-    base = 'http:%s?%s' % (reverse_full(*view_name),
-                           urllib.urlencode((('uri', encoded_uri),)))
+    base = '%s?%s' % (reverse_full(*view_name),
+                      urllib.urlencode((('uri', encoded_uri),)))
 
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
