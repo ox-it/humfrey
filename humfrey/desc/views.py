@@ -155,6 +155,8 @@ class DocView(MappingView, StoreView, RDFView, HTMLView):
         graph += ((subject_uri, NS.rdf.type, t) for t in types)
         subject = Resource(subject_uri, graph, self.endpoint)
 
+        self.conneg += subject
+
         for query in subject.get_queries():
             graph += self.endpoint.query(query)
             queries.append(query)
