@@ -133,7 +133,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
             overrides = ()
         else:
             try:
-                user_id = request.user.pk if request.user.is_authenticated() else get(settings, 'ANONYMOUS_USER_ID', None)
+                user_id = request.user.pk if request.user.is_authenticated() else getattr(settings, 'ANONYMOUS_USER_ID', None)
                 overrides = (UserPrivileges.objects.get(user_id=user_id),)
             except UserPrivileges.DoesNotExist:
                 overrides = UserPrivileges.objects.filter(group__user=request.user)
