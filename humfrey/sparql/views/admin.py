@@ -42,7 +42,7 @@ class StoreChooseMixin(object):
         return super(StoreChooseMixin, self).dispatch(request, *args, **kwargs)
 
 class DocView(StoreChooseMixin, desc_views.DocView):
-    pass
+    check_canonical = False
 
 class QueryView(StoreChooseMixin, QueryView):
     pass
