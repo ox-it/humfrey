@@ -14,7 +14,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.http import HttpResponseSeeOther
-from django_conneg.views import HTMLView, JSONPView, ErrorCatchingView
+from django_conneg.views import HTMLView, JSONPView
 import rdflib
 
 from humfrey.sparql.views import StoreView

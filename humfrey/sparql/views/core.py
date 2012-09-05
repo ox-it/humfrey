@@ -17,7 +17,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
-from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView, ErrorCatchingView
+from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView
 
 from humfrey.linkeddata.views import MappingView
 from humfrey.misc.views import PassThroughView
@@ -93,7 +93,7 @@ class StoreView(View):
         return types
 
 
-class QueryView(StoreView, MappingView, RedisView, HTMLView, ErrorCatchingView):
+class QueryView(StoreView, MappingView, RedisView, HTMLView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
     default_timeout = None # Override this with some number of seconds
@@ -298,7 +298,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, ErrorCatchingView):
 
     post = get
 
-class GraphStoreView(ErrorCatchingView, StoreView, PassThroughView):
+class GraphStoreView(StoreView, PassThroughView):
     def get_target_url(self, request, path=None, store=None):
         if not path and 'graph' in request.GET:
             graph_url = request.GET['graph']
