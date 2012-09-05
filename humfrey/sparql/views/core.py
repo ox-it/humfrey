@@ -226,6 +226,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
 
     def get_format_choices(self):
         return (
+            ('', 'Automatic'),
             ('Graph (DESCRIBE, CONSTRUCT)',
              tuple((r.format, r.name) for r in sorted(self._graph_view.conneg.renderers, key=lambda r:r.name))),
             ('Resultset (SELECT)',
