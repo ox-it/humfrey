@@ -45,8 +45,6 @@ class Upload(Transform):
 
         logger.debug("Starting upload of %r", input)
 
-        client = self.get_redis_client()
-
         extension = input.rsplit('.', 1)[-1]
         try:
             serializer = self.formats[extension]
