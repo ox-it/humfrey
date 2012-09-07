@@ -1,13 +1,10 @@
 from __future__ import with_statement
 
-import base64
 import datetime
 import logging
-import pickle
 
 import pytz
 import rdflib
-import redis
 
 from django.conf import settings
 
