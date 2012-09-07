@@ -64,7 +64,7 @@ class SparqlResultList(SparqlResultSet, list):
     """
     def __init__(self, fields, arg=None):
         self.fields = fields
-        if arg:
+        if arg is not None:
             list.__init__(self, arg)
 
 class SparqlResultBool(SparqlResult, object):
