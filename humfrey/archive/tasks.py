@@ -1,5 +1,7 @@
 import filecmp
 import hashlib
+import itertools
+import logging
 import os
 import re
 import shutil
@@ -29,6 +31,8 @@ DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
 if DATASET_NOTATION:
     DATASET_NOTATION = expand(DATASET_NOTATION)
 
+logger = logging.getLogger(__name__)
+
 class DatasetArchiver(object):
     
     def __init__(self, store, dataset, notation, updated):
@@ -39,71 +43,74 @@ class DatasetArchiver(object):
         self.endpoint = Endpoint(store.query_endpoint)
     
     @property
-    def graphs(self):
+    def graph_names(self):
         if not hasattr(self, '_graphs'):
-            query = "SELECT ?graph WHERE {{ ?graph void:inDataset {0} }}".format(self.dataset.n3())
+            query = "SELECT ?graph WHERE {{ ?graph void:inDataset/^void:subset* {0} }}".format(self.dataset.n3())
             self._graphs = set(r['graph'] for r in self.endpoint.query(query))
         return self._graphs
         
     def _graph_created(self, graph_name):
         query = "SELECT ?created WHERE {{ {0} dcterms:created ?created }}".format(graph_name.n3())
-        results = self.endpoint.query(query)
+        results = self.endpoint.query(query).get()
         if results:
             return results[0].created
         else:
-            return self.modified
+            return rdflib.URIRef(self.updated)
 
-    def _graph_triples(self, out, graph):
+    def _graph_triples(self, out, graph_name):
         url = '%s?%s' % (self.store.graph_store_endpoint,
-                         urllib.urlencode({'graph': graph}))
+                         urllib.urlencode({'graph': graph_name}))
         request = urllib2.Request(url)
         request.add_header('Accept', 'text/plain')
-    
         response = urllib2.urlopen(request)
         while True:
             chunk = response.read(4096)
             if not chunk:
                 break
             out.write(chunk)
+    
+    def _get_metadata(self, document_uri, graph_name):
+        metadata = rdflib.ConjunctiveGraph()
+        metadata += [
+            # Use a relative reference (to the current document) in the dump file.
+            (self.dataset, NS.void.dataDump, document_uri),
+            (document_uri, NS.rdf.type, NS.foaf.Document),
+            (document_uri, NS.dc['format'], rdflib.Literal('application/rdf+xml')),
+            (document_uri, NS.dcterms.modified, rdflib.Literal(self.updated)),
+            (graph_name, NS.rdf.type, NS.sd.Graph),
+            (graph_name, NS.void.inDataset, self.dataset),
+            (graph_name, NS.dcterms.modified, rdflib.Literal(self.updated)),
+            (graph_name, NS.dcterms.created, self._graph_created(graph_name)),
+        ]
+        return metadata
 
     def archive(self):
         notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
 
         archive_path = os.path.join(settings.SOURCE_DIRECTORY, 'archive', self.store.slug, notation)
-        graph_name = rdflib.URIRef('/'.join(settings.GRAPH_BASE, 'archive', notation))
-        data_dump_url = rdflib.URIRef('/'.join(settings.SOURCE_URL, 'archive', self.store.slug, notation, 'latest.rdf'))
-
-        metadata = rdflib.ConjunctiveGraph()
-        metadata += [
-            self.dataset, NS.void.dataDump, data_dump_url,
-            data_dump_url, NS.rdf.type, NS.foaf.Document,
-            data_dump_url, NS.dc['format'], rdflib.Literal('application/rdf+xml'),
-            data_dump_url, NS.dcterms.modified, rdflib.Literal(self.updated),
-            graph_name, NS.rdf.type, NS.sd.Graph,
-            graph_name, NS.void.inDataset, self.dataset,
-            graph_name, NS.dcterms.modified, rdflib.Literal(self.updated),
-            graph_name, NS.dcterms.created, rdflib.Literal(self._graph_created(graph_name)),
-        ]
+        graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
+        data_dump_url = rdflib.URIRef('{0}archive/{1}/{2}/latest.rdf'.format(settings.SOURCE_URL, self.store.slug, notation))
 
         if not os.path.exists(archive_path):
             os.makedirs(archive_path, 0755)
-    
+
         nt_fd, nt_name = tempfile.mkstemp('.nt')
+        logger.warning(nt_name)
         rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
         try:
             nt_out, rdf_out = os.fdopen(nt_fd, 'w'), os.fdopen(rdf_fd, 'w')
-            self._graph_triples(nt_out, metadata)
-            for graph in self.graphs:
-                self._graph_triples(nt_out, graph)
+            for graph_name in self.graph_names:
+                self._graph_triples(nt_out, graph_name)
             nt_out.close()
-    
+
             sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
-    
-            with open(rdf_out, 'w') as sink:
-                RDFXMLSink(sink, triples=NTriplesSource(sort.stdout))
+
+            # Use a relative reference (to the current document) in the dump file.
+            RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), graph_name),
+                                                        NTriplesSource(sort.stdout)))
             sort.wait()
             rdf_out.close()
-    
+
             previous_name = os.path.join(archive_path, 'latest.rdf')
             if not os.path.exists(previous_name) or not filecmp._do_cmp(previous_name, rdf_name):
                 new_name = os.path.join(archive_path,
@@ -113,12 +120,14 @@ class DatasetArchiver(object):
                 if os.path.exists(previous_name):
                     os.unlink(previous_name)
                 os.symlink(new_name, previous_name)
-    
+
         finally:
-            os.unlink(nt_name)
+            #os.unlink(nt_name)
             if os.path.exists(rdf_name):
                 os.unlink(rdf_name)
-        
+
+        # Upload the metadata to the store using an absolute URI
+        metadata = self._get_metadata(data_dump_url, graph_name)
         Uploader.upload([self.store], graph_name, graph=metadata)
 
 
@@ -132,7 +141,7 @@ def update_dataset_archives(update_log, graphs, updated):
         if DATASET_NOTATION:
             notation_clause = """
                 OPTIONAL {{ ?dataset skos:notation ?notation .
-                FILTER (DATATYPE(?notation) = {0}""".format(DATASET_NOTATION)
+                FILTER (DATATYPE(?notation) = {0} ) }}""".format(DATASET_NOTATION.n3())
         else:
             notation_clause = ""
 
@@ -141,7 +150,7 @@ def update_dataset_archives(update_log, graphs, updated):
           VALUES ?graph {{ {0} }}
           ?graph void:inDataset ?dataset .
           {1}
-        }}""".format(" ".join(g.n3() for s, g in graph_names),
+        }}""".format(" ".join(g.n3() for g in graph_names),
                      notation_clause)
         datasets = dict(endpoint.query(query))
     
