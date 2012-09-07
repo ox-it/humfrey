@@ -25,7 +25,9 @@ from humfrey.streaming.ntriples import NTriplesSource
 from humfrey.streaming.rdfxml import RDFXMLSink
 from humfrey.update.uploader import Uploader 
 
-DATASET_NOTATION = expand(getattr(settings, 'DATASET_NOTATION', None))
+DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
+if DATASET_NOTATION:
+    DATASET_NOTATION = expand(DATASET_NOTATION)
 
 class DatasetArchiver(object):
     
