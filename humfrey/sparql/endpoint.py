@@ -118,13 +118,13 @@ class Endpoint(object):
             return result
         except Exception:
 
-            (logger.error if log_failure else logger.info)(
+            (logger.error if log_failure else logger.debug)(
                 "Failed query: %r; took %.2f seconds", original_query, time.time() - start_time,
                 exc_info=1)
             raise
         finally:
             try:
-                logger.info("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
+                logger.debug("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
             except UnboundLocalError:
                 pass
 

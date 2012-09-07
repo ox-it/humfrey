@@ -45,7 +45,7 @@ class Retrieve(Transform):
                      or (mimetypes.guess_extension(content_type, strict=False) or '').lstrip('.') \
                      or 'unknown'
 
-            logger.info("Response had content-type %r; assigning extension %r" % (content_type, extension))
+            logger.debug("Response had content-type %r; assigning extension %r" % (content_type, extension))
 
             with open(transform_manager(extension, self.name), 'w') as output:
                 transform_manager.start(self, [input], type='identity')
