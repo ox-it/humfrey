@@ -25,7 +25,7 @@ from humfrey.sparql.models import Store
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.streaming.ntriples import NTriplesSource
 from humfrey.streaming.rdfxml import RDFXMLSink
-from humfrey.update.uploader import Uploader 
+from humfrey.update.uploader import Uploader
 
 DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
 if DATASET_NOTATION:
@@ -34,21 +34,21 @@ if DATASET_NOTATION:
 logger = logging.getLogger(__name__)
 
 class DatasetArchiver(object):
-    
+
     def __init__(self, store, dataset, notation, updated):
         self.store = store
         self.dataset = dataset
         self.notation = notation
         self.updated = updated.replace(microsecond=0)
         self.endpoint = Endpoint(store.query_endpoint)
-    
+
     @property
     def graph_names(self):
         if not hasattr(self, '_graphs'):
             query = "SELECT ?graph WHERE {{ ?graph void:inDataset/^void:subset* {0} }}".format(self.dataset.n3())
             self._graphs = set(r['graph'] for r in self.endpoint.query(query))
         return self._graphs
-        
+
     def _graph_created(self, graph_name):
         query = "SELECT ?created WHERE {{ {0} dcterms:created ?created }}".format(graph_name.n3())
         results = self.endpoint.query(query).get()
@@ -87,9 +87,9 @@ class DatasetArchiver(object):
     def archive(self):
         notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
 
-        archive_path = os.path.join(settings.SOURCE_DIRECTORY, 'archive', self.store.slug, notation)
-        graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
-        data_dump_url = rdflib.URIRef('{0}archive/{1}/{2}/latest.rdf'.format(settings.SOURCE_URL, self.store.slug, notation))
+        archive_path = os.path.join(settings.SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
+        graph_name = rdflib.URIRef('/'.join(settings.GRAPH_BASE, 'archive', notation))
+        data_dump_url = rdflib.URIRef('/'.join(settings.SOURCE_URL, 'archive', self.store.slug, notation.replace('/', '-'), 'latest.rdf'))
 
         if not os.path.exists(archive_path):
             os.makedirs(archive_path, 0755)
@@ -112,6 +112,7 @@ class DatasetArchiver(object):
             rdf_out.close()
 
             previous_name = os.path.join(archive_path, 'latest.rdf')
+            # Only update if the file has changed, or hasn't been archived before.
             if not os.path.exists(previous_name) or not filecmp._do_cmp(previous_name, rdf_name):
                 new_name = os.path.join(archive_path,
                                         self.updated.astimezone(pytz.utc).isoformat() + '.rdf')
@@ -121,15 +122,13 @@ class DatasetArchiver(object):
                     os.unlink(previous_name)
                 os.symlink(new_name, previous_name)
 
+                # Upload the metadata to the store using an absolute URI.
+                metadata = self._get_metadata(data_dump_url, graph_name)
+                Uploader.upload([self.store], graph_name, graph=metadata)
         finally:
-            #os.unlink(nt_name)
+            os.unlink(nt_name)
             if os.path.exists(rdf_name):
                 os.unlink(rdf_name)
-
-        # Upload the metadata to the store using an absolute URI
-        metadata = self._get_metadata(data_dump_url, graph_name)
-        Uploader.upload([self.store], graph_name, graph=metadata)
-
 
 @task(name='humfrey.archive.update_dataset_archives')
 def update_dataset_archives(update_log, graphs, updated):
@@ -153,10 +152,9 @@ def update_dataset_archives(update_log, graphs, updated):
         }}""".format(" ".join(g.n3() for g in graph_names),
                      notation_clause)
         datasets = dict(endpoint.query(query))
-    
+
         for dataset in datasets:
             notation = datasets[dataset]
             archiver = DatasetArchiver(store, dataset, notation, updated)
             archiver.archive()
-    
-    
+
