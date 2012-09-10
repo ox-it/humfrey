@@ -95,7 +95,6 @@ class DatasetArchiver(object):
             os.makedirs(archive_path, 0755)
 
         nt_fd, nt_name = tempfile.mkstemp('.nt')
-        logger.warning(nt_name)
         rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
         try:
             nt_out, rdf_out = os.fdopen(nt_fd, 'w'), os.fdopen(rdf_fd, 'w')
