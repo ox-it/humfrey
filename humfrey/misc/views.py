@@ -1,7 +1,7 @@
 import datetime
 import httplib
 import urlparse
-import wsgiref
+import wsgiref.util
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
