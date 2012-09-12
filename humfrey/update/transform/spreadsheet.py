@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import csv
 import datetime
 import decimal
 import gzip
@@ -121,7 +122,6 @@ class GnumericToTEI(SpreadsheetToTEI):
             else:
                 return float(cell.text)
 
-
     class Row(SpreadsheetToTEI.Row):
         def __init__(self, row, sheet):
             self.row, self.sheet = row, sheet
@@ -210,3 +210,30 @@ class ODSToTEI(SpreadsheetToTEI):
             return itertools.imap(self.Sheet, input.xpath('office:body/office:spreadsheet/table:table', namespaces=self.NS))
         finally:
             zip.close()
+
+class CSVToTEI(SpreadsheetToTEI):
+    def __init__(self, encoding='utf-8'):
+        self.encoding = encoding
+    def sheets(self, input):
+        return [self.Sheet(input, self.encoding)]
+
+    class Sheet(SpreadsheetToTEI.Sheet):
+        name = 'CSV file'
+
+        def __init__(self, input, encoding):
+            self.csv = csv.reader(open(input))
+            self.encoding = encoding
+
+        @property
+        def rows(self):
+            for row in self.csv:
+                yield CSVToTEI.Row(row, self.encoding)
+
+    class Row(SpreadsheetToTEI.Row):
+        def __init__(self, row, encoding):
+            self.row, self.encoding = row, encoding
+
+        @property
+        def cells(self):
+            for cell in self.row:
+                yield cell.decode(self.encoding)
