@@ -54,7 +54,7 @@ class SRXSource(object):
                 self.result[self.binding_name] = self.binding
                 self.binding_name, self.binding = None, None
             elif name == (self.srx_ns, 'boolean'):
-                self.queue.put(self.content == 'true')
+                self.queue.put(content == u'true')
             elif name == (self.srx_ns, 'uri'):
                 self.binding = rdflib.URIRef(content)
             elif name == (self.srx_ns, 'bnode'):
@@ -81,7 +81,7 @@ class SRXSource(object):
             self.fields = self._queue.get()
             self.__class__ = SRXSourceResultSet
         elif self.type == 'boolean':
-            self.fields = self._queue.get()
+            self._bool = self._queue.get()
             self.__class__ = SRXSourceResultBool
 
     def _parse(self):
@@ -117,11 +117,7 @@ class SRXSource(object):
     def __nonzero__(self):
         if self.type != 'boolean':
             raise TypeError("This isn't a boolean result")
-        try:
-            return self._bool
-        except AttributeError:
-            self._bool = self._next()
-            return self._bool
+        return self._bool
 
 class SRXSourceResultSet(SparqlResultSet, SRXSource):
     pass
