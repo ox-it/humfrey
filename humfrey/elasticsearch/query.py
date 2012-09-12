@@ -2,6 +2,7 @@ try:
     import json
 except ImportError:
     import simplejson as json
+import logging
 import urllib2
 import urlparse
 
@@ -10,6 +11,8 @@ from django.conf import settings
 from humfrey.sparql.models import Store
 from humfrey.elasticsearch.models import Index
 from humfrey.update.tasks.retrieve import USER_AGENTS
+
+logger = logging.getLogger(__name__)
 
 class ElasticSearchEndpoint(object):
     def __init__(self, store, index=None):
@@ -32,5 +35,6 @@ class ElasticSearchEndpoint(object):
     def query(self, query):
         request = urllib2.Request(self.search_url, json.dumps(query))
         request.add_header("User-Agent", USER_AGENTS['agent'])
-        response = urllib2.urlopen(request)
-        return json.load(response)
+        response = json.load(urllib2.urlopen(request))
+        logger.debug("Query returned %d hits: %s", response['hits']['total'], query)
+        return response

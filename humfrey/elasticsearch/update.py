@@ -57,6 +57,7 @@ class IndexUpdater(object):
             index_exists = True
         except urllib2.HTTPError, e:
             if e.code == httplib.NOT_FOUND:
+                logger.info("Index %s/%s did not previously exist", store.slug, index.slug)
                 index_exists = False
                 index.update_mapping = True
 
@@ -67,12 +68,14 @@ class IndexUpdater(object):
                 raise
 
         if index.update_mapping:
+            logger.debug("Mapping set to be updated for %s/%s", store.slug, index.slug)
             if index_exists:
                 request = urllib2.Request(index.get_type_url(store))
                 request.get_method = lambda : 'DELETE'
                 urllib2.urlopen(request)
 
             if index.mapping:
+                logger.info("Updating mapping for %s/%s (%s)", store.slug, index.slug, index.get_mapping_url(store))
                 request = urllib2.Request(index.get_mapping_url(store), index.mapping)
                 request.get_method = lambda : 'PUT'
                 urllib2.urlopen(request)
