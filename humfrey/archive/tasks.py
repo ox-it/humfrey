@@ -66,7 +66,14 @@ class DatasetArchiver(object):
                          urllib.urlencode({'graph': graph_name}))
         request = urllib2.Request(url)
         request.add_header('Accept', 'text/plain')
-        response = urllib2.urlopen(request)
+        try:
+            response = urllib2.urlopen(request)
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                logger.warning("Graph not found: %s", graph_name)
+            else:
+                logger.exception("HTTPError %d for %s: %s", e.code, graph_name, e.read())
+            return
         while True:
             chunk = response.read(4096)
             if not chunk:
