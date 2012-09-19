@@ -163,7 +163,9 @@ def update_dataset_archives(update_log, graphs, updated):
                      notation_clause)
         datasets = dict(endpoint.query(query))
 
+        logger.debug("Found %d datasets to archive", len(datasets))
         for dataset in datasets:
+            logger.debug("Archiving dataset: %s", dataset)
             notation = datasets[dataset]
             archiver = DatasetArchiver(store, dataset, notation, updated)
             archiver.archive()
