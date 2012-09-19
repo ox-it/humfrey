@@ -31,6 +31,10 @@ DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
 if DATASET_NOTATION:
     DATASET_NOTATION = expand(DATASET_NOTATION)
 
+GRAPH_BASE = getattr(settings, 'GRAPH_BASE', None)
+SOURCE_DIRECTORY = getattr(settings, 'SOURCE_DIRECTORY', None)
+SOURCE_URL = getattr(settings, 'SOURCE_URL', None)
+
 logger = logging.getLogger(__name__)
 
 class DatasetArchiver(object):
@@ -87,9 +91,9 @@ class DatasetArchiver(object):
     def archive(self):
         notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
 
-        archive_path = os.path.join(settings.SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
-        graph_name = rdflib.URIRef('/'.join(settings.GRAPH_BASE, 'archive', notation))
-        data_dump_url = rdflib.URIRef('/'.join(settings.SOURCE_URL, 'archive', self.store.slug, notation.replace('/', '-'), 'latest.rdf'))
+        archive_path = os.path.join(SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
+        graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
+        data_dump_url = rdflib.URIRef('{0}archive/{1}/{2}/latest.rdf'.format(SOURCE_URL, self.store.slug, notation.replace('/', '-')))
 
         if not os.path.exists(archive_path):
             os.makedirs(archive_path, 0755)
