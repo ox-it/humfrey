@@ -59,7 +59,7 @@ class RDFXMLSink(object):
         self.last_subject = None
         if triples:
             self.serialize(triples)
-    
+
     def start(self):
         write = self.write
         write(u'<?xml version="1.0" encoding=%s?>\n' % quoteattr(self.encoding))
@@ -72,12 +72,12 @@ class RDFXMLSink(object):
         write = self.write
         for triple in triples:
             self.triple(write, triple)
-    
+
     def end(self):
-        if self.last_subject:
+        if self.last_subject is not None:
             self.write(u'  </rdf:Description>\n')
         self.write(u'</rdf:RDF>\n')
-    
+
     def serialize(self, triples):
         self.start()
         self.triples(triples)
@@ -85,7 +85,7 @@ class RDFXMLSink(object):
 
     def triple(self, write, (s, p, o)):
         if s != self.last_subject:
-            if self.last_subject:
+            if self.last_subject is not None:
                 write(u'  </rdf:Description>\n')
             self.last_subject = s
             if isinstance(s, URIRef):
@@ -112,4 +112,3 @@ class RDFXMLSink(object):
             write(u' rdf:nodeID=%s/>\n' % quoteattr(o))
         else:
             write(u' rdf:resource=%s/>\n' % quoteattr(o))
-
