@@ -114,11 +114,15 @@ class DatasetArchiver(object):
             nt_out.close()
 
             sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
-
-            # Use a relative reference (to the current document) in the dump file.
-            RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), archive_graph_name),
-                                                        NTriplesSource(sort.stdout)))
-            sort.wait()
+            try:
+                # Use a relative reference (to the current document) in the dump file.
+                RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), archive_graph_name),
+                                                            NTriplesSource(sort.stdout)))
+            finally:
+                # Make sure stdout gets closed so that if the try block raises
+                # an exception we don't keep a sort process hanging around.
+                sort.stdout.close()
+                sort.wait()
             rdf_out.close()
 
             previous_name = os.path.join(archive_path, 'latest.rdf')
