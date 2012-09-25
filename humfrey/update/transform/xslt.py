@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import tempfile
+from xml.sax.saxutils import quoteattr
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -12,6 +13,14 @@ from humfrey.update.transform.base import Transform, TransformException
 logger = logging.getLogger(__name__)
 
 class XSLT(Transform):
+    _xsl_shim = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:include href={0}/>
+</xsl:stylesheet>
+"""
+
     def __init__(self, template, extension='xml', params=None):
         self.template = template
         self.extension = extension
@@ -26,7 +35,12 @@ class XSLT(Transform):
         raise ImproperlyConfigured("Couldn't find saxon.")
 
     def execute(self, transform_manager, input):
-        template_filename = self.template.execute(transform_manager)
+        if isinstance(self.template, basestring):
+            with open(transform_manager('xsl'), 'w') as xsl_shim:
+                xsl_shim.write(self._xsl_shim.format(quoteattr(self.template)))
+            template_filename = xsl_shim.name
+        else:
+            template_filename = self.template.execute(transform_manager)
 
         with open(transform_manager(self.extension), 'w') as output:
             with open(transform_manager('stderr'), 'w+b') as stderr:
