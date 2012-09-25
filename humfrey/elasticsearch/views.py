@@ -223,9 +223,12 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
         if not context.get('hits'):
             raise self.MissingQuery()
         context = [{'value': hit['_source']['uri'],
-                    'label': hit['_source']['label'],
-                    'altNames': '\t'.join(l for l in hit['_source'].get('altLabel', []) + hit['_source'].get('hiddenLabel', []))} for hit in context['hits']['hits']]
-        return HttpResponse(json.dumps(context), mimetype="application/json")
+                    'altNames': '\t'.join(l for l in hit['_source'].get('altLabel', []) + hit['_source'].get('hiddenLabel', [])),
+                    'label': hit['_source']['label']} for hit in context['hits']['hits']]
+        content, mimetype = json.dumps(context), 'application/json'
+        if 'callback' in request.REQUEST:
+            content, mimetype = [request.REQUEST['callback'], '(', content, ');'], 'application/javascript'
+        return HttpResponse(content, mimetype=mimetype)
 
     def error(self, request, exception, args, kwargs, status_code):
         if isinstance(exception, self.MissingQuery):
