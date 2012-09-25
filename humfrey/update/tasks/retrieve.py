@@ -44,7 +44,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
 
     request = urllib2.Request(url)
     request.add_header('User-Agent', USER_AGENTS.get(user_agent or 'browser', user_agent))
-    request.add_header('Accept', "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8")
+    request.add_header('Accept', "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8, application/*;q=0.7, */*;q=0.6")
     for key in headers:
         request.add_header(key, headers[key])
 
