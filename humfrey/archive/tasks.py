@@ -99,7 +99,7 @@ class DatasetArchiver(object):
         notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
 
         archive_path = os.path.join(SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
-        graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
+        archive_graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
         data_dump_url = rdflib.URIRef('{0}archive/{1}/{2}/latest.rdf'.format(SOURCE_URL, self.store.slug, notation.replace('/', '-')))
 
         if not os.path.exists(archive_path):
@@ -116,7 +116,7 @@ class DatasetArchiver(object):
             sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
 
             # Use a relative reference (to the current document) in the dump file.
-            RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), graph_name),
+            RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), archive_graph_name),
                                                         NTriplesSource(sort.stdout)))
             sort.wait()
             rdf_out.close()
@@ -133,8 +133,8 @@ class DatasetArchiver(object):
                 os.symlink(new_name, previous_name)
 
                 # Upload the metadata to the store using an absolute URI.
-                metadata = self._get_metadata(data_dump_url, graph_name)
-                Uploader.upload([self.store], graph_name, graph=metadata)
+                metadata = self._get_metadata(data_dump_url, archive_graph_name)
+                Uploader.upload([self.store], archive_graph_name, graph=metadata)
         finally:
             os.unlink(nt_name)
             if os.path.exists(rdf_name):
