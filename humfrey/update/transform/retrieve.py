@@ -33,7 +33,7 @@ class Retrieve(Transform):
 
         try:
             if headers.get('error'):
-                raise TransformException("Failed to download %s", self.url)
+                raise TransformException("Failed to download %s" % self.url)
             if not filename:
                 raise TransformException(headers.get('message'))
 
