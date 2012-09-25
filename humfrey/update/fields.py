@@ -27,7 +27,7 @@ class BaseEncryptedField(models.Field):
         except Exception:
             return value
     
-    def get_db_prep_value(self, value):
+    def get_db_prep_value(self, value, connection=None, prepared=False):
         if isinstance(value, unicode):
             padding = 2 * self.cipher.block_size - len(value) % self.cipher.block_size
             if True or padding and padding < self.cipher.block_size:
