@@ -129,7 +129,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
             logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
             raise Http404("Resource has no type, so is probably not known in these parts")
 
-        expected_doc_url = doc_forward(uri, request, format=format, described=True)
+        expected_doc_url = urlparse.urljoin(doc_url, doc_forward(uri, request, format=format, described=True))
         if self.check_canonical and expected_doc_url != doc_url:
             logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
             return HttpResponsePermanentRedirect(expected_doc_url)
