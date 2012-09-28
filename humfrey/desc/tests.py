@@ -11,6 +11,7 @@ except ImportError:
 
 from django.test.client import Client, RequestFactory
 from django.http import HttpResponse
+from django_conneg.conneg import Conneg
 
 from humfrey.desc import rdf_processors, views
 from humfrey.linkeddata import resource
@@ -18,6 +19,7 @@ import humfrey.sparql.endpoint
 from humfrey.linkeddata.tests import set_mappingconf, TEST_ID_MAPPING
 
 class GraphTestMixin(object):
+    http_host = 'data.example.org'
     def check_valid_terms(self, graph):
         for s, p, o in graph:
             self.assertIsInstance(s, (rdflib.URIRef, rdflib.BNode))
@@ -44,34 +46,50 @@ class RDFProcessorsTestCase(ClientTestCase, GraphTestMixin):
             subject_uri = rdflib.URIRef('http://example.org/id/Foo')
             subject = resource.Resource(subject_uri, graph, endpoint)
 
-            doc_view = views.DocView.as_view()
-            renderers = doc_view.conneg.renderers
+            #import pdb;pdb.set_trace()
+            doc_view = views.DocView()
+            renderers = Conneg(obj=doc_view).renderers
 
             request = self.factory.get('')
+            
+            doc_view.context = {'graph': graph,
+                                'doc_uri': doc_uri,
+                                'subject_uri': subject_uri,
+                                'subject': subject,
+                                'endpoint': endpoint}
+            doc_view.context['renderers'] = [doc_view.renderer_for_context(request, renderer) for renderer in renderers]
 
-            context = rdf_processor(request=request,
-                                    graph=graph,
-                                    doc_uri=doc_uri,
-                                    subject_uri=subject_uri,
-                                    subject=subject,
-                                    endpoint=endpoint,
-                                    renderers=renderers)
+            rdf_processor(request=request, context=doc_view.context)
 
             self.assertFalse(endpoint.query.called, "The RDF processor should not be touching the endpoint (at the moment)")
             self.check_valid_terms(graph)
-            self.assertIsInstance(context, (type(None), dict))
+            self.assertIsInstance(doc_view.context, (type(None), dict))
 
-#@mock.patch('humfrey.linkeddata.uri.reverse_full', stub_reverse_full)
+class IDViewTestCase(ClientTestCase, GraphTestMixin):
+    @mock.patch('humfrey.sparql.views.core.StoreView.get_types')
+    def testMissing(self, get_types):
+        get_types.return_value = set()
+        response = self.client.get('/id/foo', HTTP_HOST=self.http_host)
+        get_types.assert_called_once_with(rdflib.URIRef('http://{0}/id/foo'.format(self.http_host)))
+        self.assertEqual(response.status_code, 404)
+
+    @mock.patch('humfrey.sparql.views.core.StoreView.get_types')
+    def testPresent(self, get_types):
+        get_types.return_value = (rdflib.URIRef('http://example.org/vocab/Thing'),)
+        response = self.client.get('/id/foo', HTTP_HOST=self.http_host)
+        self.assertEqual(response.status_code, 303)
+        get_types.assert_called_once_with(rdflib.URIRef('http://{0}/id/foo'.format(self.http_host)))
+
+
 class DocViewTestCase(ClientTestCase, GraphTestMixin):
     _TEST_URI = 'http://data.example.org/id/foo'
-    _HTTP_HOST = 'data.example.org'
 
-    @mock.patch('humfrey.desc.views.DocView.get_types')
+    @mock.patch('humfrey.sparql.views.core.StoreView.get_types')
     @mock.patch('humfrey.desc.views.DocView.endpoint')
     def testGraphValid(self, endpoint, get_types):
         get_types.return_value = (rdflib.URIRef('http://example.org/vocab/Thing'),)
         endpoint.query.return_value = rdflib.ConjunctiveGraph()
-        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
+        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self.http_host)
         self.assertIsInstance(response, HttpResponse)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.context['subject_uri'], rdflib.URIRef)
@@ -81,7 +99,7 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
     @mock.patch('humfrey.desc.views.DocView.get_types')
     def testNoTypes(self, get_types):
         get_types.return_value = ()
-        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self._HTTP_HOST)
+        response = self.client.get('/doc/', {'uri': self._TEST_URI}, HTTP_HOST=self.http_host)
         self.assertEqual(response.status_code, 404)
 
     @mock.patch('humfrey.desc.views.DocView.get_types')
@@ -100,7 +118,7 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
         ]
 
         for url, uri, redirect in url_tests:
-            response = self.client.get(url, HTTP_HOST=self._HTTP_HOST)
+            response = self.client.get(url, HTTP_HOST=self.http_host)
             self.assertEqual(response.status_code, 301 if redirect else 200)
             if redirect:
                 self.assertEqual(response['Location'], uri)

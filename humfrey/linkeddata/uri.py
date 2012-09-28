@@ -70,6 +70,11 @@ def doc_forward(uri, graph=None, described=None, format=None):
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 
 def doc_backward(url, formats=None):
+    """
+    Determines the URI a doc page is about.
+
+    Returns a tuple of (uri, format, canonical).
+    """
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
     host_path = '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)

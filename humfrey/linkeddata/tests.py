@@ -3,6 +3,7 @@
 import functools
 import mock
 import unittest2
+import urlparse
 import rdflib
 
 from django.core.urlresolvers import set_urlconf
@@ -34,8 +35,11 @@ def set_mappingconf(func):
             mappingconf.set_resource_registry(None)
     return f
 
+class RelativeURLTestCase(unittest2.TestCase):
+    def assertRelativeEqual(self, one, two):
+        self.assertEqual(urlparse.urljoin(two, one), two)
 
-class URITestCase(unittest2.TestCase):
+class URITestCase(RelativeURLTestCase):
     def setUp(self):
         set_urlconf(get_host('data').urlconf)
 
@@ -58,34 +62,34 @@ class URITestCase(unittest2.TestCase):
         qs_without_format = '?uri=http%3A%2F%2Fremote.example.org%2Ffoo'
 
         # With no indication as to whether we know about it
-        self.assertEqual(doc_forward(uri),
-                         desc_root + qs_without_format)
-        self.assertEqual(doc_forward(uri, format='nt'),
-                         desc_root + qs_with_format)
+        self.assertRelativeEqual(doc_forward(uri),
+                                 desc_root + qs_without_format)
+        self.assertRelativeEqual(doc_forward(uri, format='nt'),
+                                 desc_root + qs_with_format)
 
         # When we provide a graph that doesn't mention it
         graph = rdflib.ConjunctiveGraph()
-        self.assertEqual(doc_forward(uri, graph=graph),
-                         desc_root + qs_without_format)
-        self.assertEqual(doc_forward(uri, graph=graph, format='nt'),
-                         desc_root + qs_with_format)
+        self.assertRelativeEqual(doc_forward(uri, graph=graph),
+                                 desc_root + qs_without_format)
+        self.assertRelativeEqual(doc_forward(uri, graph=graph, format='nt'),
+                                 desc_root + qs_with_format)
 
         # Now our graph knows something about it
         graph.add((uri, rdflib.URIRef('http://example.org/predicate'), rdflib.Literal('foo')))
-        self.assertEqual(doc_forward(uri, graph=graph),
-                         doc_root + qs_without_format)
-        self.assertEqual(doc_forward(uri, graph=graph, format='nt'),
-                         doc_root + qs_with_format)
+        self.assertRelativeEqual(doc_forward(uri, graph=graph),
+                                 doc_root + qs_without_format)
+        self.assertRelativeEqual(doc_forward(uri, graph=graph, format='nt'),
+                                 doc_root + qs_with_format)
 
         # When we definitely know nothing about it, go straight off-site
-        self.assertEqual(doc_forward(uri, described=False), unicode(uri))
-        self.assertEqual(doc_forward(uri, described=False, format='nt'), unicode(uri))
+        self.assertRelativeEqual(doc_forward(uri, described=False), unicode(uri))
+        self.assertRelativeEqual(doc_forward(uri, described=False, format='nt'), unicode(uri))
 
         # When we definitely know something about it, go straight off-site
-        self.assertEqual(doc_forward(uri, described=True),
-                         doc_root + qs_without_format)
-        self.assertEqual(doc_forward(uri, described=True, format='nt'),
-                         doc_root + qs_with_format)
+        self.assertRelativeEqual(doc_forward(uri, described=True),
+                                 doc_root + qs_without_format)
+        self.assertRelativeEqual(doc_forward(uri, described=True, format='nt'),
+                                 doc_root + qs_with_format)
 
     @set_mappingconf
     def testDocLocalNegotiate(self):
@@ -99,7 +103,7 @@ class URITestCase(unittest2.TestCase):
         self.assertEqual(doc_forward(uri),
                          'http://data.example.org/doc/foo')
 
-class UnicodeURITestCase(unittest2.TestCase):
+class UnicodeURITestCase(RelativeURLTestCase):
     TESTS = [
         (u'http://id.example.org/fuß', 'http://data.example.org/doc/fu%C3%9F'),
         (u'http://id.example.org/βήτα', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
@@ -123,14 +127,14 @@ class UnicodeURITestCase(unittest2.TestCase):
     @set_mappingconf
     def testUnicodeForward(self):
         for uri, url in self.TESTS:
-            self.assertEqual(doc_forward(uri, described=True), url)
+            self.assertRelativeEqual(doc_forward(uri, described=True), url)
 
     @set_mappingconf
     def testUnicodeBackward(self):
         for uri, url in self.TESTS:
             if isinstance(uri, unicode):
-                self.assertEqual(doc_backward(url)[0], rdflib.URIRef(uri))
-                self.assertEqual(doc_forward(doc_backward(url)[0], described=True), url)
+                self.assertRelativeEqual(doc_backward(url)[0], uri)
+                self.assertRelativeEqual(doc_forward(doc_backward(url)[0], described=True), url)
 
 
 if __name__ == '__main__':
