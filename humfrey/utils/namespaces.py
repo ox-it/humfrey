@@ -74,10 +74,10 @@ def expand(qname):
     except KeyError:
         return URIRef(qname)
 
-def contract(uri):
+def contract(uri, separator=':'):
     for ns, prefix in INVERSE_NS:
         if uri.startswith(ns):
             localpart = uri[len(ns):]
             if is_localpart(localpart):
-                return "%s:%s" % (prefix, localpart)
+                return "{0}{1}{2}".format(prefix, separator, localpart)
     return uri

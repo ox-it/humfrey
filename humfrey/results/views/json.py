@@ -20,7 +20,7 @@ class JSONRDFView(ContentNegotiatedView):
         seen += (subject,)
 
         for p in graph.predicates(subject):
-            data[contract(p).replace(':', '_')] = objects = []
+            data[contract(p, '_')] = objects = []
             for o in graph.objects(subject, p):
                 if isinstance(o, rdflib.Literal):
                     objects.append(unicode(o))
