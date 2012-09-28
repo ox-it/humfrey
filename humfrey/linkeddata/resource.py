@@ -8,7 +8,7 @@ import re
 import urllib2
 from xml.sax.saxutils import escape, quoteattr
 
-from rdflib import URIRef, BNode
+from rdflib import URIRef, BNode, Literal
 
 from django.core.cache import cache
 from django.conf import settings
@@ -210,6 +210,18 @@ class BaseResource(object):
         values = [Resource(v, self._graph, self._endpoint) if is_resource(v) else v for v in values]
         values.sort(key=lambda r: (r.label if is_resource(r) else r))
         return values
+
+    def get_with_datatype(self, predicate, datatype, all=False):
+        """Finds a property with the given predicate and literal datatype"""
+        values = []
+        for value in self._graph.objects(self._identifier, predicate):
+            if isinstance(value, Literal) and value.datatype == datatype:
+                values.append(value)
+        if all:
+            return values
+        elif values:
+            values.sort()
+            return values[0]
 
     def _additional_queries(self):
         objects = set()
