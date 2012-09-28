@@ -18,6 +18,7 @@ from humfrey.linkeddata.resource import Resource, IRI
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.linkeddata.views import MappingView
 
+from humfrey.results.views.json import JSONRDFView
 from humfrey.results.views.standard import RDFView
 from humfrey.sparql.views import StoreView
 from humfrey.utils.namespaces import NS, expand
@@ -92,7 +93,7 @@ class DescView(MappingView, StoreView):
         else:
             raise Http404
 
-class DocView(MappingView, StoreView, RDFView, HTMLView):
+class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
     check_canonical = True
 
     doc_rdf_processors = getattr(settings, 'DOC_RDF_PROCESSORS', ())
