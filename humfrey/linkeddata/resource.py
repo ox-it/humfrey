@@ -332,7 +332,8 @@ class BaseResource(object):
 
     @property
     def hexhash(self):
-        return hashlib.sha1(self._identifier).hexdigest()[:8]
+        "Returns a hexadecimal hash of the URI of a resource"
+        return hashlib.sha1(self._identifier.encode('utf-8')).hexdigest()[:8]
 
 class Address(object):
     types = ('v:Address',)

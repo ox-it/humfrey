@@ -36,7 +36,7 @@ def doc_forwards(uri, graph=None, described=None):
     Determines all doc URLs for a URI.
 
     graph is an rdflib.ConjunctiveGraph that can be checked for a description
-    of uri. described is a ternary boolean.
+    of uri. described is a ternary boolean (None for 'unknown').
     """
 
     if isinstance(uri, unicode):
