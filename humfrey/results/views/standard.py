@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import imp
 from xml.sax.saxutils import escape
 try:
