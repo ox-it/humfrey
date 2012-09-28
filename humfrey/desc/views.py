@@ -35,9 +35,9 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
     def get(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
         if not IRI.match(uri):
-            raise Http404
+            raise Http404("Invalid IRI")
         if not self.get_types(uri):
-            raise Http404
+            raise Http404("URI has no types; not known around here")
 
         description_url = doc_forward(uri, described=True)
 
