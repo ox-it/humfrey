@@ -8,11 +8,13 @@ import urllib
 import rdflib
 from PIL import Image
 
+from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.http import HttpResponse, Http404, HttpResponseBadRequest
 from django.views.generic import View
 
 from humfrey.utils.namespaces import expand
+from humfrey.sparql.models import Store
 from humfrey.sparql.views import StoreView
 
 from .encoding import encode_parameters
