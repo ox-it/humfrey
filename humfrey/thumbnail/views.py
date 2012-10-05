@@ -61,10 +61,8 @@ class ThumbnailView(StoreView):
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
 
-        if not os.path.exists(filename):
+        if not os.path.exists(filename) or os.stat(filename).st_size == 0:
             open(filename, 'w').close()
-            if re.match(r"http://www\.mae\.u-paris10\.fr/limc-france/images/.*\.JPG", url):
-                url = url[:-4] + '.jpg'
             temporary_filename, _ = urllib.urlretrieve(url)
             try:
                 try:
