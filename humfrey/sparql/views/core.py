@@ -1,6 +1,7 @@
 import base64
 import datetime
 import hashlib
+import httplib
 import pickle
 import time
 import urllib
@@ -50,14 +51,6 @@ class SparqlBooleanView(ResultSetView, HTMLView):
         return self.render(request, context, ('sparql/boolean', 'results/boolean'))
     post = get
 
-class SparqlErrorView(HTMLView, TextView):
-    _default_format = 'txt'
-    _force_fallback_format = 'txt'
-
-    def get(self, request, context):
-        return self.render(request, context, 'sparql/error')
-    post = get
-
 class StoreView(View):
     store_name = DEFAULT_STORE_NAME # Use the default store
 
@@ -96,6 +89,8 @@ class StoreView(View):
 class QueryView(StoreView, MappingView, RedisView, HTMLView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
+    template_name = 'sparql/query'
+
     default_timeout = None # Override this with some number of seconds
     maximum_timeout = None # Override this with some number of seconds
     allow_concurrent_queries = False
@@ -103,8 +98,9 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
     class SparqlViewException(Exception):
         pass
     class ConcurrentQueryException(SparqlViewException):
-        pass
+        message = "You cannot perform more than one query at a time.\nPlease wait for your previous query to complete or time out first."
     class ExcessiveQueryException(SparqlViewException):
+        message = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
         def __init__(self, intensity):
             self.intensity = intensity
 
@@ -115,8 +111,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
     _graph_view = staticmethod(SparqlGraphView.as_view())
     _resultset_view = staticmethod(SparqlResultSetView.as_view())
     _boolean_view = staticmethod(SparqlBooleanView.as_view())
-    _error_view = staticmethod(SparqlErrorView.as_view())
-    
+
     def _get_float(self, value):
         try:
             return float(value)
@@ -242,11 +237,12 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
         form = SparqlQueryForm(request.REQUEST if query else None,
                                formats=self.get_format_choices())
 
-        context = {
+        context = self.context
+        context.update({
             'namespaces': sorted(NS.items()),
             'form': form,
-            'store': self.store,
-        }
+            'store': self.store
+        })
 
         if privileges['throttle']:
             additional_headers = context['additional_headers'] = {
@@ -262,40 +258,38 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
                     additional_headers['X-Humfrey-SPARQL-Intensity'] = intensity
 
             except urllib2.HTTPError, e:
-                context['error'] = e.read() #parse(e).find('.//pre').text
-                context['status_code'] = e.code
-            except self.ConcurrentQueryException, e:
-                context['error'] = "You cannot perform more than one query at a time.\nPlease wait for your previous query to complete or time out first."
-                context['status_code'] = 403
-            except self.ExcessiveQueryException, e:
-                context['error'] = "You have been performing a lot of queries recently.\nPlease wait a while and try again."
-                context['status_code'] = 403
-                additional_headers['X-Humfrey-SPARQL-Intensity'] = e.intensity
+                context['error'] = {'message': e.read(),
+                                    'status_code': e.code}
+                return self.error_view(request, context, 'sparql/error')
+            except self.SparqlViewException, e:
+                if hasattr(e, 'intensity'):
+                    context['additional_headers']['X-Humfrey-SPARQL-Intensity'] = e.intensity
+                context['error'] = {'message': e.message,
+                                    'status_code': httplib.FORBIDDEN}
+                return self.error_view(request, context, 'sparql/error')
             except etree.XMLSyntaxError, e:
-                context['error'] = "Your query could not be returned in the time allotted it.\n" \
-                                 + "Please try a simpler query or using LIMIT to reduce the number of returned results."
-                context['status_code'] = 403
+                context['error'] = {'message': "Your query could not be returned in the time allotted it.\n" \
+                                              + "Please try a simpler query or using LIMIT to reduce the number of returned results.",
+                                    'status_code': httplib.FORBIDDEN}
+                return self.error_view(request, context, 'sparql/error')
+
+            context['queries'] = [results.query]
+            context['duration'] = results.duration
+
+            if isinstance(results, SparqlResultSet):
+                context['results'] = results
+                return self._resultset_view(request, context)
+            elif isinstance(results, SparqlResultBool):
+                context['result'] = results
+                return self._boolean_view(request, context)
+            elif isinstance(results, SparqlResultGraph):
+                context['graph'] = results
+                context['subjects'] = results.subjects()
+                return self._graph_view(request, context)
             else:
-                context['queries'] = [results.query]
-                context['duration'] = results.duration
+                raise AssertionError("Unexpected return type: %r" % type(results))
 
-                if isinstance(results, SparqlResultSet):
-                    context['results'] = results
-                    return self._resultset_view(request, context)
-                elif isinstance(results, SparqlResultBool):
-                    context['result'] = results
-                    return self._boolean_view(request, context)
-                elif isinstance(results, SparqlResultGraph):
-                    context['graph'] = results
-                    context['subjects'] = results.subjects()
-                    return self._graph_view(request, context)
-                else:
-                    raise AssertionError("Unexpected return type: %r" % type(results))
-
-        if 'error' in context:
-            return self._error_view(request, context)
-        else:
-            return self.render(request, context, 'sparql/query')
+        return self.render()
 
     post = get
 
