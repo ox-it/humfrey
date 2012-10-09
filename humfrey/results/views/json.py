@@ -13,7 +13,11 @@ from django_conneg.views import ContentNegotiatedView
 
 class JSONRDFView(ContentNegotiatedView):
     def render_json_subject(self, graph, subject, seen=()):
-        data, inv_data = {'_uri': unicode(subject)}, {}
+        data, inv_data = {}, {}
+        if isinstance(subject, rdflib.URIRef):
+            data['_uri'] = unicode(subject)
+        elif isinstance(subject, rdflib.BNode):
+            data['_id'] = unicode(subject)
         if subject in seen:
             data['_nested'] = True
             return data
