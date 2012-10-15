@@ -1,5 +1,4 @@
 import base64
-import datetime
 import hashlib
 import httplib
 import math
@@ -12,7 +11,6 @@ import urlparse
 import uuid
 
 from lxml import etree
-import pytz
 import rdflib
 import redis
 
@@ -22,7 +20,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
-from django_conneg.views import ContentNegotiatedView, HTMLView, JSONPView, TextView
+from django_conneg.views import HTMLView
 
 from humfrey.linkeddata.views import MappingView
 from humfrey.misc.views import PassThroughView
@@ -36,7 +34,7 @@ from humfrey.utils.namespaces import NS
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.forms import SparqlQueryForm
-from humfrey.sparql.models import Store, UserPrivileges
+from humfrey.sparql.models import Store
 
 DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
 
