@@ -72,14 +72,23 @@ class RDFView(ContentNegotiatedView):
 
 
 class ResultSetView(ContentNegotiatedView):
-    def _spool_srj_boolean(self, result):
+    def _spool_srj_boolean(self, result, callback):
+        if callback:
+            yield callback
+            yield '('
         yield '{\n'
         yield '  "head": {},\n'
         yield '  "boolean": %s\n' % ('true' if result else 'false')
-        yield '}\n'
+        yield '}'
+        if callback:
+            yield ')'
+        yield '\n'
 
-    def _spool_srj_resultset(self, results):
+    def _spool_srj_resultset(self, results, callback):
         dumps = json.dumps
+        if callback:
+            yield callback
+            yield '('
         yield '{\n'
         yield '  "head": {\n'
         yield '    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields)
@@ -109,12 +118,15 @@ class ResultSetView(ContentNegotiatedView):
             yield '\n      }'
         yield '\n    ]\n'
         yield '  }\n'
-        yield '}\n'
+        yield '}'
+        if callback:
+            yield ')'
+        yield '\n'
 
-    def _spool_csv_boolean(self, result):
+    def _spool_csv_boolean(self, result, callback):
         yield '%s\n' % ('true' if result else 'false')
 
-    def _spool_csv_resultset(self, results):
+    def _spool_csv_resultset(self, results, callback):
         def quote(value):
             if value is None:
                 return ''
@@ -126,11 +138,11 @@ class ResultSetView(ContentNegotiatedView):
             yield ",".join(quote(value) for value in result)
             yield '\n'
 
-    def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
+    def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype, callback=None):
         if isinstance(context.get('result'), SparqlResultBool):
-            spool = spool_boolean(context['result'])
+            spool = spool_boolean(context['result'], callback)
         elif isinstance(context.get('results'), SparqlResultSet):
-            spool = spool_resultset(context['results'])
+            spool = spool_resultset(context['results'], callback)
         else:
             return NotImplemented
         return HttpResponse(spool, mimetype=mimetype)
@@ -143,10 +155,13 @@ class ResultSetView(ContentNegotiatedView):
 
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):
+        callback = request.GET.get('callback')
+
         return self.render_resultset(request, context,
                                      self._spool_srj_boolean,
                                      self._spool_srj_resultset,
-                                     'application/sparql-results+json')
+                                     'application/javascript' if callback else 'application/sparql-results+json',
+                                     callback)
 
     @renderer(format='csv', mimetypes=('text/csv',), name='CSV')
     def render_csv(self, request, context, template_name):
