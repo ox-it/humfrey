@@ -2,7 +2,7 @@
 
 {% block sparql_results %}
 <section>
-  <h2>Query error</h2>
+  <h2>Query error: {{ error.status_code }} {{ error.response }}</h2>
   
   <pre>{{ error.message }}</pre>
 </section>
