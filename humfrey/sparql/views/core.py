@@ -327,6 +327,9 @@ class ProtectedQueryView(QueryView):
 
     def _heartbeat(self, client, query_key, query_done, heartbeat_frequency):
         while not query_done.wait(self.heartbeat_frequency):
+            # In Py2.6, Event.wait() always returns None, so we need this check
+            if query_done.is_set():
+                break
             new_data = {'heartbeat': time.time() + heartbeat_frequency * 2}
             self._update_redis_dict(client, query_key, new_data)
 
