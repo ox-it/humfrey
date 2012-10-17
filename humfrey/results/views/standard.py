@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import functools
 import imp
 from xml.sax.saxutils import escape
 try:
@@ -123,10 +124,10 @@ class ResultSetView(ContentNegotiatedView):
             yield ')'
         yield '\n'
 
-    def _spool_csv_boolean(self, result, callback):
+    def _spool_csv_boolean(self, result):
         yield '%s\n' % ('true' if result else 'false')
 
-    def _spool_csv_resultset(self, results, callback):
+    def _spool_csv_resultset(self, results):
         def quote(value):
             if value is None:
                 return ''
@@ -138,11 +139,11 @@ class ResultSetView(ContentNegotiatedView):
             yield ",".join(quote(value) for value in result)
             yield '\n'
 
-    def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype, callback=None):
+    def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
         if isinstance(context.get('result'), SparqlResultBool):
-            spool = spool_boolean(context['result'], callback)
+            spool = spool_boolean(context['result'])
         elif isinstance(context.get('results'), SparqlResultSet):
-            spool = spool_resultset(context['results'], callback)
+            spool = spool_resultset(context['results'])
         else:
             return NotImplemented
         return HttpResponse(spool, mimetype=mimetype)
@@ -158,8 +159,8 @@ class ResultSetView(ContentNegotiatedView):
         callback = request.GET.get('callback')
 
         return self.render_resultset(request, context,
-                                     self._spool_srj_boolean,
-                                     self._spool_srj_resultset,
+                                     functools.partial(self._spool_srj_boolean, callback=callback),
+                                     functools.partial(self._spool_srj_resultset, callback=callback),
                                      'application/javascript' if callback else 'application/sparql-results+json',
                                      callback)
 
