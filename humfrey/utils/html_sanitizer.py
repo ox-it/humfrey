@@ -101,7 +101,7 @@ class HTMLSanitizer(object):
 
         return mark_safe(lxml.etree.tostring(data, method='html'))
 
-class XHTMLSanitizer(object):
+class XHTMLSanitizer(HTMLSanitizer):
     NS_PREFIX = '{http://www.w3.org/1999/xhtml}'
     parser_class = lxml.etree.XMLParser
 
