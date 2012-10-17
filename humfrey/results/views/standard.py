@@ -161,8 +161,7 @@ class ResultSetView(ContentNegotiatedView):
         return self.render_resultset(request, context,
                                      functools.partial(self._spool_srj_boolean, callback=callback),
                                      functools.partial(self._spool_srj_resultset, callback=callback),
-                                     'application/javascript' if callback else 'application/sparql-results+json',
-                                     callback)
+                                     'application/javascript' if callback else 'application/sparql-results+json')
 
     @renderer(format='csv', mimetypes=('text/csv',), name='CSV')
     def render_csv(self, request, context, template_name):
