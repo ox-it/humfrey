@@ -11,16 +11,19 @@ class HTMLSanitizer(object):
     
     
     # These are the only attributes we'll keep
-    good_attribs = 'src href alt title rel'.split()
+    good_attribs = 'src href alt title rel longdesc'.split()
     
     # Here is our whitelist of good tags. Everything else is replaced with a div or span
-    good_tags = 'ul li em strong u b div span ol i dl dt dd table tbody thead tfoot tr td th hr img p br a h1 h2 h3 h4 h5 h6'.split()
+    good_tags = """ul li em strong u b div span ol i dl dt dd table tbody
+                  thead tfoot tr td th hr img p br a h1 h2 h3 h4 h5 h6 pre
+                  address blockquote del ins abbr dfn code samp kbd var small
+                  s big tt span bdo cite q sub sup wbr colgroup col caption""".split()
     
     # These and their content are removed completely
-    remove_tags = 'iframe applet script'.split()
+    remove_tags = 'iframe applet script style title object param'.split()
     
     # These are stripped, but their content preserved
-    ignore_tags = 'html body'.split()
+    ignore_tags = 'html body noscript font'.split()
     
     # Here's the list of non-good tags that should be replaced with div elements
     block_tags = 'h1 h2 h3 h4 h5 h6'.split()
