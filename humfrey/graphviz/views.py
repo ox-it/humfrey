@@ -110,14 +110,17 @@ class GraphVizView(RDFView, StoreView, MappingView):
         subjects = [Resource(s, graph, self.endpoint) for s in set(graph.objects(page_uri, NS['foaf'].topic))]
         subjects.sort(key=lambda s: s.label)
 
+        subject = Resource(root, graph, self.endpoint) if root else None
+
         context = {
             'graph': graph,
             'queries': [graph.query],
             'subjects': subjects,
-            'subject': Resource(root, graph, self.endpoint) if root else None,
+            'subject': subject,
             'inverted': inverted,
             'relations': relations,
             'minimal': minimal,
+            'filename_base': slugify(subject.label if subject else 'graphviz')[:32]
         }
 
         for subject in subjects:
@@ -153,7 +156,8 @@ class GraphVizView(RDFView, StoreView, MappingView):
             dot = subprocess.Popen(['dot', '-K'+layout, '-T'+dot_output], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             dot_stdout, _ = dot.communicate(input=plain_gv.encode('utf-8'))
             response = HttpResponse(dot_stdout, mimetype=output['mimetypes'][0])
-            response['Content-Disposition'] = 'inline; filename="%s.%s"' % (slugify(context['subject'].label if context['subject'] else 'graphviz')[:32], output['format'])
+            response['Content-Disposition'] = 'inline; filename="{0}.{1}"'.format(context['filename_base'],
+                                                                                  output['format'])
             return response
 
         dot_output = output.pop('dot_output')
@@ -164,23 +168,10 @@ class GraphVizView(RDFView, StoreView, MappingView):
         locals()['render_%s' % output['format']] = _get_dot_renderer(output)
     del _get_dot_renderer, output
 
-    @renderer(format="gv", mimetypes=('text/vnd.graphviz',), name="DOT (GraphViz)")
-    def render_gv(self, request, context, template_name):
-        layout = request.GET.get('layout')
-        if layout not in self._DOT_LAYOUTS:
-            layout = 'fdp'
-        template = loader.get_template(template_name + '.gv')
-        plain_gv = template.render(RequestContext(request, context))
-        dot = subprocess.Popen(['dot', '-K'+layout, '-Txdot'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        dot_stdout, _ = dot.communicate(input=plain_gv.encode('utf-8'))
-        response = HttpResponse(dot_stdout, mimetype='text/vnd.graphviz')
-        response['Content-Disposition'] = 'attachment; filename="%s.gv"' % slugify(context['subject'].dcterms_title)[:32]
-        return response
-
     @renderer(format="graphml", mimetypes=('application/x-graphml+xml',), name="GraphML")
     def render_graphml(self, request, context, template_name):
         response = render_to_response(template_name + '.graphml',
                                       context, context_instance=RequestContext(request),
                                       mimetype='application/x-graphml+xml')
-        response['Content-Disposition'] = 'attachment; filename="%s.graphml"' % slugify(context['subject'].dcterms_title)[:32]
+        response['Content-Disposition'] = 'attachment; filename="{0}.graphml"'.format(context['filename_base'])
         return response
