@@ -107,17 +107,20 @@ class GraphVizView(RDFView, StoreView, MappingView):
                                )
         graph = self.endpoint.query(query)
 
+        subjects = [Resource(s, graph, self.endpoint) for s in set(graph.objects(page_uri, NS['foaf'].topic))]
+        subjects.sort(key=lambda s: s.label)
+
         context = {
             'graph': graph,
             'queries': [graph.query],
-            'subjects': [Resource(s, graph, self.endpoint) for s in set(graph.objects(page_uri, NS['foaf'].topic))],
-            'subject': Resource(root, graph, self.endpoint),
+            'subjects': subjects,
+            'subject': Resource(root, graph, self.endpoint) if root else None,
             'inverted': inverted,
             'relations': relations,
             'minimal': minimal,
         }
 
-        for subject in context['subjects']:
+        for subject in subjects:
             if not inverted:
                 subject.children = set(Resource(s, graph, self.endpoint) for relation in relations for s in graph.objects(subject._identifier, relation))
             else:
@@ -150,7 +153,7 @@ class GraphVizView(RDFView, StoreView, MappingView):
             dot = subprocess.Popen(['dot', '-K'+layout, '-T'+dot_output], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             dot_stdout, _ = dot.communicate(input=plain_gv.encode('utf-8'))
             response = HttpResponse(dot_stdout, mimetype=output['mimetypes'][0])
-            response['Content-Disposition'] = 'inline; filename="%s.%s"' % (slugify(context['subject'].dcterms_title)[:32], output['format'])
+            response['Content-Disposition'] = 'inline; filename="%s.%s"' % (slugify(context['subject'].label if context['subject'] else 'graphviz')[:32], output['format'])
             return response
 
         dot_output = output.pop('dot_output')
