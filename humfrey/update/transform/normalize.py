@@ -47,6 +47,7 @@ class SearchNormalization(Normalization):
         self.mapping = {}
         self.searches = defaultdict(dict)
         self.safe_predicates = frozenset(map(expand, (safe_predicates or ())))
+        self.no_index = set()
 
     def __call__(self, source):
         for triple in self.pass_function(source):
@@ -107,6 +108,7 @@ class SearchNormalization(Normalization):
                     self.mapping[subject] = URIRef(hit['_source']['uri'])
             else:
                 logger.warning('No match for "%s" (%s)', query_string, ptype)
+                self.no_index.update(subjects)
 
         logger.debug("Searches done")
 
@@ -120,6 +122,8 @@ class SearchNormalization(Normalization):
             if o in self.replacements and self.replacements[o] in self.mapping:
                 o = self.mapping[self.replacements[o]]
             yield s, p, o
+        for subject in self.no_index:
+            yield (s, HUMFREY.noIndex, Literal(True))
         logger.debug("Substitutions done")
         self.done = True
 
@@ -181,16 +185,25 @@ class NotationNormalization(Normalization):
                 if notation in notation_mapping:
                     mapping[subject] = notation_mapping[notation]
                 else:
+                    mapping[subject] = None
                     logger.warning("Notation %s for %s not found.", notation, subject)
 
         for s, p, o in source:
-            if o in mapping:
-                yield (s, p, mapping[o])
-            elif s in mapping:
+            if mapping.get(s) is not None:
+                s = mapping[s]
                 if p not in self.safe_predicates and isinstance(o, (BNode, URIRef)):
+                    # Start the process of removing the CBD for s.
                     self.to_remove.add(o)
-            else:
-                yield (s, p, o)
+                    continue
+            elif s in mapping:
+                yield (s, HUMFREY.noIndex, Literal(True))
+
+            if mapping.get(o) is not None:
+                o = mapping[o]
+            elif s in mapping:
+                yield (o, HUMFREY.noIndex, Literal(True))
+
+            yield (s, p, o)
 
         if self.to_remove:
             self.pass_function = self.remove_bounded_description
