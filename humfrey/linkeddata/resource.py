@@ -224,20 +224,7 @@ class BaseResource(object):
             return values[0]
 
     def _additional_queries(self):
-        objects = set()
-        for o in itertools.chain(self._graph.subjects(), self._graph.predicates(), self._graph.objects()):
-            if isinstance(o, URIRef):
-                objects.add(o)
-
-        return ["""
-            CONSTRUCT {
-              ?s ?p ?label
-            } WHERE {
-              ?s ?p ?label .
-              FILTER ( %s ) .
-              FILTER ( ?p = rdfs:label || ?p = rdf:value || ?p = foaf:name || ?p = skos:prefLabel || ?p = dc:title || ?p = dcterms:title || ?p = gr:name )
-            }
-        """ % ' || '.join('?s = %s' % o.n3() for o in objects if IRI.match(o))]
+        return []
 
     def properties(self):
         data = defaultdict(set)

@@ -17,6 +17,7 @@ from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedire
 from humfrey.linkeddata.resource import Resource, IRI
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.linkeddata.views import MappingView
+from humfrey.sparql.utils import get_labels
 
 from humfrey.results.views.json import JSONRDFView
 from humfrey.results.views.standard import RDFView
@@ -161,6 +162,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         for query in subject.get_queries():
             graph += self.endpoint.query(query)
             queries.append(query)
+        graph += get_labels(graph, self.endpoint, mapping=False)
 
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):

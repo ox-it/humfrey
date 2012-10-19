@@ -87,7 +87,6 @@ class StoreView(View):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
-
 class QueryView(StoreView, MappingView, RedisView, HTMLView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
