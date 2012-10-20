@@ -34,8 +34,7 @@ def get_labels(subjects, endpoint=None, mapping=True):
         raise TypeError("endpoint parameter should be an Endpoint instance.")
 
     subjects = set(s for s in subjects if isinstance(s, URIRef) and IRI.match(s))
-    print subjects
-    
+
     query = """
         CONSTRUCT {{
           ?s ?p ?label
