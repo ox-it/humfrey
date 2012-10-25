@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 from collections import defaultdict
+import datetime
 import logging
 import urllib2
 import urlparse
@@ -33,7 +34,7 @@ class TimezoneNormalization(Normalization):
             if isinstance(o, Literal) and o.datatype == NS.xsd.dateTime:
                 try:
                     dt = o.toPython()
-                    if not dt.tzinfo:
+                    if isinstance(dt, datetime.datetime) and not dt.tzinfo:
                         o = Literal(tz.localize(dt))
                 except Exception:
                     logger.exception("Failed to parse datetime: %s", o)
