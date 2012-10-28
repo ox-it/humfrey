@@ -24,6 +24,7 @@ class NotationNormalizationTestCase(unittest.TestCase):
         (original_node, SKOS.narrower, child_node),
         (original_node, SKOS.notation, test_notation),
         (original_node, SKOS.broader, other_node),
+        (other_node, SKOS.prefLabel, rdflib.Literal("Title")),
     ]
 
     def run_normalization(self, normalization, triples):
@@ -46,6 +47,7 @@ class NotationNormalizationTestCase(unittest.TestCase):
         self.assertIn((self.original_node, HUMFREY.noIndex, rdflib.Literal(True)), graph)
         self.assertNotIn((self.original_node, SKOS.notation, self.test_notation), graph)
         self.assertIn((self.original_node, SKOS.broader, self.other_node), graph)
+        self.assertIn((self.other_node, SKOS.prefLabel, rdflib.Literal("Title")), graph)
 
     def testFound(self):
         normalization = NotationNormalization(datatypes=(self.test_datatype,))
@@ -59,6 +61,7 @@ class NotationNormalizationTestCase(unittest.TestCase):
         self.assertNotIn((self.original_node, HUMFREY.noIndex, rdflib.Literal(True)), graph)
         self.assertNotIn((self.original_node, SKOS.notation, self.test_notation), graph)
         self.assertNotIn((self.original_node, SKOS.broader, self.other_node), graph)
+        self.assertIn((self.other_node, SKOS.prefLabel, rdflib.Literal("Title")), graph)
 
     def testFoundWithSafe(self):
         normalization = NotationNormalization(datatypes=(self.test_datatype,),
@@ -69,3 +72,4 @@ class NotationNormalizationTestCase(unittest.TestCase):
         graph = self.run_normalization(normalization, self.triples)
         
         self.assertIn((self.target_node, SKOS.broader, self.other_node), graph)
+        self.assertIn((self.other_node, SKOS.prefLabel, rdflib.Literal("Title")), graph)
