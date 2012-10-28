@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 from collections import defaultdict
+import datetime
 import logging
 import urllib2
 import urlparse
@@ -33,7 +34,7 @@ class TimezoneNormalization(Normalization):
             if isinstance(o, Literal) and o.datatype == NS.xsd.dateTime:
                 try:
                     dt = o.toPython()
-                    if not dt.tzinfo:
+                    if isinstance(dt, datetime.datetime) and not dt.tzinfo:
                         o = Literal(tz.localize(dt))
                 except Exception:
                     logger.exception("Failed to parse datetime: %s", o)
@@ -143,6 +144,7 @@ class NotationNormalization(Normalization):
         for s, p, o in source:
             if p == skos_notation and o.datatype in datatypes:
                 self.notations[o].add(s)
+                continue
             yield (s, p, o)
         self.pass_function = self.substitute_notations
 
@@ -191,7 +193,7 @@ class NotationNormalization(Normalization):
         for s, p, o in source:
             if mapping.get(s) is not None:
                 s = mapping[s]
-                if p not in self.safe_predicates and isinstance(o, (BNode, URIRef)):
+                if p not in self.safe_predicates and isinstance(o, BNode):
                     # Start the process of removing the CBD for s.
                     self.to_remove.add(o)
                     continue
@@ -214,7 +216,7 @@ class NotationNormalization(Normalization):
         to_remove = set()
         for s, p, o in source:
             if s in self.to_remove:
-                if isinstance(o, (BNode, URIRef)):
+                if isinstance(o, BNode):
                     to_remove.add(o)
             else:
                 yield (s, p, o)

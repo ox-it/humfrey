@@ -94,6 +94,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django_hosts',
     'django_conneg',
+    'djcelery',
     'object_permissions',
     'humfrey.base',
     'humfrey.desc',
