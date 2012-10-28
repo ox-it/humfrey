@@ -193,7 +193,7 @@ class NotationNormalization(Normalization):
         for s, p, o in source:
             if mapping.get(s) is not None:
                 s = mapping[s]
-                if p not in self.safe_predicates and isinstance(o, (BNode, URIRef)):
+                if p not in self.safe_predicates and isinstance(o, BNode):
                     # Start the process of removing the CBD for s.
                     self.to_remove.add(o)
                     continue
@@ -216,7 +216,7 @@ class NotationNormalization(Normalization):
         to_remove = set()
         for s, p, o in source:
             if s in self.to_remove:
-                if isinstance(o, (BNode, URIRef)):
+                if isinstance(o, BNode):
                     to_remove.add(o)
             else:
                 yield (s, p, o)
