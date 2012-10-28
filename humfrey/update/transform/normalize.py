@@ -144,6 +144,7 @@ class NotationNormalization(Normalization):
         for s, p, o in source:
             if p == skos_notation and o.datatype in datatypes:
                 self.notations[o].add(s)
+                continue
             yield (s, p, o)
         self.pass_function = self.substitute_notations
 
