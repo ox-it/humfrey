@@ -246,18 +246,18 @@ class BaseResource(object):
 
     @property
     def label(self):
-        labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
-        #if not labels:
-        #    self._graph += self._endpoint.describe(self._identifier)
-        #    labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
-        if not labels:
-            if isinstance(self._identifier, URIRef):
-                return self.label2
-            elif self.rdf_type:
-                return '<unnamed %s>' % self.rdf_type.label
+        if not hasattr(self, '_label'):
+            labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
+            if labels:
+                self._label = self.localised(labels)[0]
             else:
-                return '<unnamed>'
-        return self.localised(labels)[0]
+                if isinstance(self._identifier, URIRef):
+                    self._label = self.label2
+                elif self.rdf_type:
+                    self._label = '<unnamed %s>' % self.rdf_type.label
+                else:
+                    self._label = '<unnamed>'
+        return self._label
 
     def localised(self, values):
         def f(v):
