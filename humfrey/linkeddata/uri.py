@@ -50,7 +50,7 @@ def doc_forwards(uri, graph=None, described=None):
             pattern = base.replace('%', '%%') + '.%(format)s'
             return DocURLs(base, pattern)
 
-    if graph and not described and any(graph.triples((uri, None, None))):
+    if graph is not None and not described and any(graph.triples((uri, None, None))):
         described = True
 
     if described == False:
