@@ -206,7 +206,6 @@ class BaseResource(object):
             values = self._graph.subjects(uri, self._identifier)
         else:
             values = self._graph.objects(self._identifier, uri)
-        values = list(values)
         values = [Resource(v, self._graph, self._endpoint) if is_resource(v) else v for v in values]
         values.sort(key=lambda r: (r.label if is_resource(r) else r))
         return values
