@@ -134,7 +134,9 @@ class BaseResource(object):
 
     @property
     def doc_url(self):
-        return doc_forward(self._identifier, graph=self._graph)
+        if '_doc_url' not in self.__dict__:
+            self._doc_url = doc_forward(self._identifier, graph=self._graph)
+        return self._doc_url
 
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self._identifier)
@@ -246,7 +248,7 @@ class BaseResource(object):
 
     @property
     def label(self):
-        if not hasattr(self, '_label'):
+        if '_label' not in self.__dict__:
             labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
             if labels:
                 self._label = self.localised(labels)[0]
