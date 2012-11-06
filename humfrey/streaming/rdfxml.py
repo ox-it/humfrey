@@ -90,8 +90,13 @@ class RDFXMLSink(object):
             self.last_subject = s
             if isinstance(s, URIRef):
                 write(u'  <rdf:Description rdf:about=%s>\n' % quoteattr(s))
-            else:
+            elif isinstance(s, BNode):
                 write(u'  <rdf:Description rdf:nodeID=%s>\n' % quoteattr(s))
+            else:
+                raise AssertionError("Unexpected subject term: %r (%r)" % (type(s), s))
+
+        if not isinstance(p, URIRef):
+            raise AssertionError("Unexpected predicate term: %r (%r)" % (type(p), p))
         for prefix, uri in self.namespaces:
             if p.startswith(uri) and self.localpart.match(p[len(uri):]):
                 tag_name = '%s:%s' % (prefix, p[len(uri):])
@@ -110,5 +115,7 @@ class RDFXMLSink(object):
             write('>%s</%s>\n' % (escape(o), tag_name))
         elif isinstance(o, BNode):
             write(u' rdf:nodeID=%s/>\n' % quoteattr(o))
-        else:
+        elif isinstance(o, URIRef):
             write(u' rdf:resource=%s/>\n' % quoteattr(o))
+        else:
+            raise AssertionError("Unexpected object term: %r (%r)" % (type(o), o))
