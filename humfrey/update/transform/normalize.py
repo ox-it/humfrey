@@ -202,7 +202,7 @@ class NotationNormalization(Normalization):
 
             if mapping.get(o) is not None:
                 o = mapping[o]
-            elif s in mapping:
+            elif o in mapping:
                 yield (o, HUMFREY.noIndex, Literal(True))
 
             yield (s, p, o)
