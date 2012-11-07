@@ -8,9 +8,7 @@ except ImportError:
 import math
 import re
 import urllib
-import urlparse
 
-from django.conf import settings
 from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.http import HttpResponseSeeOther
@@ -184,8 +182,8 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
             else:
                 for term in results['facets'][key]['terms']:
                     term['value'] = term['term']
-        
-        labels = get_labels(facet_labels, endpoint=self.endpoint)
+
+        labels = get_labels(map(rdflib.URIRef, facet_labels), endpoint=self.endpoint)
         for key in query['facets']:
             if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
                 for term in results['facets'][key]['terms']:
