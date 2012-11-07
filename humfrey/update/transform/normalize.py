@@ -188,7 +188,7 @@ class NotationNormalization(Normalization):
                     mapping[subject] = notation_mapping[notation]
                 else:
                     mapping[subject] = None
-                    logger.warning("Notation %s for %s not found.", notation, subject)
+                    logger.warning("Notation %s for %s not found.", notation.n3(), subject)
 
         for s, p, o in source:
             if mapping.get(s) is not None:
