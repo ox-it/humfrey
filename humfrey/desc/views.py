@@ -157,8 +157,6 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         graph += ((subject_uri, NS.rdf.type, t) for t in types)
         subject = Resource(subject_uri, graph, self.endpoint)
 
-        self.conneg += subject
-
         for query in subject.get_queries():
             graph += self.endpoint.query(query)
             queries.append(query)
@@ -209,6 +207,12 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
                 expected_doc_url = doc_forward(uri, request, format=format, described=True)
         if expected_doc_url != doc_url:
             additional_headers['Content-Location'] = expected_doc_url
+
+        # NOTE: This getattrs every atttr on subject, so would force
+        # memoization on any cached attributes. We call it as late as
+        # possible to make sure the graph won't change afterwards, making
+        # those cached results incorrect.
+        self.conneg += subject
 
         if self.context['format']:
             try:
