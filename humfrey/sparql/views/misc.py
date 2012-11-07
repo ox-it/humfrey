@@ -1,12 +1,11 @@
 import functools
 
-from django_conneg.views import HTMLView
 from humfrey.linkeddata.resource import Resource
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
 from humfrey.sparql.utils import get_labels
 from .core import StoreView
 
-class CannedQueryView(HTMLView, StoreView):
+class CannedQueryView(StoreView):
     query = None
     template_name = None
     with_labels = False

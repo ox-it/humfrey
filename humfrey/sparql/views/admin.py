@@ -54,7 +54,7 @@ class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
         return "{0}?{1}".format(self.store.graph_store_endpoint,
                                 urllib.urlencode({'graph': request.GET['graph']}))
 
-class GraphListView(RDFView, StoreChooseMixin, CannedQueryView, MappingView):
+class GraphListView(RDFView, HTMLView, StoreChooseMixin, CannedQueryView, MappingView):
     query = """
         CONSTRUCT {
          ?g a sd:Graph ;
