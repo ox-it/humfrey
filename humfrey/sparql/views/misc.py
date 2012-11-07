@@ -3,6 +3,7 @@ import functools
 from django_conneg.views import HTMLView
 from humfrey.linkeddata.resource import Resource
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.utils import get_labels
 from .core import StoreView
 
 class CannedQueryView(HTMLView, StoreView):
@@ -50,10 +51,8 @@ class CannedQueryView(HTMLView, StoreView):
             subjects = self.get_subjects(request, result, *args, **kwargs)
             context['subjects'] = map(self.resource, subjects)
 
-            if self.with_labels:
-                r = Resource(None, result, None)
-                for query in r._additional_queries():
-                    context['graph'] += self.endpoint.query(query)
+            if 'graph' in context and self.with_labels:
+                context['graph'] += get_labels(context['graph'], self.endpoint, mapping=False)
 
         if self.content_location:
             context['additional_headers'] = {'Content-location': self.content_location}
