@@ -3,3 +3,6 @@ reports
 *.pyc
 build
 dist
+.project
+.pydevproject
+.settings
