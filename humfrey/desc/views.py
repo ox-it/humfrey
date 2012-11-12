@@ -119,6 +119,8 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         # 'foo.bar' is part of the URI
         for formats in (None, ()):
             uri, format, is_local = doc_backward(doc_url, formats)
+            if not IRI.match(uri):
+                raise Http404("Invalid IRI")
             if not uri:
                 logger.debug("Could not resolve URL to a URI: %r", doc_url)
                 raise Http404("Could not resolve URL to a URI")
