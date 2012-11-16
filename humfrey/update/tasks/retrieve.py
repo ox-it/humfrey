@@ -23,7 +23,7 @@ def get_filename(url):
     h = sha1(url).hexdigest()
     return os.path.join(DOWNLOAD_CACHE, h[:2], h[2:4], h)
 
-def get_opener(url, user, username, password):
+def get_opener(url, user, username=None, password=None):
     handlers = []
     password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
     if username and password:
