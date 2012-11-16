@@ -23,7 +23,7 @@ class BaseEncryptedField(models.Field):
         
     def to_python(self, value):
         try:
-            return self.cipher.decrypt(binascii.a2b_hex(str(value))).split('\0')[0]
+            return self.cipher.decrypt(binascii.a2b_hex(str(value))).split('\0')[0].decode('utf-8')
         except Exception:
             return value
     
@@ -32,7 +32,7 @@ class BaseEncryptedField(models.Field):
             padding = 2 * self.cipher.block_size - len(value) % self.cipher.block_size
             if True or padding and padding < self.cipher.block_size:
                 value += "\0" + ''.join([random.choice(string.printable) for index in range(padding-1)])
-            value = EncryptedString(binascii.b2a_hex(self.cipher.encrypt(value)))
+            value = binascii.b2a_hex(self.cipher.encrypt(value))
         return value
 
 class EncryptedTextField(BaseEncryptedField):
