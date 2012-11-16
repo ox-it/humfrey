@@ -20,7 +20,7 @@ else:
             self.kwargs = kwargs
 
         def execute(self, transform_manager):
-            opener = get_opener(self.site_url, transform_manager.opener)
+            opener = get_opener(self.site_url, transform_manager.owner)
             site = sharepoint.SharePointSite(self.site_url, opener)
             
             with transform_manager('xml')  as f:
