@@ -59,7 +59,7 @@ class DatasetArchiver(object):
         if results:
             return results[0].created
         else:
-            return rdflib.URIRef(self.updated)
+            return rdflib.Literal(self.updated)
 
     def _graph_triples(self, out, graph_name):
         url = '%s?%s' % (self.store.graph_store_endpoint,
