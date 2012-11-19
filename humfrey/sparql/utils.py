@@ -35,15 +35,15 @@ def get_labels(subjects, endpoint=None, mapping=True):
 
     subjects = set(s for s in subjects if isinstance(s, URIRef) and IRI.match(s))
 
-    query = """
+    query = u"""
         CONSTRUCT {{
           ?s ?p ?label
         }} WHERE {{
           VALUES ?p {{ {predicates} }}
           VALUES ?s {{ {subjects} }}
           ?s ?p ?label
-        }}""".format(predicates=' '.join(p.n3() for p in label_predicates),
-                     subjects=' '.join(s.n3() for s in subjects))
+        }}""".format(predicates=u' '.join(p.n3() for p in label_predicates),
+                     subjects=u' '.join(s.n3() for s in subjects))
 
     graph = endpoint.query(query)
     
