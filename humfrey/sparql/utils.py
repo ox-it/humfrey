@@ -28,7 +28,7 @@ def get_labels(subjects, endpoint=None, mapping=True):
         endpoint = Endpoint(settings.ENDPOINT_QUERY)
     elif isinstance(endpoint, basestring):
         endpoint = Endpoint(endpoint)
-    elif isinstance(endpoint, Endpoint):
+    elif hasattr(endpoint, 'query'):
         pass
     else:
         raise TypeError("endpoint parameter should be an Endpoint instance.")
