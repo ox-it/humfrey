@@ -73,7 +73,7 @@ class RDFView(ContentNegotiatedView):
 
 
 class ResultSetView(ContentNegotiatedView):
-    def _spool_srj_boolean(self, result, callback):
+    def _spool_srj_boolean(self, result, callback=None):
         if callback:
             yield callback
             yield '('
@@ -85,7 +85,7 @@ class ResultSetView(ContentNegotiatedView):
             yield ')'
         yield '\n'
 
-    def _spool_srj_resultset(self, results, callback):
+    def _spool_srj_resultset(self, results, callback=None):
         dumps = json.dumps
         if callback:
             yield callback
