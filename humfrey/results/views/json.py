@@ -11,6 +11,8 @@ from humfrey.utils.namespaces import contract
 from django_conneg.decorators import renderer
 from django_conneg.views import ContentNegotiatedView
 
+# FIXME: This seems to get into unbounded recursion, so I'm disabling it for now.
+
 class JSONRDFView(ContentNegotiatedView):
     def render_json_subject(self, graph, subject, seen=()):
         data, inv_data = {}, {}
@@ -67,12 +69,12 @@ class JSONRDFView(ContentNegotiatedView):
         else:
             return [self.render_json_subject(graph, coerce_subject(s)) for s in context['subjects']]
 
-    @renderer(format='json', mimetypes=('application/json',), name='JSON', test=render_json_test)
+    #@renderer(format='json', mimetypes=('application/json',), name='JSON', test=render_json_test)
     def render_json(self, request, context, template_name):
         data = self.render_json_data(context)
         return HttpResponse(json.dumps(data, indent=2), mimetype="application/json")
 
-    @renderer(format='js', mimetypes=('application/javascript','text/javascript'), name='JavaScript (JSONP)', test=render_json_test)
+    #@renderer(format='js', mimetypes=('application/javascript','text/javascript'), name='JavaScript (JSONP)', test=render_json_test)
     def render_js(self, request, context, template_name):
         callback = request.REQUEST.get('callback', 'callback')
         data = [callback, '(', self.render_json_data(context), ');']
