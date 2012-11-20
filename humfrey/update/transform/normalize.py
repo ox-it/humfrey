@@ -180,6 +180,7 @@ class NotationNormalization(Normalization):
         else:
             notation_mapping = {}
         mapping = {}
+        not_found = set()
         self.to_remove = set()
 
         for notation in self.notations:
@@ -187,22 +188,23 @@ class NotationNormalization(Normalization):
                 if notation in notation_mapping:
                     mapping[subject] = notation_mapping[notation]
                 else:
-                    mapping[subject] = None
+                    not_found.add(subject)
                     logger.warning("Notation %s for %s not found.", notation.n3(), subject)
 
         for s, p, o in source:
-            if mapping.get(s) is not None:
+            if mapping.get(s):
                 s = mapping[s]
-                if p not in self.safe_predicates and isinstance(o, BNode):
-                    # Start the process of removing the CBD for s.
-                    self.to_remove.add(o)
+                if p not in self.safe_predicates:
+                    if isinstance(o, BNode):
+                        # Start the process of removing the CBD for s.
+                        self.to_remove.add(o)
                     continue
-            elif s in mapping:
+            elif s in not_found:
                 yield (s, HUMFREY.noIndex, Literal(True))
 
-            if mapping.get(o) is not None:
+            if mapping.get(o):
                 o = mapping[o]
-            elif o in mapping:
+            elif o in not_found:
                 yield (o, HUMFREY.noIndex, Literal(True))
 
             yield (s, p, o)
