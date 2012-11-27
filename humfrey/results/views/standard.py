@@ -127,7 +127,7 @@ class ResultSetView(ContentNegotiatedView):
     def _spool_csv_boolean(self, result):
         yield '%s\n' % ('true' if result else 'false')
 
-    def _spool_csv_resultset(self, results):
+    def _spool_csv_resultset(self, results, include_header=True):
         def quote(value):
             if value is None:
                 return ''
@@ -135,6 +135,9 @@ class ResultSetView(ContentNegotiatedView):
             if any(bad_char in value for bad_char in '\n" ,'):
                 value = '"%s"' % value
             return value
+        if include_header:
+            yield ','.join(quote(field) for field in results.fields)
+            yield '\n'
         for result in results:
             yield ",".join(quote(value) for value in result)
             yield '\n'
