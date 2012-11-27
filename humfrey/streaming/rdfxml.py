@@ -1,5 +1,6 @@
 import Queue
 import re
+import sys
 import threading
 from xml.sax.saxutils import quoteattr, escape
 
@@ -19,7 +20,7 @@ class QueueGraph(Graph):
         super(QueueGraph, self).__init__(*args, **kwargs)
 
     def add(self, triple):
-        self.queue.put(triple)
+        self.queue.put(('triple', triple))
 
 class RDFXMLSource(object):
     def __init__(self, f):
@@ -31,8 +32,10 @@ class RDFXMLSource(object):
         store = QueueGraph(queue)
         try:
             parser.parse(file, store)
-        finally:
-            queue.put(None) # Sentinel
+        except:
+            queue.put(('exception', sys.exc_info()))
+        else:
+            queue.put(('sentinel', None)) # Sentinel
 
     def __iter__(self):
         parser_thread = threading.Thread(target=self.parser,
@@ -42,10 +45,13 @@ class RDFXMLSource(object):
         queue = self.queue
 
         while True:
-            triple = queue.get()
-            if triple is None:
+            type, value = queue.get()
+            if type == 'triple':
+                yield value
+            elif type == 'sentinel':
                 break
-            yield triple
+            elif type == 'exception':
+                raise value[0], value[1], value[2]
 
         parser_thread.join()
 
