@@ -88,6 +88,10 @@ class CSVRendererTestCase(unittest2.TestCase):
         except Exception, e:
             raise AssertionError(e)
 
+        # Pop the columns and make sure they match.
+        columns = data.next()
+        self.assertEqual(columns, list(TEST_RESULTSET.fields))
+
         for result, target_result in zip(data, TEST_RESULTSET):
             for term, target_term in zip(result, target_result):
                 term = term.decode('utf-8')
