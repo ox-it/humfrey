@@ -23,15 +23,16 @@ class QueueGraph(Graph):
         self.queue.put(('triple', triple))
 
 class RDFXMLSource(object):
-    def __init__(self, f):
+    def __init__(self, f, parser_kwargs={}):
         self.file = f
         self.queue = Queue.Queue(maxsize=10)
+        self.parser_kwargs = parser_kwargs
 
     def parser(self, file, queue):
         parser = RDFXMLParser()
         store = QueueGraph(queue)
         try:
-            parser.parse(file, store)
+            parser.parse(file, store, **self.parser_kwargs)
         except:
             queue.put(('exception', sys.exc_info()))
         else:

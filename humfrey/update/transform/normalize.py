@@ -249,7 +249,7 @@ class Normalize(Transform):
 
         while self.normalizations:
             with open(input, 'r') as source:
-                pipeline = RDFSource(source)
+                pipeline = RDFSource(source, parser_kwargs={'preserve_bnode_ids': True})
                 for normalization in self.normalizations:
                     pipeline = normalization(pipeline)
                 with open(transform_manager('rdf'), 'w') as target:

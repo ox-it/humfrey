@@ -1,3 +1,5 @@
+# *-* coding: UTF-8
+
 import unittest
 
 import rdflib
@@ -15,9 +17,13 @@ class NotationNormalizationTestCase(unittest.TestCase):
     parent_node = rdflib.URIRef('http://example.com/parent')
     child_node = rdflib.URIRef('http://example.com/child')
     other_node = rdflib.URIRef('http://example.com/other')
+
+    # URIRef→URIRef, BNode→URIRef, BNode→BNode
     original_nodes = (rdflib.URIRef('http://example.com/original'),
+                      rdflib.BNode(),
                       rdflib.BNode())
     target_nodes = (rdflib.URIRef('http://example.com/target'),
+                    rdflib.URIRef('http://example.com/target'),
                     rdflib.BNode())
     test_datatype = rdflib.URIRef('http://example.com/notation')
     test_notation = rdflib.Literal('foo', datatype=test_datatype)
@@ -39,7 +45,7 @@ class NotationNormalizationTestCase(unittest.TestCase):
             while not normalization.done:
                 in_file.seek(0)
                 out_file.seek(0)
-                pipeline = normalization(RDFSource(in_file))
+                pipeline = normalization(RDFSource(in_file, parser_kwargs={'preserve_bnode_ids': True}))
                 RDFXMLSink(out_file, triples=pipeline)
                 out_file.truncate()
                 in_file, out_file = out_file, in_file
@@ -47,7 +53,7 @@ class NotationNormalizationTestCase(unittest.TestCase):
             in_file.seek(0)
 
             graph = rdflib.ConjunctiveGraph()
-            graph.parse(in_file)
+            graph.parse(in_file, preserve_bnode_ids=True)
             return graph
         finally:
             in_file.close()
