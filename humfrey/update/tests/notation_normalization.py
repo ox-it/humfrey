@@ -2,7 +2,9 @@ import unittest
 
 import rdflib
 import mock
+import tempfile
 
+from humfrey.streaming import RDFSource, RDFXMLSink
 from humfrey.utils.namespaces import HUMFREY, NS
 from humfrey.update.transform.normalize import NotationNormalization
 
@@ -30,12 +32,27 @@ class NotationNormalizationTestCase(unittest.TestCase):
     ]) for original_node, target_node in zip(original_nodes, target_nodes)]
 
     def run_normalization(self, normalization, triples):
-        while not normalization.done:
-            triples = list(normalization(triples))
+        try:
+            in_file, out_file = [tempfile.NamedTemporaryFile(suffix='.rdf', delete=False) for i in range(2)]
+            RDFXMLSink(in_file, triples=triples)
 
-        graph = rdflib.ConjunctiveGraph()
-        graph += triples
-        return graph
+            while not normalization.done:
+                in_file.seek(0)
+                out_file.seek(0)
+                pipeline = normalization(RDFSource(in_file))
+                RDFXMLSink(out_file, triples=pipeline)
+                out_file.truncate()
+                in_file, out_file = out_file, in_file
+
+            in_file.seek(0)
+
+            graph = rdflib.ConjunctiveGraph()
+            graph.parse(in_file)
+            return graph
+        finally:
+            in_file.close()
+            out_file.close()
+
 
     def testNotFound(self):
         for original_node, target_node, triples in self.triple_sets:
