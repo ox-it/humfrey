@@ -16,5 +16,5 @@ def RDFSource(source):
         return _source_types[ext](source)
     else:
         raise AssertionError("File did not have an expected extension. " +
-                             "Was {0}'; should be one of {1}".format(ext,
-                                                                     ', '.join(_source_types)))
+                             "Was '{0}'; should be one of {1}".format(ext,
+                                                                      ', '.join(_source_types)))
