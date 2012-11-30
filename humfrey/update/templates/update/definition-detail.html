@@ -18,21 +18,21 @@
     
     {{ pipelines.management_form }}
     
-  <table>
+  <table class="update-pipelines">
     <thead>
       <tr>
-        <th>Remove</th>
-        <th>Pipeline</th>
-        <th>Stores</th>
+        <th class="update-pipeline-delete">Remove</th>
+        <th class="update-pipeline-value">Pipeline</th>
+        <th class="update-pipeline-stores">Stores</th>
       </tr>
     </thead>
     <tbody>
   {% for pipeline in pipelines.forms %}
       <tr>
-        <td>{{ pipeline.DELETE }}{{ pipeline.id }}</td> 
-        <td>{{ pipeline.value }}</td>
-        <td>{{ pipeline.stores }}</td>
-        <td>{{ pipeline.errors }}</td>
+        <td class="update-pipeline-delete">{{ pipeline.DELETE }}{{ pipeline.id }}</td>
+        <td class="update-pipeline-value">{{ pipeline.value }}</td>
+        <td class="update-pipeline-stores">{{ pipeline.stores }}</td>
+        <td class="update-pipeline-errors">{{ pipeline.errors }}</td>
       </tr>
   {% endfor %}
     </tbody>

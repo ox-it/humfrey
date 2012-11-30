@@ -26,3 +26,19 @@ table.update-log-records td {
 table.update-log-records tr.overline td {
 	border-top:1px solid #000
 }
+
+table.update-pipelines {
+	width: 100%;
+}
+
+table.update-pipelines th, table.update-pipelines td {
+	padding: 0.4em;
+}
+
+.update-pipeline-delete {
+	width: 4em;
+}
+
+td.update-pipeline-value {
+	width: 50%
+}
