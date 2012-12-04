@@ -39,30 +39,16 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
     class MissingQuery(Exception):
         pass
 
-    class Deunderscorer(object):
-        def __init__(self, obj):
-            self.obj = obj
-        def __getitem__(self, key):
-            try:
-                value = self.obj[key]
-            except KeyError:
-                try:
-                    value = self.obj['_' + key]
-                except KeyError:
-                    return None
-            if isinstance(value, (dict, list)):
-                value = SearchView.Deunderscorer(value)
-            return value
-        def __setitem__(self, key, value):
-            self.obj[key] = value
-        def __getattribute__(self, name):
-            if name == 'obj':
-                return super(SearchView.Deunderscorer, self).__getattribute__(name)
-            return getattr(self.obj, name)
-        def __len__(self):
-            return len(self.obj)
-        def __repr__(self):
-            return repr(self.obj)
+    @classmethod
+    def strip_underscores(cls, value):
+        if isinstance(value, dict):
+            for key, subvalue in value.items():
+                if key.startswith('_'):
+                    value[key[1:]] = value.pop(key)
+                cls.strip_underscores(subvalue)
+        if isinstance(value, list):
+            for subvalue in value:
+                cls.strip_underscores(subvalue)
 
     @property
     def search_endpoint(self):
@@ -164,7 +150,7 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
             if not query['filter']:
                 del query['filter']
 
-        results = self.Deunderscorer(self.search_endpoint.query(query))
+        results = self.search_endpoint.query(query)
 
         results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
@@ -214,7 +200,13 @@ class SearchView(HTMLView, JSONPView, MappingView, StoreView):
         return {'page_count': max(1, page_count),
                 'start': start + 1,
                 'pages': pages_out,
-                'page': page}
+                'page': page,
+                'page_size': page_size}
+
+    @renderer(format="html", mimetypes=('text/html', 'application/xhtml+xml'), priority=1, name='HTML')
+    def render_html(self, request, context, template_name):
+        self.strip_underscores(context['hits'])
+        return super(SearchView, self).render_html(request, context, template_name)
 
     @renderer(format="autocomplete", name="Autocomplete JSON")
     def render_autocomplete(self, request, context, template_name):

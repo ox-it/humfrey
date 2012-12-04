@@ -46,13 +46,13 @@ def search_html(value):
 
 @register.filter
 def search_item_template(hit, default_search_item_template_name):
-    types = set(t['uri'] for t in hit['_source'].get('allTypes', ()))
+    types = set(t['uri'] for t in hit['source'].get('allTypes', ()))
     try:
-        types.add(hit['_source']['type']['uri'])
+        types.add(hit['source']['type']['uri'])
     except KeyError:
         pass
     graph = rdflib.ConjunctiveGraph()
-    uri = rdflib.URIRef(hit['_source']['uri'])
+    uri = rdflib.URIRef(hit['source']['uri'])
     for t in types:
         graph.add((uri, NS.rdf.type, rdflib.URIRef(t)))
     resource = Resource(uri, graph, None)
