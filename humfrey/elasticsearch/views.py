@@ -23,8 +23,9 @@ from humfrey.utils.namespaces import expand, contract
 
 from .forms import SearchForm
 from .query import ElasticSearchEndpoint
+from .opensearch import OpenSearchView
 
-class SearchView(HTMLView, JSONPView, MappingView, StoreView):
+class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
     page_size = 10
 
     # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
