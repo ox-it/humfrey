@@ -83,6 +83,8 @@ class Endpoint(object):
         }))
 
         # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
+        # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
+        # for crude benchmarking.
         request.headers['Accept'] = 'text/plain, text/turtle;q=0.9, application/rdf+xml;q=0.8, application/sparql-results+xml'
         request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
