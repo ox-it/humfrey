@@ -1,13 +1,9 @@
-import base64
 from collections import defaultdict
-import hashlib
 import logging
-import pickle
 import sys
 import time
 import urllib
 import urllib2
-import urlparse
 
 import rdflib
 try:
@@ -15,11 +11,6 @@ try:
 except ImportError:
     import simplejson as json
 
-from django.conf import settings
-from django.views.generic import View
-from django.core.cache import cache
-
-from humfrey import __version__
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srx
