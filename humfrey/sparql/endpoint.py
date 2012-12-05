@@ -50,6 +50,11 @@ def trim_indentation(s):
     return '\n'.join(trimmed)
 
 class Endpoint(object):
+    _rdflib_parser_names = {'application/rdf+xml': 'xml',
+                            'text/plain': 'nt',
+                            'text/turtle': 'n3',
+                            'text/n3': 'n3'}
+
     def __init__(self, url, update_url=None, namespaces={}):
         self._url, self._update_url = url, update_url
         self._namespaces = NS.copy()
@@ -76,7 +81,9 @@ class Endpoint(object):
         request = urllib2.Request(self._url, urllib.urlencode({
             'query': query.encode('utf-8'),
         }))
-        request.headers['Accept'] = 'application/rdf+xml, application/sparql-results+xml'
+
+        # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
+        request.headers['Accept'] = 'text/plain, text/turtle;q=0.9, application/rdf+xml;q=0.8, application/sparql-results+xml'
         request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
             request.headers['Timeout'] = str(timeout)
@@ -101,9 +108,11 @@ class Endpoint(object):
                 result = srx.SRXSource(response, encoding)
             elif content_type == 'application/sparql-results+json':
                 result = self.parse_json_results(response)
-            else: # response.headers['Content-Type'] == 'application/rdf+xml':
+            elif content_type in self._rdflib_parser_names:
                 result = SparqlResultGraph()
-                result.parse(response)
+                result.parse(response, format=self._rdflib_parser_names[content_type])
+            else:
+                raise AssertionError("Unexpected content-type: %s" % content_type)
             result.query = query
             result.duration = time.time() - start_time
             return result
