@@ -199,6 +199,7 @@ if config.get('update:enabled') == 'true':
         'humfrey.update.transform.local_file.LocalFile',
         'humfrey.update.transform.normalize.Normalize',
         'humfrey.update.transform.retrieve.Retrieve',
+        'humfrey.update.transform.sharepoint.SharePoint',
         'humfrey.update.transform.shell.Shell',
         'humfrey.update.transform.spreadsheet.GnumericToTEI',
         'humfrey.update.transform.spreadsheet.ODSToTEI',

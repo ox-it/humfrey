@@ -14,7 +14,7 @@ else:
     
     logger = logging.getLogger(__name__)
 
-    class SharePointLists(Transform):
+    class SharePoint(Transform):
         def __init__(self, site_url, **kwargs):
             self.site_url = site_url
             self.kwargs = kwargs
@@ -24,6 +24,6 @@ else:
             site = sharepoint.SharePointSite(self.site_url, opener)
             
             with open(transform_manager('xml'), 'w') as f:
-                xml = site.lists.as_xml(**self.kwargs)
+                xml = site.as_xml(**self.kwargs)
                 f.write(etree.tostring(xml))
                 return f.name
