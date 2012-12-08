@@ -206,7 +206,8 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
 
     @renderer(format="html", mimetypes=('text/html', 'application/xhtml+xml'), priority=1, name='HTML')
     def render_html(self, request, context, template_name):
-        self.strip_underscores(context['hits'])
+        if 'hits' in context:
+            self.strip_underscores(context['hits'])
         return super(SearchView, self).render_html(request, context, template_name)
 
     @renderer(format="autocomplete", name="Autocomplete JSON")
