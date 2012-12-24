@@ -3,6 +3,8 @@ import urllib
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
+from django_conneg.conneg import Conneg
 from django_conneg.views import ContentNegotiatedView, HTMLView, JSONView
 
 from .core import StoreView, QueryView
@@ -35,17 +37,39 @@ class StoreChooseMixin(object):
     id_mapping = ()
     resource_registry = ResourceRegistry()
 
+    # These are sensible defaults.
+    permission_requirements = {'get': 'can_query',
+                               'post': 'can_update',
+                               'put': 'can_update',
+                               'delete': 'can_update',
+                               'head': 'can_query'}
+
     def dispatch(self, request, *args, **kwargs):
         self.store_name = kwargs.pop('store')
-        if not self.store.can_query(request.user):
-            raise PermissionDenied
+        method = request.method.lower()
+        if not hasattr(self, method):
+            pass
+        if method in self.permission_requirements:
+            permission_checker = getattr(self.store, self.permission_requirements[method])
+            if not permission_checker(request.user):
+                setattr(self, method, self.not_authorized)
+        elif method != 'options':
+            setattr(self, method, self.not_authorized)
         return super(StoreChooseMixin, self).dispatch(request, *args, **kwargs)
+
+    def not_authorized(self, request):
+        if request.user.is_authenticated():
+            raise PermissionDenied
+        else:
+            return login_required(lambda request:None)(request)
 
 class DocView(StoreChooseMixin, desc_views.DocView):
     check_canonical = False
 
 class QueryView(StoreChooseMixin, QueryView):
-    pass
+    permission_requirements = {'get': 'can_query',
+                               'post': 'can_query',
+                               'head': 'can_query'}
 
 class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
     def get_target_url(self, request):
@@ -54,7 +78,12 @@ class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
         return "{0}?{1}".format(self.store.graph_store_endpoint,
                                 urllib.urlencode({'graph': request.GET['graph']}))
 
-class GraphListView(RDFView, HTMLView, StoreChooseMixin, CannedQueryView, MappingView):
+    def post(self, request, *args, **kwargs):
+        if not self.store.can_query(request.user):
+            return self.not_authorized(request)
+        return super(StoreChooseMixin, self).get(request, *args, **kwargs)
+
+class GraphListView(StoreChooseMixin, RDFView, HTMLView, CannedQueryView, MappingView):
     query = """
         CONSTRUCT {
          ?g a sd:Graph ;
@@ -99,6 +128,9 @@ if 'humfrey.elasticsearch' in settings.INSTALLED_APPS:
         pass
 
     class ElasticSearchPassThroughView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
+        permission_requirements = {'get': 'can_query',
+                                   'post': 'can_query',
+                                   'head': 'can_query'}
         def get_target_url(self, request, index=None):
             params = {'host': settings.ELASTICSEARCH_SERVER['host'],
                       'port': settings.ELASTICSEARCH_SERVER['port'],
