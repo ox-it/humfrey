@@ -23,11 +23,15 @@ def coerce_triple_iris(triples):
     # construct a new URIRef iff characters were actually replaced.
     for s, p, o in triples:
         if isinstance(s, URIRef):
-            new_s, n = subn_characters(encode, s)
+            new, n = subn_characters(encode, s)
             if n > 0:
-                s = URIRef(new_s)
+                s = URIRef(new)
         if isinstance(p, URIRef):
-            new_p, n = subn_characters(encode, p)
+            new, n = subn_characters(encode, p)
             if n > 0:
-                p = URIRef(new_p)
+                p = URIRef(new)
+        if isinstance(o, URIRef):
+            new, n = subn_characters(encode, o)
+            if n > 0:
+                o = URIRef(new)
         yield s, p, o
