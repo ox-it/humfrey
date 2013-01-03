@@ -2,9 +2,9 @@ from __future__ import division
 
 import copy
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 import math
 import re
 import urllib

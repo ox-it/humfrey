@@ -4,9 +4,9 @@ import logging
 import pickle
 
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 from celery.execute import send_task
 from djcelery.models import PeriodicTask, CrontabSchedule

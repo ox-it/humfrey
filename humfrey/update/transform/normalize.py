@@ -7,9 +7,9 @@ import urllib2
 import urlparse
 
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 from django.conf import settings
 import pytz

@@ -1,6 +1,9 @@
 from hashlib import sha1
 import httplib
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import logging
 import os
 import shutil

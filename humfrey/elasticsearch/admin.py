@@ -1,7 +1,7 @@
 try:
-    import json
-except ImportError:
     import simplejson
+except ImportError:
+    import json
 
 from django.contrib import admin
 from django import forms

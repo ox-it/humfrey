@@ -4,9 +4,9 @@ import functools
 import imp
 from xml.sax.saxutils import escape
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 import rdflib
 import rdflib.plugin

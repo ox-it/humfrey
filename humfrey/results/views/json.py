@@ -1,6 +1,9 @@
 from __future__ import absolute_import
 
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from django.http import HttpResponse
 import rdflib

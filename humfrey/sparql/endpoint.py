@@ -7,9 +7,9 @@ import urllib2
 
 import rdflib
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource

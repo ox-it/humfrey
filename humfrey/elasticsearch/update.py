@@ -6,9 +6,9 @@ import tempfile
 import time
 import urllib2
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 import rdflib
 import redis

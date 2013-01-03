@@ -1,8 +1,8 @@
 import datetime
 try:
-    import json
-except ImportError:
     import simplejson
+except ImportError:
+    import json
 
 from celery.execute import send_task
 from django.conf import settings
