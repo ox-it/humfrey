@@ -28,6 +28,58 @@ class HTMLSanitizerTestCase(unittest.TestCase):
                                     """<div>FooBaz</div>"""),
                   'remove_applet_previous': ("""<div>Foo<em>Bar</em>Baz<applet>Qux</applet>Quux</div>""",
                                              """<div>Foo<em>Bar</em>BazQuux</div>"""),
+                  'remove_empty': ("""<div>Foo<font></font>Bar</div>""",
+                                   """<div>FooBar</div>"""),
+                  'add_rel': ("""<a href="foo">bar</a>""",
+                              """<a rel="nofollow" href="foo">bar</a>"""),
+                  'add_rel_append': ("""<a rel="baz" href="foo">bar</a>""",
+                                     """<a rel="baz nofollow" href="foo">bar</a>"""),
+                  'sharepoint': ("""<div xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
+               <xhtml:p>
+                  <xhtml:span id="ms-rterangepaste-start">
+                     <xhtml:div>
+                        <xhtml:font size="1">
+                           <xhtml:font size="1"/>
+                        </xhtml:font>
+                        <xhtml:font size="1">
+                           <xhtml:font size="1">
+                              <xhtml:font size="1">
+                                 <xhtml:span id="ms-rterangepaste-start"/>
+                                 <xhtml:div>Foo</xhtml:div>
+                                 <xhtml:div>Bar<xhtml:br/>
+                                 </xhtml:div>
+                              </xhtml:font>
+                           </xhtml:font>
+                        </xhtml:font>
+                     </xhtml:div>
+                     <xhtml:ul>
+                        <xhtml:span id="ms-rterangepaste-end"/>
+                        <xhtml:font size="1"/>
+                     </xhtml:ul>
+                     <xhtml:span id="ms-rterangepaste-end">
+                        <xhtml:p/>
+                     </xhtml:span>
+                  </xhtml:span>
+               </xhtml:p>
+               <xhtml:p>Intended Audience: Humanities DPhils</xhtml:p>
+            </div>""", """<div>
+               <p><span><div>
+                        
+                        <span></span>
+                                 <div>Foo</div>
+                                 <div>Bar<br></div>
+                              
+                           
+                        
+                     </div>
+                     <ul><span></span>
+                        
+                     </ul><span><p></p>
+                     </span>
+                  </span>
+               </p>
+               <p>Intended Audience: Humanities DPhils</p>
+            </div>"""),
                   }
 
     def test_case_method(self, original, expected):
