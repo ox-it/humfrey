@@ -1,5 +1,6 @@
 import os.path
 
+from .encoding import coerce_triple_iris
 from .ntriples import NTriplesSource, NTriplesSink
 from .rdfxml import RDFXMLSource, RDFXMLSink
 
@@ -13,7 +14,8 @@ def RDFSource(source, parser_kwargs={}):
     """
     name, ext = os.path.splitext(source.name)
     if ext in _source_types:
-        return _source_types[ext](source, parser_kwargs=parser_kwargs)
+        triples = _source_types[ext](source, parser_kwargs=parser_kwargs)
+        return coerce_triple_iris(triples)
     else:
         raise AssertionError("File did not have an expected extension. " +
                              "Was '{0}'; should be one of {1}".format(ext,
