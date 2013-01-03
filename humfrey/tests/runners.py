@@ -27,6 +27,7 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
 
     _ignore_test_modules = [
        'django.contrib.auth.tests',
+       'django.contrib.auth.tests.context_processors',
        'django.contrib.auth.tests.decorators',
        'django.contrib.auth.tests.signals',
        'django.contrib.auth.tests.views',
