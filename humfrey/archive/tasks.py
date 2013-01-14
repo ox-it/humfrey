@@ -192,11 +192,12 @@ class DatasetArchiver(object):
             timestamps.append((timestamp, os.path.join(archive_path, filename)))
         timestamps.sort()
 
+        # Always leave the first and last.
+        if len(timestamps) < 2:
+            return
+
         # Never delete the last archive
         timestamps.pop()
-
-        if not timestamps:
-            return
 
         last_timestamp = timestamps.pop(0)[0]
         for timestamp, filename in timestamps:
