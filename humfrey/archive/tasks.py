@@ -1,3 +1,4 @@
+import datetime
 import filecmp
 import hashlib
 import itertools
@@ -11,6 +12,7 @@ import urllib
 import urllib2
 
 from celery.task import task
+import dateutil.parser
 from django.conf import settings
 import rdflib
 import pytz
@@ -143,6 +145,70 @@ class DatasetArchiver(object):
             os.unlink(nt_name)
             if os.path.exists(rdf_name):
                 os.unlink(rdf_name)
+            self.filter_old_archives(archive_path)
+
+    @classmethod
+    def filter_old_archives(cls, archive_path):
+        """
+        Aims for progressively fewer archives as one goes back in time, to save disk.
+
+        Every archive for today and yesterday, one per day until the beginning
+        of the previous month, one per month until the beginning of the
+        previous year, and then one per year.
+        """
+
+        today = pytz.utc.localize(datetime.datetime.utcnow())
+        today = today.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # limit is the point in time at which we no longer archive at this
+        # frequency. epoch is an function that maps a datetime to its
+        # partition (such that g(x,y) = f(x) == f(y) is an equivalence
+        # relation). We then remove all archives that are in the same
+        # partition as the timestamp before it.
+        limits = [{'name': 'all',
+                   'epoch': lambda dt: dt,
+                   'limit': today - datetime.timedelta(1)},
+                  {'name': 'daily',
+                   'epoch': lambda dt: dt.replace(hour=0, minute=0, second=0, microsecond=0),
+                   'limit': today.replace(day=1) - datetime.timedelta(today.isoweekday() % 7 - 7)},
+                  {'name': 'weekly',
+                   'epoch': lambda dt: dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                                       - datetime.timedelta(dt.isoweekday() % 7),
+                   'limit': today - datetime.timedelta(28 + today.isoweekday() % 7)},
+                  {'name': 'monthly',
+                   'epoch': lambda dt: dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                   'limit': today.replace(year=today.year-1, month=1, day=1)},
+                  {'name': 'yearly',
+                   'epoch': lambda dt: dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0),
+                   'limit': pytz.utc.localize(datetime.datetime(1970, 1, 1))}]
+
+        timestamps = []
+        for filename in os.listdir(archive_path):
+            dt, _ = os.path.splitext(filename)
+            try:
+                timestamp = dateutil.parser.parse(dt)
+            except ValueError:
+                continue
+            timestamps.append((timestamp, os.path.join(archive_path, filename)))
+        timestamps.sort()
+
+        if not timestamps:
+            return
+
+        last_timestamp = timestamps.pop(0)[0]
+        for timestamp, filename in timestamps:
+            for limit in limits:
+                if timestamp < limit['limit']:
+                    # The limit doesn't apply as this archive is too far in
+                    # the past.
+                    continue
+                if limit['epoch'](last_timestamp) == limit['epoch'](timestamp):
+                    # The archive is in the same partition as the one before
+                    # it, and is therefore unnecessary.
+                    os.unlink(filename)
+                else:
+                    break
+            last_timestamp = timestamp
 
 @task(name='humfrey.archive.update_dataset_archives')
 def update_dataset_archives(update_log, graphs, updated):
