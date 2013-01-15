@@ -12,6 +12,7 @@ VAR_DIR = tempfile.mkdtemp()
 
 INSTALLED_APPS += (
     'humfrey.elasticsearch',
+    'humfrey.archive',
 )
 
 def register_atexit(VAR_DIR):
