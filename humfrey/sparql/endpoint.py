@@ -16,6 +16,7 @@ from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srx
 from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
 from humfrey.utils.user_agents import USER_AGENTS
+from humfrey.utils.statsd import statsd
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
@@ -117,18 +118,19 @@ class Endpoint(object):
                 raise AssertionError("Unexpected content-type: %s" % content_type)
             result.query = query
             result.duration = time.time() - start_time
+            logger.debug("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
+            statsd.timing('humfrey.sparql-query.duration', (time.time() - start_time)*1000)
+            statsd.incr('humfrey.sparql-query.success')
             return result
         except Exception:
-
-            (logger.error if log_failure else logger.debug)(
-                "Failed query: %r; took %.2f seconds", original_query, time.time() - start_time,
-                exc_info=1)
-            raise
-        finally:
             try:
-                logger.debug("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
+                (logger.error if log_failure else logger.debug)(
+                    "Failed query: %r; took %.2f seconds", original_query, time.time() - start_time,
+                    exc_info=1)
             except UnboundLocalError:
                 pass
+            statsd.incr('humfrey.sparql-query.fail')
+            raise
 
     def update(self, query):
         request = urllib2.Request(self._update_url, urllib.urlencode({

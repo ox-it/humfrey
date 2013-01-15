@@ -30,6 +30,7 @@ from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
+from humfrey.utils.statsd import statsd
 
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
