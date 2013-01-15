@@ -1,5 +1,10 @@
 from __future__ import absolute_import
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import functools
 import imp
 from xml.sax.saxutils import escape
@@ -90,43 +95,54 @@ class ResultSetView(ContentNegotiatedView):
     @statsd.timer('humfrey.serialization.srj-boolean')
     def _spool_srj_resultset(self, results, callback=None):
         with statsd.timer('humfrey.serialization.srj-resultset'):
+            buffer = StringIO()
             dumps = json.dumps
+            URI, BNODE, LITERAL, TYPED_LITERAL = map(dumps, ['uri', 'bnode', 'literal', 'typed-literal'])
+
             if callback:
-                yield callback
-                yield '('
-            yield '{\n'
-            yield '  "head": {\n'
-            yield '    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields)
-            yield '  },\n'
-            yield '  "results": {\n'
-            yield '    "bindings": [\n'
+                buffer.write(callback)
+                buffer.write('(')
+            buffer.write('{\n')
+            buffer.write('  "head": {\n')
+            buffer.write('    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields))
+            buffer.write('  },\n')
+            buffer.write('  "results": {\n')
+            buffer.write('    "bindings": [\n')
             for i, result in enumerate(results):
-                yield '      {' if i == 0 else ',\n      {'
+                buffer.write('      {' if i == 0 else ',\n      {')
                 j = 0
                 for name, value in result._asdict().iteritems():
                     if value is None:
                         continue
-                    yield ',\n' if j > 0 else '\n'
-                    yield '        %s: { "type": ' % dumps(name.encode('utf8'))
+                    buffer.write(',\n' if j > 0 else '\n')
+                    buffer.write('        %s: { "type": ' % dumps(name.encode('utf8')))
                     if isinstance(value, rdflib.URIRef):
-                        yield dumps('uri')
+                        buffer.write(URI)
                     elif isinstance(value, rdflib.BNode):
-                        yield dumps('bnode')
+                        buffer.write(BNODE)
                     elif value.datatype:
-                        yield '%s, "datatype": %s' % (dumps('typed-literal'), dumps(value.datatype.encode('utf8')))
+                        buffer.write('%s, "datatype": %s' % (TYPED_LITERAL, dumps(value.datatype.encode('utf8'))))
                     elif value.language:
-                        yield '%s, "xml:lang": %s' % (dumps('literal'), dumps(value.language.encode('utf8')))
+                        buffer.write('%s, "xml:lang": %s' % (LITERAL, dumps(value.language.encode('utf8'))))
                     else:
-                        yield dumps('literal')
-                    yield ', "value": %s }' % dumps(value.encode('utf8'))
+                        buffer.write(LITERAL)
+                    buffer.write(', "value": %s }' % dumps(value.encode('utf8')))
+
+                    if buffer.tell() > 65000: # Almost 64k
+                        yield buffer.getvalue()
+                        buffer.seek(0)
+                        buffer.truncate()
+
                     j += 1
-                yield '\n      }'
-            yield '\n    ]\n'
-            yield '  }\n'
-            yield '}'
+                buffer.write('\n      }')
+            buffer.write('\n    ]\n')
+            buffer.write('  }\n')
+            buffer.write('}')
             if callback:
-                yield ')'
-            yield '\n'
+                buffer.write(')')
+            buffer.write('\n')
+            yield buffer.getvalue()
+            buffer.close()
 
     def _spool_csv_boolean(self, result):
         with statsd.timer('humfrey.serialization.csv-boolean'):
