@@ -68,6 +68,11 @@ class StoreView(View):
             self._endpoint = Endpoint(self.store.query_endpoint)
         return self._endpoint
 
+    def dispatch(self, request, *args, **kwargs):
+        response = super(StoreView, self).dispatch(request, *args, **kwargs)
+        response['X-Humfrey-Store-Name'] = self.store.slug
+        return response
+
     def get_types(self, uri):
         if ' ' in uri:
             return set()
