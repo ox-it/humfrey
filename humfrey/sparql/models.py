@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User, Group
 
+from .endpoint import Endpoint
+
 from object_permissions import register
 
 def permission_check(model, perm):
@@ -23,6 +25,9 @@ class Store(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def query(self, *args, **kwargs):
+        return Endpoint(self.query_endpoint).query(*args, **kwargs)
 
     class Meta:
         permissions = (('administer_store', 'can administer'),

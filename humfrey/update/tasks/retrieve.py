@@ -13,12 +13,10 @@ import urllib2
 from celery.task import task
 from django.conf import settings
 
-from humfrey import __version__, source_homepage
+from humfrey.utils.user_agents import USER_AGENTS
 
 DOWNLOAD_CACHE = getattr(settings, 'DOWNLOAD_CACHE', None)
 
-USER_AGENTS = {'agent': 'humfrey/{0} ({1}; {2})'.format(__version__, source_homepage, settings.DEFAULT_FROM_EMAIL),
-               'browser': 'Mozilla (compatible; humfrey/{0}; {1}; {2})'.format(__version__, source_homepage, settings.DEFAULT_FROM_EMAIL)}
 
 logger = logging.getLogger(__name__)
 

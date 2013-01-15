@@ -15,7 +15,7 @@ from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srx
 from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
-from humfrey.update.tasks.retrieve import USER_AGENTS
+from humfrey.utils.user_agents import USER_AGENTS
 
 def is_qname(uri):
     return len(uri.split(':')) == 2 and '/' not in uri.split(':')[1]
