@@ -95,38 +95,42 @@ class ResultSetView(ContentNegotiatedView):
     @statsd.timer('humfrey.serialization.srj-boolean')
     def _spool_srj_resultset(self, results, callback=None):
         with statsd.timer('humfrey.serialization.srj-resultset'):
+            # We'll spool to a buffer, and only yield when it gets a bit big.
             buffer = StringIO()
-            dumps = json.dumps
-            URI, BNODE, LITERAL, TYPED_LITERAL = map(dumps, ['uri', 'bnode', 'literal', 'typed-literal'])
+
+            # Do these attribute lookups only once.
+            json_dumps, buffer_write = json.dumps, buffer.write
+            # And only encode these once, too.
+            URI, BNODE, LITERAL, TYPED_LITERAL = map(json_dumps, ['uri', 'bnode', 'literal', 'typed-literal'])
 
             if callback:
-                buffer.write(callback)
-                buffer.write('(')
-            buffer.write('{\n')
-            buffer.write('  "head": {\n')
-            buffer.write('    "vars": [ %s ]\n' % ', '.join(dumps(v) for v in results.fields))
-            buffer.write('  },\n')
-            buffer.write('  "results": {\n')
-            buffer.write('    "bindings": [\n')
+                buffer_write(callback)
+                buffer_write('(')
+            buffer_write('{\n')
+            buffer_write('  "head": {\n')
+            buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(v) for v in results.fields))
+            buffer_write('  },\n')
+            buffer_write('  "results": {\n')
+            buffer_write('    "bindings": [\n')
             for i, result in enumerate(results):
-                buffer.write('      {' if i == 0 else ',\n      {')
+                buffer_write('      {' if i == 0 else ',\n      {')
                 j = 0
                 for name, value in result._asdict().iteritems():
                     if value is None:
                         continue
-                    buffer.write(',\n' if j > 0 else '\n')
-                    buffer.write('        %s: { "type": ' % dumps(name.encode('utf8')))
+                    buffer_write(',\n' if j > 0 else '\n')
+                    buffer_write('        %s: { "type": ' % json_dumps(name.encode('utf8')))
                     if isinstance(value, rdflib.URIRef):
-                        buffer.write(URI)
+                        buffer_write(URI)
                     elif isinstance(value, rdflib.BNode):
-                        buffer.write(BNODE)
+                        buffer_write(BNODE)
                     elif value.datatype:
-                        buffer.write('%s, "datatype": %s' % (TYPED_LITERAL, dumps(value.datatype.encode('utf8'))))
+                        buffer_write('%s, "datatype": %s' % (TYPED_LITERAL, json_dumps(value.datatype.encode('utf8'))))
                     elif value.language:
-                        buffer.write('%s, "xml:lang": %s' % (LITERAL, dumps(value.language.encode('utf8'))))
+                        buffer_write('%s, "xml:lang": %s' % (LITERAL, json_dumps(value.language.encode('utf8'))))
                     else:
-                        buffer.write(LITERAL)
-                    buffer.write(', "value": %s }' % dumps(value.encode('utf8')))
+                        buffer_write(LITERAL)
+                    buffer_write(', "value": %s }' % json_dumps(value.encode('utf8')))
 
                     if buffer.tell() > 65000: # Almost 64k
                         yield buffer.getvalue()
@@ -134,13 +138,13 @@ class ResultSetView(ContentNegotiatedView):
                         buffer.truncate()
 
                     j += 1
-                buffer.write('\n      }')
-            buffer.write('\n    ]\n')
-            buffer.write('  }\n')
-            buffer.write('}')
+                buffer_write('\n      }')
+            buffer_write('\n    ]\n')
+            buffer_write('  }\n')
+            buffer_write('}')
             if callback:
-                buffer.write(')')
-            buffer.write('\n')
+                buffer_write(')')
+            buffer_write('\n')
             yield buffer.getvalue()
             buffer.close()
 
