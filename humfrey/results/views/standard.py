@@ -9,7 +9,10 @@ import functools
 import imp
 from xml.sax.saxutils import escape
 try:
-    import simplejson as json
+    try:
+        import ujson as json
+    except ImportError:
+        import simplejson as json
 except ImportError:
     import json
 
