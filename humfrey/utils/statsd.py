@@ -4,7 +4,6 @@ if hasattr(settings, 'STATSD_HOST'):
     from django_statsd.clients import statsd
 else:
     # A no-op stub of the statsd interface
-    raise Exception
     class _timer(object):
         def __call__(self, f):
             return f
