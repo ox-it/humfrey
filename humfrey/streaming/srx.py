@@ -1,8 +1,8 @@
 import logging
 import Queue
 import threading
-import xml.sax
 from xml.sax.saxutils import escape
+from xml.parsers import expat
 
 import rdflib
 
@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 
 class SRXSource(object):
 
-    class SRXContentHandler(xml.sax.ContentHandler):
-        feature_namespaces = True
-
+    class SRXContentHandler(object):
         def __init__(self, queue):
             self.queue = queue
             self.fields = []
@@ -23,48 +21,46 @@ class SRXSource(object):
             self.xml_ns = 'http://www.w3.org/XML/1998/namespace'
             self.content = []
 
-        def startDocument(self):
-            pass
-        def startElementNS(self, name, qname, attrs):
-            if name == (self.srx_ns, 'results'):
+        def start_element(self, name, attrs):
+            if name == (self.srx_ns + ' results'):
                 self.queue.put('resultset')
                 self.queue.put(tuple(self.fields))
-            elif name == (self.srx_ns, 'boolean'):
+            elif name == (self.srx_ns + ' boolean'):
                 self.queue.put('boolean')
-            elif name == (self.srx_ns, 'variable'):
-                self.fields.append(attrs[(None, 'name')])
-            elif name == (self.srx_ns, 'result'):
+            elif name == (self.srx_ns + ' variable'):
+                self.fields.append(attrs['name'])
+            elif name == (self.srx_ns + ' result'):
                 self.result = {}
-            elif name == (self.srx_ns, 'binding'):
-                self.binding_name = attrs[(None, 'name')]
+            elif name == (self.srx_ns + ' binding'):
+                self.binding_name = attrs['name']
                 self.binding = None
-            elif name == (self.srx_ns, 'literal'):
+            elif name == (self.srx_ns + ' literal'):
                 # rdflib will turn the datatype into a URIRef for us
-                self.literal_kwargs = {'lang': attrs.get((self.xml_ns, 'lang')),
-                                       'datatype': attrs.get((None, 'datatype'))}
+                self.literal_kwargs = {'lang': attrs.get(self.xml_ns + ' lang'),
+                                       'datatype': attrs.get('datatype')}
 
             self.content = []
 
-        def endElementNS(self, name, qname):
+        def end_element(self, name):
             content = ''.join(self.content) if self.content else None
-            if name == (self.srx_ns, 'result'):
+            if name == (self.srx_ns + ' result'):
                 self.queue.put(self.result)
                 self.result = None
-            elif name == (self.srx_ns, 'binding'):
+            elif name == (self.srx_ns + ' binding'):
                 self.result[self.binding_name] = self.binding
                 self.binding_name, self.binding = None, None
-            elif name == (self.srx_ns, 'boolean'):
+            elif name == (self.srx_ns + ' boolean'):
                 self.queue.put(content == u'true')
-            elif name == (self.srx_ns, 'uri'):
+            elif name == (self.srx_ns + ' uri'):
                 self.binding = rdflib.URIRef(content)
-            elif name == (self.srx_ns, 'bnode'):
+            elif name == (self.srx_ns + ' bnode'):
                 self.binding = rdflib.BNode(content)
-            elif name == (self.srx_ns, 'literal'):
+            elif name == (self.srx_ns + ' literal'):
                 self.binding = rdflib.Literal(content, **self.literal_kwargs)
             content = None
 
-        def characters(self, content):
-            self.content.append(content)
+        def char_data(self, data):
+            self.content.append(data)
 
     def __init__(self, stream, encoding='utf-8'):
         self.stream = stream
@@ -86,11 +82,13 @@ class SRXSource(object):
 
     def _parse(self):
         handler = self.SRXContentHandler(self._queue)
-        parser = xml.sax.make_parser()
-        parser.setFeature(xml.sax.handler.feature_namespaces, True)
-        parser.setContentHandler(handler)
+        parser = expat.ParserCreate(namespace_separator=' ')
+        parser.StartElementHandler = handler.start_element
+        parser.EndElementHandler = handler.end_element
+        parser.CharacterDataHandler = handler.char_data
+
         try:
-            parser.parse(self.stream)
+            parser.ParseFile(self.stream)
         except Exception:
             logger.exception("Failed to parse stream")
         finally:
