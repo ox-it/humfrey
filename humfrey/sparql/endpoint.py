@@ -13,8 +13,7 @@ except ImportError:
 
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
-from humfrey.streaming import srx
-from humfrey.sparql.results import Result, SparqlResultList, SparqlResultBool, SparqlResultGraph
+from humfrey.streaming import srj, srx
 from humfrey.utils.user_agents import USER_AGENTS
 from humfrey.utils.statsd import statsd
 
@@ -110,7 +109,7 @@ class Endpoint(object):
             if content_type == 'application/sparql-results+xml':
                 result = srx.SRXSource(response, encoding)
             elif content_type == 'application/sparql-results+json':
-                result = self.parse_json_results(response)
+                result = srj.SRJSource(response, encoding)
             elif content_type in self._rdflib_parser_names:
                 result = SparqlResultGraph()
                 result.parse(response, format=self._rdflib_parser_names[content_type])
@@ -193,35 +192,3 @@ class Endpoint(object):
             return self.query("ASK WHERE { %s }" % ' '.join(map(self.quote, obj)))
         else:
             return self.query("ASK WHERE { %s ?p ?o }" % self.quote(obj))
-
-    def parse_json_results(self, response):
-        graph = rdflib.ConjunctiveGraph()
-        json = json.load(response)
-
-        if 'boolean' in json:
-            return SparqlResultBool(json['boolean'])
-
-        vars_ = json['head']['vars']
-        ResultClass = Result(json['head']['vars'])
-        pb = self.parse_json_binding
-
-        results = SparqlResultList(vars_)
-        for binding in json['results']['bindings']:
-            results.append(ResultClass(*[pb(binding.get(v), graph) for v in vars_]))
-        return results
-
-    def parse_json_binding(self, binding, graph):
-        if not binding:
-            return None
-        t = binding['type']
-        if t == 'uri':
-            return Resource(rdflib.URIRef(binding['value']), graph, self)
-        elif t == 'bnode':
-            return Resource(rdflib.BNode(binding['value']), graph, self)
-        elif t == 'literal':
-            return rdflib.Literal(binding['value'], lang=binding.get('lang'))
-        elif t == 'typed-literal':
-            return rdflib.Literal(binding['value'], datatype=binding.get('datatype'))
-        else:
-            raise AssertionError("Unexpected binding type")
-
