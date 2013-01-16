@@ -102,46 +102,53 @@ class ResultSetView(ContentNegotiatedView):
             buffer = StringIO()
 
             # Do these attribute lookups only once.
-            json_dumps, buffer_write = json.dumps, buffer.write
-            # And only encode these once, too.
-            URI, BNODE, LITERAL, TYPED_LITERAL = map(json_dumps, ['uri', 'bnode', 'literal', 'typed-literal'])
+            json_dumps, json_dump, buffer_write = json.dumps, json.dump, buffer.write
+
+            var_names = list(results.fields)
 
             if callback:
                 buffer_write(callback)
                 buffer_write('(')
             buffer_write('{\n')
             buffer_write('  "head": {\n')
-            buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(v) for v in results.fields))
+            buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(var_name) for var_name in var_names))
             buffer_write('  },\n')
             buffer_write('  "results": {\n')
             buffer_write('    "bindings": [\n')
             for i, result in enumerate(results):
                 buffer_write('      {' if i == 0 else ',\n      {')
                 j = 0
-                for name, value in result._asdict().iteritems():
+                for var_name in var_names:
+                    value = result.get(var_name)
                     if value is None:
                         continue
-                    buffer_write(',\n' if j > 0 else '\n')
-                    buffer_write('        %s: { "type": ' % json_dumps(name.encode('utf8')))
+                    buffer_write(',\n        ' if j > 0 else '\n        ')
+                    json_dump(var_name, buffer)
                     if isinstance(value, rdflib.URIRef):
-                        buffer_write(URI)
+                        buffer_write(': { "type": "uri"')
                     elif isinstance(value, rdflib.BNode):
-                        buffer_write(BNODE)
-                    elif value.datatype:
-                        buffer_write('%s, "datatype": %s' % (TYPED_LITERAL, json_dumps(value.datatype.encode('utf8'))))
-                    elif value.language:
-                        buffer_write('%s, "xml:lang": %s' % (LITERAL, json_dumps(value.language.encode('utf8'))))
+                        buffer_write(': { "type": "bnode"')
+                    elif value.datatype is not None:
+                        buffer_write(': { "type": "typed-literal", "datatype": ')
+                        json_dump(value.datatype, buffer)
+                    elif value.language is not None:
+                        buffer_write(': { "type": "literal", "xml:lang": ')
+                        json_dump(value.language, buffer)
                     else:
-                        buffer_write(LITERAL)
-                    buffer_write(', "value": %s }' % json_dumps(value.encode('utf8')))
-
-                    if buffer.tell() > 65000: # Almost 64k
-                        yield buffer.getvalue()
-                        buffer.seek(0)
-                        buffer.truncate()
+                        buffer_write(': { "type": "literal"')
+                    buffer_write(', "value": ')
+                    json_dump(value, buffer)
+                    buffer_write(' }')
 
                     j += 1
+
                 buffer_write('\n      }')
+
+                if buffer.tell() > 65000: # Almost 64k
+                    yield buffer.getvalue()
+                    buffer.seek(0)
+                    buffer.truncate()
+
             buffer_write('\n    ]\n')
             buffer_write('  }\n')
             buffer_write('}')
