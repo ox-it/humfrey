@@ -7,11 +7,11 @@ from xml.parsers import expat
 import rdflib
 
 from humfrey.sparql.results import Result, SparqlResultSet, SparqlResultList, SparqlResultBool
+from .base import StreamingParser
 
 logger = logging.getLogger(__name__)
 
-class SRXSource(object):
-
+class SRXSource(StreamingParser):
     class SRXContentHandler(object):
         def __init__(self, queue):
             self.queue = queue
@@ -62,9 +62,16 @@ class SRXSource(object):
         def char_data(self, data):
             self.content.append(data)
 
-    def __init__(self, stream, encoding='utf-8'):
-        self.stream = stream
-        self.encoding = encoding
+    media_type = 'application/rdf+xml'
+
+    def read(self, num):
+        self.mode = 'stream'
+        return self._stream.read(num)
+
+    def get_sparql_results_type(self):
+        if hasattr(self, '_sparql_results_type'):
+            return self._sparql_results_type
+        self.mode = 'parse'
 
         self._finished = False
 
@@ -72,13 +79,23 @@ class SRXSource(object):
         self._thread = threading.Thread(target=self._parse)
         self._thread.start()
 
-        self.type = self._queue.get()
-        if self.type == 'resultset':
-            self.fields = self._queue.get()
-            self.__class__ = SRXSourceResultSet
-        elif self.type == 'boolean':
-            self._bool = self._queue.get()
-            self.__class__ = SRXSourceResultBool
+        self._sparql_results_type = self._queue.get()
+        if self._sparql_results_type == 'resultset':
+            self._fields = self._queue.get()
+        elif self._sparql_results_type == 'boolean':
+            self._boolean = self._queue.get()
+        else:
+            raise AssertionError("Unexpected result type: {0}".format(self._sparql_results_type))
+
+    def get_fields(self):
+        if self.get_sparql_results_type() != 'resultset':
+            raise TypeError("This isn't a resultset.")
+        return self._fields
+
+    def get_boolean(self):
+        if self.get_sparql_results_type() != 'boolean':
+            raise TypeError("This isn't a boolean result.")
+        return self._boolean
 
     def _parse(self):
         handler = self.SRXContentHandler(self._queue)
@@ -88,40 +105,29 @@ class SRXSource(object):
         parser.CharacterDataHandler = handler.char_data
 
         try:
-            parser.ParseFile(self.stream)
+            parser.ParseFile(self._stream)
         except Exception:
             logger.exception("Failed to parse stream")
         finally:
             self._queue.put(None)
 
-    def __iter__(self):
+    def get_bindings(self):
+        fields = self.get_fields()
+        if self._finished:
+            raise AssertionError("This method can only be called once.")
         while not self._finished:
             value = self._queue.get()
             if value is None:
                 self._finished = True
-                break
-            if isinstance(value, bool):
-                yield value
             else:
-                yield Result(self.fields, value)
+                yield Result(fields, value)
         self._thread.join()
 
     def get(self):
-        if self.type == 'resultset':
-            return SparqlResultList(self.fields, self)
+        if self.get_sparql_results_type() == 'resultset':
+            return SparqlResultList(self.get_fields(), self.get_bindings())
         else:
-            return self.__nonzero__()
-    
-    def __nonzero__(self):
-        if self.type != 'boolean':
-            raise TypeError("This isn't a boolean result")
-        return self._bool
-
-class SRXSourceResultSet(SparqlResultSet, SRXSource):
-    pass
-class SRXSourceResultBool(SRXSource, SparqlResultBool):
-    pass
-
+            return self.get_boolean()
 
 class SRXSerializer(object):
     def __init__(self, results):

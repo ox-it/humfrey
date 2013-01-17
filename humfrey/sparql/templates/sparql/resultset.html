@@ -1,26 +1,23 @@
-{% extends "sparql/results.html" %}{% load humfrey_desc %}
-
-{% block sparql_results_detail %}
+{% load humfrey_desc %}
 <table class="sparql-results">
   <thead>
     <tr>
-{% for field in results.fields %}
+{% for field in results.get_fields %}
       <th>{{ field }}</th>
 {% endfor %}
     </tr>
   </thead>
   <tbody>
-{% for result in results %}
+{% for binding in results.get_bindings %}
     <tr class="row-{% cycle "odd" "even" %}">
-{% for cell in result %}
+{% for cell in binding %}
       <td>{{ cell|node|default_if_none:"" }}</td>
 {% endfor %}
     </tr>
 {% empty %}
     <tr>
-      <td colspan="{{ results.fields|length }}">No results found</td>
+      <td colspan="{{ results.get_fields|length }}">No results found</td>
     </tr>
 {% endfor %}
   </tbody>
 </table>
-{% endblock %}

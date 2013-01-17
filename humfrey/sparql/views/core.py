@@ -20,6 +20,8 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
+from django_conneg.decorators import renderer
+from django_conneg.http import MediaType
 from django_conneg.views import HTMLView
 
 from humfrey.linkeddata.views import MappingView
@@ -28,6 +30,7 @@ from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.results.views.feed import FeedView
 from humfrey.results.views.spreadsheet import SpreadsheetView
 from humfrey.results.views.geospatial import KMLView
+from humfrey.streaming.base import StreamingParser
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
 from humfrey.utils.statsd import statsd
@@ -93,7 +96,7 @@ class StoreView(View):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
-class QueryView(StoreView, MappingView, RedisView, HTMLView):
+class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
     template_name = 'sparql/query'
@@ -126,7 +129,12 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
 
     def perform_query(self, request, query, common_prefixes):
         timeout = self._get_timeout(request)
-        return self.endpoint.query(query, common_prefixes=common_prefixes, timeout=timeout)
+        preferred_media_types = MediaType.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
+        preferred_media_types = [media_type.value for media_type in preferred_media_types]
+        return self.endpoint.query(query,
+                                   common_prefixes=common_prefixes,
+                                   timeout=timeout,
+                                   preferred_media_types=preferred_media_types)
 
     def get_format_choices(self):
         return (
@@ -157,23 +165,24 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView):
 
             context['queries'] = [results.query]
             context['duration'] = results.duration
-
-            if isinstance(results, SparqlResultSet):
-                context['results'] = results
-                return self._resultset_view(request, context)
-            elif isinstance(results, SparqlResultBool):
-                context['result'] = results
-                return self._boolean_view(request, context)
-            elif isinstance(results, SparqlResultGraph):
-                context['graph'] = results
-                context['subjects'] = results.subjects()
-                return self._graph_view(request, context)
-            else:
-                raise AssertionError("Unexpected return type: %r" % type(results))
+            context['results'] = results
 
         return self.render()
 
     post = get
+    
+    @renderer(format='default', mimetypes=('*/*',), name='Default')
+    def render_default(self, request, context, template_name):
+        results = context.get('results')
+        if not isinstance(results, StreamingParser):
+            return NotImplemented
+        if results.get_sparql_results_type() == 'resultset':
+            return self._resultset_view(request, context)
+        elif results.get_sparql_results_type() == 'boolean':
+            return self._boolean_view(request, context)
+        elif results.get_sparql_results_type() == 'graph':
+            return self._graph_view(request, context)
+        raise AssertionError("Unexpected SPARQL results type")
 
 class ProtectedQueryView(QueryView):
     """

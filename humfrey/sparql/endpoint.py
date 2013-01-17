@@ -14,6 +14,7 @@ except ImportError:
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
 from humfrey.streaming import srj, srx
+from humfrey.sparql.results import SparqlResultGraph
 from humfrey.utils.user_agents import USER_AGENTS
 from humfrey.utils.statsd import statsd
 
@@ -74,7 +75,7 @@ class Endpoint(object):
             query = ''.join(prefixes + q)
         return query
 
-    def query(self, query, common_prefixes=True, timeout=None, log_failure=True):
+    def query(self, query, common_prefixes=True, timeout=None, log_failure=True, preferred_media_types=()):
         original_query = query
         query = self.normalize_query(query, common_prefixes)
 
@@ -85,7 +86,19 @@ class Endpoint(object):
         # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
         # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
         # for crude benchmarking.
-        request.headers['Accept'] = 'text/plain, text/turtle;q=0.9, application/rdf+xml;q=0.8, application/sparql-results+xml'
+        accept_header = ['application/sparql-results+xml',
+                         'application/sparql-results+json',
+                         'text/plain',
+                         'text/turtle',
+                         'application/rdf+xml']
+        for media_type in preferred_media_types:
+            media_type = media_type.split(';')[0].strip()
+            if media_type in accept_header:
+                # Move it to the front
+                accept_header.remove(media_type)
+                accept_header.insert(0, media_type)
+        accept_header = ['%s;q=%3.1f' % (imt, 1-i/10.0) for i, imt in enumerate(accept_header)]
+        request.headers['Accept'] = ', '.join(accept_header)
         request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
             request.headers['Timeout'] = str(timeout)
@@ -105,7 +118,7 @@ class Endpoint(object):
                     if '=' in param:
                         params.__setitem__(*param.split('=', 1))
             encoding = params.get('charset', 'UTF-8')
-
+            print content_type, accept_header
             if content_type == 'application/sparql-results+xml':
                 result = srx.SRXSource(response, encoding)
             elif content_type == 'application/sparql-results+json':

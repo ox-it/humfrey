@@ -21,8 +21,25 @@
 
 {% block content %}
     <h1>SPARQL{% if store %} ({{ store.name }}){% endif %}</h1>
-    
-    {% block sparql_results %}{% endblock %}
+
+    {% if results %}
+    <section>
+      <h2>Results</h2>
+
+      <p>Query took {{ results.duration|floatformat:2 }} seconds to complete.</p>
+
+{{ results.get_sparql_results_type}}
+    {% if results.get_sparql_results_type == "resultset" %}
+      {% include "sparql/resultset.html" %}
+    {% endif %}
+    {% if results.get_sparql_results_type == "boolean" %}
+      {% include "sparql/boolean.html" %}
+    {% endif %}
+    {% if results.get_sparql_results_type == "graph" %}
+      {% include "sparql/graph.html" %}
+    {% endif %}
+    </section>
+    {% endif %}
 
     <h2>Query</h2>
 
