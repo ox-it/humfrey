@@ -1,22 +1,7 @@
 from __future__ import absolute_import
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-import functools
+import itertools
 import imp
-from xml.sax.saxutils import escape
-try:
-    try:
-        import ujson as json
-    except ImportError:
-        import simplejson as json
-except ImportError:
-    import json
-
-import rdflib
 import rdflib.plugin
 try: # This moved during the transition from rdflib 2.4 to rdflib 3.0.
     from rdflib.serializer import Serializer # 3.0
@@ -28,183 +13,83 @@ from django.http import HttpResponse
 from django_conneg.decorators import renderer
 from django_conneg.views import ContentNegotiatedView
 
-from humfrey.sparql.results import SparqlResultSet, SparqlResultBool
-from humfrey.streaming import srx
+from humfrey import streaming
 from humfrey.utils.statsd import statsd
 
-# Register the RDF/JSON and JSON-LD serializer plugins if available
-try:
-    imp.find_module('rdfextras.serializers.rdfjson')
-    rdflib.plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
-    with_rdfjson_serializer = True
-except ImportError:
-    with_rdfjson_serializer = False
-try:
-    imp.find_module('rdfextras.serializers.jsonld')
-    rdflib.plugin.register("rdf-json", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
-    with_jsonld_serializer = True
-except ImportError:
-    with_jsonld_serializer = False
+def get_renderer(streaming_format):
+    serializer_class = streaming_format['serializer']
+    mimetype = streaming_format['media_type']
 
-class _RDFViewMetaclass(type):
-    @classmethod
-    def get_rdf_renderer(mcs, format, mimetype, method, name):
-        @renderer(format=format, mimetypes=(mimetype,), name=name)
-        def render(self, request, context, template_name):
-            graph = context.get('graph')
-            if not isinstance(graph, rdflib.ConjunctiveGraph):
-                return NotImplemented
-            return HttpResponse(graph.serialize(format=method), mimetype=mimetype)
-        render.__name__ = 'render_%s' % format
-        return render
+    @renderer(format=streaming_format['format'],
+              mimetypes=(mimetype,),
+              name=streaming_format['name'])
+    def render(self, request, context, template_name):
+        results = context.get('results')
+        try:
+            data = iter(serializer_class(results))
+            return HttpResponse(data, mimetype=mimetype)
+        except TypeError:
+            raise
+            return NotImplemented
+    render.__name__ = 'render_%s' % streaming_format['format']
+    return render
 
-    def __new__(mcs, name, bases, dict):
-        if 'RDF_SERIALIZATIONS' in dict:
-            serializations = dict.pop('RDF_SERIALIZATIONS')
-            for format, mimetype, method, renderer_name in serializations:
-                dict['render_%s' % format] = mcs.get_rdf_renderer(format, mimetype, method, renderer_name)
+renderers = {}
+for f in streaming.formats:
+    if 'graph' not in f['supported_results_types'] or not f.get('serializer'):
+        continue
+    render = get_renderer(f)
+    renderers[render.__name__] = render
+RDFView = type('RDFView', (ContentNegotiatedView,), renderers)
 
-        return super(_RDFViewMetaclass, mcs).__new__(mcs, name, bases, dict)
-
-class RDFView(ContentNegotiatedView):
-    __metaclass__ = _RDFViewMetaclass
-
-    RDF_SERIALIZATIONS = (
-        ('rdf', 'application/rdf+xml', 'pretty-xml', 'RDF/XML'),
-        ('nt', 'text/plain', 'nt', 'N-Triples'),
-        ('ttl', 'text/turtle', 'turtle', 'Turtle'),
-        ('n3', 'text/n3', 'n3', 'Notation3'),
-    )
-    if with_rdfjson_serializer:
-        RDF_SERIALIZATIONS += (('rdfjson', 'application/rdf+json', 'rdf-json', 'RDF/JSON'),)
-    if with_jsonld_serializer:
-        RDF_SERIALIZATIONS += (('jsonld', 'application/ld+json', 'json-ld', 'JSON-LD'),)
+renderers = {}
+for f in streaming.formats:
+    if 'resultset' not in f['supported_results_types'] or not f.get('serializer'):
+        continue
+    render = get_renderer(f)
+    renderers[render.__name__] = render
+ResultSetView = type('ResultSetView', (ContentNegotiatedView,), renderers)
 
 
-class ResultSetView(ContentNegotiatedView):
-    def _spool_srj_boolean(self, result, callback=None):
-        with statsd.timer('humfrey.serialization.srj-boolean'):
-            if callback:
-                yield callback
-                yield '('
-            yield '{\n'
-            yield '  "head": {},\n'
-            yield '  "boolean": %s\n' % ('true' if result else 'false')
-            yield '}'
-            if callback:
-                yield ')'
-            yield '\n'
-
-    @statsd.timer('humfrey.serialization.srj-boolean')
-    def _spool_srj_resultset(self, results, callback=None):
-        with statsd.timer('humfrey.serialization.srj-resultset'):
-            # We'll spool to a buffer, and only yield when it gets a bit big.
-            buffer = StringIO()
-
-            # Do these attribute lookups only once.
-            json_dumps, json_dump, buffer_write = json.dumps, json.dump, buffer.write
-
-            var_names = list(results.fields)
-
-            if callback:
-                buffer_write(callback)
-                buffer_write('(')
-            buffer_write('{\n')
-            buffer_write('  "head": {\n')
-            buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(var_name) for var_name in var_names))
-            buffer_write('  },\n')
-            buffer_write('  "results": {\n')
-            buffer_write('    "bindings": [\n')
-            for i, result in enumerate(results):
-                buffer_write('      {' if i == 0 else ',\n      {')
-                j = 0
-                for var_name in var_names:
-                    value = result.get(var_name)
-                    if value is None:
-                        continue
-                    buffer_write(',\n        ' if j > 0 else '\n        ')
-                    json_dump(var_name, buffer)
-                    if isinstance(value, rdflib.URIRef):
-                        buffer_write(': { "type": "uri"')
-                    elif isinstance(value, rdflib.BNode):
-                        buffer_write(': { "type": "bnode"')
-                    elif value.datatype is not None:
-                        buffer_write(': { "type": "typed-literal", "datatype": ')
-                        json_dump(value.datatype, buffer)
-                    elif value.language is not None:
-                        buffer_write(': { "type": "literal", "xml:lang": ')
-                        json_dump(value.language, buffer)
-                    else:
-                        buffer_write(': { "type": "literal"')
-                    buffer_write(', "value": ')
-                    json_dump(value, buffer)
-                    buffer_write(' }')
-
-                    j += 1
-
-                buffer_write('\n      }')
-
-                if buffer.tell() > 65000: # Almost 64k
-                    yield buffer.getvalue()
-                    buffer.seek(0)
-                    buffer.truncate()
-
-            buffer_write('\n    ]\n')
-            buffer_write('  }\n')
-            buffer_write('}')
-            if callback:
-                buffer_write(')')
-            buffer_write('\n')
-            yield buffer.getvalue()
-            buffer.close()
-
-    def _spool_csv_boolean(self, result):
-        with statsd.timer('humfrey.serialization.csv-boolean'):
-            yield '%s\n' % ('true' if result else 'false')
-
-    def _spool_csv_resultset(self, results, include_header=True):
-        with statsd.timer('humfrey.serialization.csv-resultset'):
-            def quote(value):
-                if value is None:
-                    return ''
-                value = value.replace('"', '""')
-                if any(bad_char in value for bad_char in '\n" ,'):
-                    value = '"%s"' % value
-                return value
-            if include_header:
-                yield ','.join(quote(field) for field in results.fields)
-                yield '\n'
-            for result in results:
-                yield ",".join(quote(value) for value in result)
-                yield '\n'
+class ResultSetiew(ContentNegotiatedView):
 
     def render_resultset(self, request, context, spool_boolean, spool_resultset, mimetype):
-        if isinstance(context.get('result'), SparqlResultBool):
-            spool = spool_boolean(context['result'])
-        elif isinstance(context.get('results'), SparqlResultSet):
+        try:
+            sparql_results_type = context['results'].get_sparql_results_type()
+        except:
+            return NotImplemented
+        if sparql_results_type == 'boolean':
+            spool = spool_boolean(context['results'])
+        elif sparql_results_type == 'resultset':
             spool = spool_resultset(context['results'])
         else:
-            return NotImplemented
+            raise AssertionError("Unexpected SPARQL results type: {0}".format(sparql_results_type))
         return HttpResponse(spool, mimetype=mimetype)
 
     @renderer(format='srx', mimetypes=('application/sparql-results+xml',), name='SPARQL Results XML')
     def render_srx(self, request, context, template_name):
-        return self.render_resultset(request, context,
-                                     srx.SRXSerializer, srx.SRXSerializer,
-                                     'application/sparql-results+xml')
+        try:
+            return HttpResponse(iter(srx.SRXSerializer(context.get('results'))),
+                                mimetype='application/sparql-results+xml')
+        except TypeError:
+            return NotImplemented
 
     @renderer(format='srj', mimetypes=('application/sparql-results+json',), name='SPARQL Results JSON')
     def render_srj(self, request, context, template_name):
+        try:
+            results = iter(srj.SRJSerializer(context.get('results')))
+        except TypeError:
+            return NotImplemented
         callback = request.GET.get('callback')
-
-        return self.render_resultset(request, context,
-                                     functools.partial(self._spool_srj_boolean, callback=callback),
-                                     functools.partial(self._spool_srj_resultset, callback=callback),
-                                     'application/javascript' if callback else 'application/sparql-results+json')
+        mimetype = 'application/javascript' if callback else 'application/sparql-results+json'
+        if callback:
+            results = itertools.chain([callback, '('], results, [');\n'])
+        return HttpResponse(results, mimetype=mimetype)
 
     @renderer(format='csv', mimetypes=('text/csv',), name='CSV')
     def render_csv(self, request, context, template_name):
-        return self.render_resultset(request, context,
-                                     self._spool_csv_boolean,
-                                     self._spool_csv_resultset,
-                                     'text/csv;charset=UTF-8')
+        try:
+            return HttpResponse(iter(csv.CSVSerializer(context.get('results'))),
+                                mimetype='text/csv')
+        except TypeError:
+            return NotImplemented

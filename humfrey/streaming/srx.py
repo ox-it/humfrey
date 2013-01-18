@@ -6,12 +6,12 @@ from xml.parsers import expat
 
 import rdflib
 
-from humfrey.sparql.results import Result, SparqlResultSet, SparqlResultList, SparqlResultBool
-from .base import StreamingParser
+from humfrey.sparql.results import Result
+from .base import StreamingParser, StreamingSerializer
 
 logger = logging.getLogger(__name__)
 
-class SRXSource(StreamingParser):
+class SRXParser(StreamingParser):
     class SRXContentHandler(object):
         def __init__(self, queue):
             self.queue = queue
@@ -62,11 +62,7 @@ class SRXSource(StreamingParser):
         def char_data(self, data):
             self.content.append(data)
 
-    media_type = 'application/rdf+xml'
-
-    def read(self, num):
-        self.mode = 'stream'
-        return self._stream.read(num)
+    media_type = 'application/sparql-results+xml'
 
     def get_sparql_results_type(self):
         if hasattr(self, '_sparql_results_type'):
@@ -86,16 +82,7 @@ class SRXSource(StreamingParser):
             self._boolean = self._queue.get()
         else:
             raise AssertionError("Unexpected result type: {0}".format(self._sparql_results_type))
-
-    def get_fields(self):
-        if self.get_sparql_results_type() != 'resultset':
-            raise TypeError("This isn't a resultset.")
-        return self._fields
-
-    def get_boolean(self):
-        if self.get_sparql_results_type() != 'boolean':
-            raise TypeError("This isn't a boolean result.")
-        return self._boolean
+        return self._sparql_results_type
 
     def _parse(self):
         handler = self.SRXContentHandler(self._queue)
@@ -111,6 +98,11 @@ class SRXSource(StreamingParser):
         finally:
             self._queue.put(None)
 
+    def get_fields(self):
+        if self.get_sparql_results_type() != 'resultset':
+            raise TypeError("This isn't a resultset.")
+        return self._fields
+
     def get_bindings(self):
         fields = self.get_fields()
         if self._finished:
@@ -123,33 +115,36 @@ class SRXSource(StreamingParser):
                 yield Result(fields, value)
         self._thread.join()
 
-    def get(self):
-        if self.get_sparql_results_type() == 'resultset':
-            return SparqlResultList(self.get_fields(), self.get_bindings())
-        else:
-            return self.get_boolean()
+    def get_boolean(self):
+        if self.get_sparql_results_type() != 'boolean':
+            raise TypeError("This isn't a boolean result.")
+        return self._boolean
 
-class SRXSerializer(object):
-    def __init__(self, results):
-        self.results = results
+    def get_triples(self):
+        raise TypeError("This isn't a graph result.")
 
-    def __iter__(self):
-        results = self.results
+class SRXSerializer(StreamingSerializer):
+    media_type = 'application/sparql-results+xml'
+    supported_results_types = ('resultset', 'boolean')
+
+    def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
+        if sparql_results_type not in ('resultset', 'boolean'):
+            raise TypeError("Unexpected results type: {0}".format(sparql_results_type))
 
         yield '<?xml version="1.0"?>\n'
         yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
 
-        if getattr(self.results, 'fields', None):
+        if fields is not None:
             yield '  <head>\n'
-            for binding in results.fields:
-                yield '    <variable name="%s"/>\n' % escape(binding)
+            for field in fields:
+                yield '    <variable name="%s"/>\n' % escape(field)
             yield '  </head>\n'
 
             yield '  <results>\n'
-            for result in results:
+            for binding in bindings:
                 yield '    <result>\n'
-                for field in result.fields:
-                    value = getattr(result, field)
+                for field in fields:
+                    value = getattr(binding, field)
                     if value is None:
                         continue
                     yield '      <binding name="%s">\n' % escape(field)
@@ -171,10 +166,6 @@ class SRXSerializer(object):
 
         else:
             yield '  <head/>\n'
-            yield '  <boolean>%s</boolean>\n' % ('true' if results else 'false')
-        
-        yield '</sparql>\n'
+            yield '  <boolean>%s</boolean>\n' % ('true' if boolean else 'false')
 
-    def serialize(self, stream):
-        for line in self:
-            stream.write(line)
+        yield '</sparql>\n'

@@ -5,124 +5,71 @@ import threading
 from xml.sax.saxutils import quoteattr, escape
 
 try: # rdflib 3.0
-    from rdflib.plugins.parsers.rdfxml import RDFXMLParser
+    from rdflib.plugins.parsers.rdfxml import RDFXMLParser as RDFXMLParser_
 except ImportError: # rdflib 2.4.x
-    from rdflib.syntax.parsers.RDFXMLParser import RDFXMLParser
+    from rdflib.syntax.parsers.RDFXMLParser import RDFXMLParser as RDFXMLParser_
 from rdflib import Graph, URIRef, Literal, BNode
-
-#from rdflib.plugins.memory.IOMemory
 
 from humfrey.utils.namespaces import NS
 
-class QueueGraph(Graph):
-    def __init__(self, queue, *args, **kwargs):
-        self.queue = queue
-        super(QueueGraph, self).__init__(*args, **kwargs)
+from .base import StreamingParser, StreamingSerializer
+from .wrapper import get_rdflib_parser
 
-    def add(self, triple):
-        self.queue.put(('triple', triple))
-
-class RDFXMLSource(object):
-    def __init__(self, f, parser_kwargs={}):
-        self.file = f
-        self.queue = Queue.Queue(maxsize=10)
-        self.parser_kwargs = parser_kwargs
-
-    def parser(self, file, queue):
-        parser = RDFXMLParser()
-        store = QueueGraph(queue)
-        try:
-            parser.parse(file, store, **self.parser_kwargs)
-        except:
-            queue.put(('exception', sys.exc_info()))
-        else:
-            queue.put(('sentinel', None)) # Sentinel
-
-    def __iter__(self):
-        parser_thread = threading.Thread(target=self.parser,
-                                         args=(self.file, self.queue))
-        parser_thread.start()
-
-        queue = self.queue
-
-        while True:
-            type, value = queue.get()
-            if type == 'triple':
-                yield value
-            elif type == 'sentinel':
-                break
-            elif type == 'exception':
-                raise value[0], value[1], value[2]
-
-        parser_thread.join()
-
-class RDFXMLSink(object):
+class RDFXMLSerializer(StreamingSerializer):
     localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
+    supported_results_types = ('graph',)
+    media_type = 'application/rdf+xml'
 
-    def __init__(self, out, namespaces=None, encoding='utf-8', triples=None):
-        self.write = lambda s: out.write(s.encode(self.encoding))
-        self.namespaces = sorted((namespaces or NS).items())
-        self.encoding = encoding
-        self.last_subject = None
-        if triples:
-            self.serialize(triples)
+    def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
+        namespaces = sorted((NS).items())
+        last_subject = None
 
-    def start(self):
-        write = self.write
-        write(u'<?xml version="1.0" encoding=%s?>\n' % quoteattr(self.encoding))
-        write(u'<rdf:RDF')
-        for prefix, uri in self.namespaces:
-            write(u'\n    xmlns:%s=%s' % (prefix, quoteattr(uri)))
-        write(u'>\n')
+        # XML declaration, root element and namespaces
+        yield '<?xml version="1.0" encoding="utf-8"?>\n'
+        yield '<rdf:RDF'
+        for prefix, uri in namespaces:
+            yield '\n    xmlns:%s=%s' % (prefix, quoteattr(uri))
+        yield '>\n'
 
-    def triples(self, triples):
-        write = self.write
-        for triple in triples:
-            self.triple(write, triple)
+        # Triples
+        for s, p, o in triples:
+            if s != last_subject:
+                if self.last_subject is not None:
+                    yield '  </rdf:Description>\n'
+                self.last_subject = s
+                if isinstance(s, URIRef):
+                    yield '  <rdf:Description rdf:about=%s>\n' % quoteattr(s).encode('utf-8')
+                elif isinstance(s, BNode):
+                    yield '  <rdf:Description rdf:nodeID=%s>\n' % quoteattr(s).encode('utf-8')
+                else:
+                    raise AssertionError("Unexpected subject term: %r (%r)" % (type(s), s))
 
-    def end(self):
-        if self.last_subject is not None:
-            self.write(u'  </rdf:Description>\n')
-        self.write(u'</rdf:RDF>\n')
-
-    def serialize(self, triples):
-        self.start()
-        self.triples(triples)
-        self.end()
-
-    def triple(self, write, (s, p, o)):
-        if s != self.last_subject:
-            if self.last_subject is not None:
-                write(u'  </rdf:Description>\n')
-            self.last_subject = s
-            if isinstance(s, URIRef):
-                write(u'  <rdf:Description rdf:about=%s>\n' % quoteattr(s))
-            elif isinstance(s, BNode):
-                write(u'  <rdf:Description rdf:nodeID=%s>\n' % quoteattr(s))
+            if not isinstance(p, URIRef):
+                raise AssertionError("Unexpected predicate term: %r (%r)" % (type(p), p))
+            for prefix, uri in self.namespaces:
+                if p.startswith(uri) and self.localpart.match(p[len(uri):]):
+                    tag_name = '%s:%s' % (prefix, p[len(uri):])
+                    yield '    <%s' % tag_name.encode('utf-8')
+                    break
             else:
-                raise AssertionError("Unexpected subject term: %r (%r)" % (type(s), s))
+                match = self.localpart.search(p)
+                tag_name = p[match.start():]
+                yield '    <%s xmlns=%s' % (tag_name.encode('utf-8'),
+                                             quoteattr(p[:match.start()]).encode('utf-8'))
 
-        if not isinstance(p, URIRef):
-            raise AssertionError("Unexpected predicate term: %r (%r)" % (type(p), p))
-        for prefix, uri in self.namespaces:
-            if p.startswith(uri) and self.localpart.match(p[len(uri):]):
-                tag_name = '%s:%s' % (prefix, p[len(uri):])
-                write(u'    <%s' % tag_name)
-                break
-        else:
-            match = self.localpart.search(p)
-            tag_name = p[match.start():]
-            write(u'    <%s xmlns=%s' % (tag_name, quoteattr(p[:match.start()])))
+            if isinstance(o, Literal):
+                if o.language:
+                    yield ' xml:lang=%s' % quoteattr(o.language).encode('utf-8')
+                if o.datatype:
+                    yield ' rdf:datatype=%s' % quoteattr(o.datatype).encode('utf-8')
+                yield '>%s</%s>\n' % (escape(o).encode('utf-8'), tag_name.encode('utf-8'))
+            elif isinstance(o, BNode):
+                yield ' rdf:nodeID=%s/>\n' % quoteattr(o).encode('utf-8')
+            elif isinstance(o, URIRef):
+                yield ' rdf:resource=%s/>\n' % quoteattr(o).encode('utf-8')
+            else:
+                raise AssertionError("Unexpected object term: %r (%r)" % (type(o), o))
 
-        if isinstance(o, Literal):
-            if o.language:
-                write(u' xml:lang=%s' % quoteattr(o.language))
-            if o.datatype:
-                write(u' rdf:datatype=%s' % quoteattr(o.datatype))
-            write('>%s</%s>\n' % (escape(o), tag_name))
-        elif isinstance(o, BNode):
-            write(u' rdf:nodeID=%s/>\n' % quoteattr(o))
-        elif isinstance(o, URIRef):
-            write(u' rdf:resource=%s/>\n' % quoteattr(o))
-        else:
-            raise AssertionError("Unexpected object term: %r (%r)" % (type(o), o))
+        if self.last_subject is not None:
+            yield '  </rdf:Description>\n'
+        yield '</rdf:RDF>\n'

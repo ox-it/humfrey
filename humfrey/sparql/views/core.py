@@ -36,7 +36,7 @@ from humfrey.utils.namespaces import NS
 from humfrey.utils.statsd import statsd
 
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.sparql.results import SparqlResultSet, SparqlResultGraph, SparqlResultBool
+from humfrey.sparql.results import SparqlResultList
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store
 
@@ -55,6 +55,11 @@ class SparqlResultSetView(ResultSetView, SpreadsheetView, HTMLView):
 class SparqlBooleanView(ResultSetView, HTMLView):
     def get(self, request, context):
         return self.render(request, context, ('sparql/boolean', 'results/boolean'))
+    post = get
+
+class PassThroughSerializerView(RDFView, ResultSetView):
+    def get(self, request, context):
+        return self.render(request, context, None)
     post = get
 
 class StoreView(View):
@@ -107,6 +112,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
     _graph_view = staticmethod(SparqlGraphView.as_view())
     _resultset_view = staticmethod(SparqlResultSetView.as_view())
     _boolean_view = staticmethod(SparqlBooleanView.as_view())
+    _passthrough_serializer_view = staticmethod(PassThroughSerializerView.as_view())
 
     def _get_float(self, value):
         try:
@@ -129,8 +135,9 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
 
     def perform_query(self, request, query, common_prefixes):
         timeout = self._get_timeout(request)
-        preferred_media_types = MediaType.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
-        preferred_media_types = [media_type.value for media_type in preferred_media_types]
+        #preferred_media_types = MediaType.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
+        #preferred_media_types = [media_type.value for media_type in preferred_media_types]
+        preferred_media_types = [m.value for r in request.renderers for m in r.mimetypes]
         return self.endpoint.query(query,
                                    common_prefixes=common_prefixes,
                                    timeout=timeout,
@@ -167,10 +174,21 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
             context['duration'] = results.duration
             context['results'] = results
 
+            response = self._passthrough_serializer_view(request, context)
+            if response.status_code == httplib.OK:
+                return response
+            elif results.get_sparql_results_type() == 'resultset':
+                return self._resultset_view(request, context)
+            elif results.get_sparql_results_type() == 'boolean':
+                return self._boolean_view(request, context)
+            elif results.get_sparql_results_type() == 'graph':
+                return self._graph_view(request, context)
+            raise AssertionError("Unexpected SPARQL results type: {0}".format(results.get_sparql_results_type()))
+
         return self.render()
 
     post = get
-    
+
     @renderer(format='default', mimetypes=('*/*',), name='Default')
     def render_default(self, request, context, template_name):
         results = context.get('results')

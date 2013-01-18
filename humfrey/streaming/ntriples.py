@@ -1,36 +1,56 @@
 try: # rdflib 3.0
-    from rdflib.plugins.parsers.ntriples import NTriplesParser, ParseError
-    from rdflib.plugins.serializers.nt import NTSerializer
+    from rdflib.plugins.parsers.ntriples import NTriplesParser as NTriplesParser_, ParseError
 except ImportError: # rdflib 2.4.x
-    from rdflib.syntax.parsers.ntriples import NTriplesParser, ParseError
-    from rdflib.syntax.serializers.NTSerializer import NTSerializer
+    from rdflib.syntax.parsers.ntriples import NTriplesParser as NTriplesParser_, ParseError
+
+from .base import StreamingParser, StreamingSerializer
 
 __all__ = ['NTriplesSource', 'NTriplesSink']
 
-class NTriplesSource(NTriplesParser):
+class NTriplesParser(StreamingParser):
+    media_type = 'text/plain'
+
+    def get_sparql_results_type(self):
+        self.mode = 'parse'
+        return 'graph'
+
+    def get_fields(self):
+        raise TypeError("This is a graph parser")
+
+    def get_bindings(self):
+        raise TypeError("This is a graph parser")
+
+    def get_boolean(self):
+        raise TypeError("This is a graph parser")
+
+    def get_triples(self):
+        self.mode = 'parse'
+        parser = NTriplesParser_()
+        parser.sink = self.Sink(self)
+        self.triple = None
+        while True:
+            parser.line = self._stream.readline().strip()
+            if not parser.line:
+                break
+            try:
+                parser.parseline()
+            except ParseError:
+                raise ParseError("Invalid line: %r" % parser.line)
+            if self.triple:
+                yield self.triple
+                self.triple = None
+
     class Sink(object):
         def __init__(self, source):
             self.source = source
         def triple(self, subject, predicate, object):
             self.source.triple = subject, predicate, object
 
-    def __init__(self, f):
-        self.file = f
-        self.triple = None
-        super(NTriplesSource, self).__init__(self.Sink(self))
 
-    def __iter__(self):
-        self.buffer = ''
-        while True:
-            self.line = self.readline()
-            if self.line is None:
-                break
-            try:
-                self.parseline()
-            except ParseError:
-                raise ParseError("Invalid line: %r" % self.line)
-            if self.triple:
-                yield self.triple
-                self.triple = None
+class NTriplesSerializer(StreamingSerializer):
+    media_type = 'text/plain'
+    supported_results_types = ('graph',)
 
-NTriplesSink = NTSerializer
+    def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
+        for triple in triples:
+            yield u'{0} {1} {2} .\n'.format(*triple).encode('utf-8')

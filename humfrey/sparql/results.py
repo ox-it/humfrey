@@ -37,28 +37,7 @@ def Result(fields, bindings=None):
         return cls
 Result._memo = weakref.WeakValueDictionary()
 
-
-class SparqlResult(object):
-    """
-    The base type for all responses from SPARQL endpoints.
-    """
-
-class SparqlResultTriples(SparqlResult):
-    """
-    A SPARQL result containing triples. Possibly just an iterator.
-    """
-
-class SparqlResultGraph(SparqlResultTriples, rdflib.ConjunctiveGraph):
-    """
-    A SPARQL result that has been cached as an rdflib graph.
-    """
-
-class SparqlResultSet(SparqlResult):
-    """
-    A SPARQL resultset. Possibly just an iterator.
-    """
-
-class SparqlResultList(SparqlResultSet, list):
+class SparqlResultList(list):
     """
     A SPARQL resultset that has been turned into a list.
     """
@@ -67,8 +46,8 @@ class SparqlResultList(SparqlResultSet, list):
         if arg is not None:
             list.__init__(self, arg)
 
-class SparqlResultBool(SparqlResult, object):
-    def __init__(self, value):
-        self._value = bool(value)
-    def __nonzero__(self):
-        return self._value
+    def get_bindings(self):
+        return self
+
+    def get_fields(self):
+        return self.fields

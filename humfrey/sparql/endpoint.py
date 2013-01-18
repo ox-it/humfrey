@@ -13,8 +13,7 @@ except ImportError:
 
 from humfrey.utils.namespaces import NS
 from humfrey.linkeddata.resource import Resource
-from humfrey.streaming import srj, srx
-from humfrey.sparql.results import SparqlResultGraph
+from humfrey import streaming
 from humfrey.utils.user_agents import USER_AGENTS
 from humfrey.utils.statsd import statsd
 
@@ -51,11 +50,6 @@ def trim_indentation(s):
     return '\n'.join(trimmed)
 
 class Endpoint(object):
-    _rdflib_parser_names = {'application/rdf+xml': 'xml',
-                            'text/plain': 'nt',
-                            'text/turtle': 'n3',
-                            'text/n3': 'n3'}
-
     def __init__(self, url, update_url=None, namespaces={}):
         self._url, self._update_url = url, update_url
         self._namespaces = NS.copy()
@@ -85,13 +79,15 @@ class Endpoint(object):
 
         # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
         # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
-        # for crude benchmarking.
+        # for crude benchmarking. We put the SRX/SRJ ones first to avoid getting
+        # text/plain responses for non-RDF-returning queries.
         accept_header = ['application/sparql-results+xml',
                          'application/sparql-results+json',
                          'text/plain',
                          'text/turtle',
+                         'text/n3',
                          'application/rdf+xml']
-        for media_type in preferred_media_types:
+        for media_type in reversed(list(preferred_media_types)):
             media_type = media_type.split(';')[0].strip()
             if media_type in accept_header:
                 # Move it to the front
@@ -118,14 +114,8 @@ class Endpoint(object):
                     if '=' in param:
                         params.__setitem__(*param.split('=', 1))
             encoding = params.get('charset', 'UTF-8')
-            print content_type, accept_header
-            if content_type == 'application/sparql-results+xml':
-                result = srx.SRXSource(response, encoding)
-            elif content_type == 'application/sparql-results+json':
-                result = srj.SRJSource(response, encoding)
-            elif content_type in self._rdflib_parser_names:
-                result = SparqlResultGraph()
-                result.parse(response, format=self._rdflib_parser_names[content_type])
+            if content_type in streaming.parsers:
+                result = streaming.parsers[content_type](response, encoding)
             else:
                 raise AssertionError("Unexpected content-type: %s" % content_type)
             result.query = query

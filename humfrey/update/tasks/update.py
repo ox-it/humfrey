@@ -169,7 +169,7 @@ def update(update_log=None, slug=None, trigger=None):
                 except Exception, e:
                     logger.exception("Transform failed, perhaps ungracefully.")
                 finally:
-                    shutil.rmtree(output_directory)
+                    pass#shutil.rmtree(output_directory)
 
     updated = _time_zone.localize(datetime.datetime.now())
 
