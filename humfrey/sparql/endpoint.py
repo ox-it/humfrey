@@ -50,11 +50,12 @@ def trim_indentation(s):
     return '\n'.join(trimmed)
 
 class Endpoint(object):
-    def __init__(self, url, update_url=None, namespaces={}):
+    def __init__(self, url, update_url=None, namespaces={}, preferred_media_types=()):
         self._url, self._update_url = url, update_url
         self._namespaces = NS.copy()
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
+        self._preferred_media_types = list(preferred_media_types)
 
     def normalize_query(self, query, common_prefixes=True):
         query = trim_indentation(query)
@@ -87,7 +88,7 @@ class Endpoint(object):
                          'text/turtle',
                          'text/n3',
                          'application/rdf+xml']
-        for media_type in reversed(list(preferred_media_types)):
+        for media_type in reversed(self._preferred_media_types):
             media_type = media_type.split(';')[0].strip()
             if media_type in accept_header:
                 # Move it to the front

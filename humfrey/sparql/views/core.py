@@ -74,7 +74,9 @@ class StoreView(View):
     @property
     def endpoint(self):
         if not hasattr(self, '_endpoint'):
-            self._endpoint = Endpoint(self.store.query_endpoint)
+            preferred_media_types = [m.value for r in self.request.renderers for m in r.mimetypes]
+            self._endpoint = Endpoint(self.store.query_endpoint,
+                                      preferred_media_types=preferred_media_types)
         return self._endpoint
 
     def dispatch(self, request, *args, **kwargs):
@@ -135,13 +137,9 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
 
     def perform_query(self, request, query, common_prefixes):
         timeout = self._get_timeout(request)
-        #preferred_media_types = MediaType.parse_accept_header(request.META.get('HTTP_ACCEPT', ''))
-        #preferred_media_types = [media_type.value for media_type in preferred_media_types]
-        preferred_media_types = [m.value for r in request.renderers for m in r.mimetypes]
         return self.endpoint.query(query,
                                    common_prefixes=common_prefixes,
-                                   timeout=timeout,
-                                   preferred_media_types=preferred_media_types)
+                                   timeout=timeout)
 
     def get_format_choices(self):
         return (
