@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import httplib
+import operator
 import math
 import pickle
 import threading
@@ -42,24 +43,14 @@ from humfrey.sparql.models import Store
 
 DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
 
-class SparqlGraphView(RDFView, HTMLView, FeedView, KMLView):
+class SparqlGraphView(RDFView, HTMLView):
     def get(self, request, context):
-        return self.render(request, context, ('sparql/graph', 'results/graph'))
+        return self.render(request, context, ('sparql/query', 'results/graph'))
     post = get
 
-class SparqlResultSetView(ResultSetView, SpreadsheetView, HTMLView):
+class SparqlResultsView(ResultSetView, HTMLView):
     def get(self, request, context):
-        return self.render(request, context, ('sparql/resultset', 'results/resultset'))
-    post = get
-
-class SparqlBooleanView(ResultSetView, HTMLView):
-    def get(self, request, context):
-        return self.render(request, context, ('sparql/boolean', 'results/boolean'))
-    post = get
-
-class PassThroughSerializerView(RDFView, ResultSetView):
-    def get(self, request, context):
-        return self.render(request, context, None)
+        return self.render(request, context, ('sparql/query', 'results/resultset'))
     post = get
 
 class StoreView(View):
@@ -112,9 +103,9 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
     maximum_timeout = None # Override this with some number of seconds
 
     _graph_view = staticmethod(SparqlGraphView.as_view())
-    _resultset_view = staticmethod(SparqlResultSetView.as_view())
-    _boolean_view = staticmethod(SparqlBooleanView.as_view())
-    _passthrough_serializer_view = staticmethod(PassThroughSerializerView.as_view())
+    _sparql_results_view = staticmethod(SparqlResultsView.as_view())
+
+    _passthrough_view = staticmethod(PassThroughView.as_view())
 
     def _get_float(self, value):
         try:
@@ -146,10 +137,8 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
             ('', 'Automatic'),
             ('Graph (DESCRIBE, CONSTRUCT)',
              tuple((r.format, r.name) for r in sorted(self._graph_view.conneg.renderers, key=lambda r:r.name))),
-            ('Resultset (SELECT)',
-             tuple((r.format, r.name) for r in sorted(self._resultset_view.conneg.renderers, key=lambda r:r.name))),
-            ('Boolean (ASK)',
-             tuple((r.format, r.name) for r in sorted(self._boolean_view.conneg.renderers, key=lambda r:r.name))),
+            ('SPARQL Results (SELECT, ASK)',
+             tuple((r.format, r.name) for r in sorted(self._sparql_results_view.conneg.renderers, key=lambda r:r.name))),
         )
 
     def get(self, request):
@@ -172,33 +161,15 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
             context['duration'] = results.duration
             context['results'] = results
 
-            response = self._passthrough_serializer_view(request, context)
-            if response.status_code == httplib.OK:
-                return response
-            elif results.get_sparql_results_type() == 'resultset':
-                return self._resultset_view(request, context)
-            elif results.get_sparql_results_type() == 'boolean':
-                return self._boolean_view(request, context)
-            elif results.get_sparql_results_type() == 'graph':
+            if results.format_type == 'sparql-results':
+                return self._sparql_results_view(request, context)
+            elif results.format_type == 'graph':
                 return self._graph_view(request, context)
-            raise AssertionError("Unexpected SPARQL results type: {0}".format(results.get_sparql_results_type()))
+            raise AssertionError("Unexpected format type: {0}".format(results.format_type))
 
         return self.render()
 
     post = get
-
-    @renderer(format='default', mimetypes=('*/*',), name='Default')
-    def render_default(self, request, context, template_name):
-        results = context.get('results')
-        if not isinstance(results, StreamingParser):
-            return NotImplemented
-        if results.get_sparql_results_type() == 'resultset':
-            return self._resultset_view(request, context)
-        elif results.get_sparql_results_type() == 'boolean':
-            return self._boolean_view(request, context)
-        elif results.get_sparql_results_type() == 'graph':
-            return self._graph_view(request, context)
-        raise AssertionError("Unexpected SPARQL results type")
 
 class ProtectedQueryView(QueryView):
     """
