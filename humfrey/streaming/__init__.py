@@ -29,7 +29,7 @@ formats = [
      'parser': RDFXMLParser, 'serializer': RDFXMLSerializer},
     {'format': 'nt', 'name': 'NTriples',
      'parser': NTriplesParser, 'serializer': NTriplesSerializer},
-    {'format': 'srj', 'name': 'SPARQL Results JSON',
+    {'format': 'srj', 'name': 'SPARQL Results JSON', 'priority': 0.9,
      'parser': SRJParser, 'serializer': SRJSerializer},
     {'format': 'srx', 'name': 'SPARQL Results XML',
      'parser': SRXParser, 'serializer': SRXSerializer},

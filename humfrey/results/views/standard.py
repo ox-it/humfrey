@@ -22,14 +22,14 @@ def get_renderer(streaming_format):
 
     @renderer(format=streaming_format['format'],
               mimetypes=(mimetype,),
-              name=streaming_format['name'])
+              name=streaming_format['name'],
+              priority=streaming_format.get('priority', 1))
     def render(self, request, context, template_name):
         results = context.get('results')
         try:
             data = iter(serializer_class(results))
             return HttpResponse(data, mimetype=mimetype)
         except TypeError:
-            raise
             return NotImplemented
     render.__name__ = 'render_%s' % streaming_format['format']
     return render
