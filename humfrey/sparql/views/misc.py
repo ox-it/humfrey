@@ -41,33 +41,9 @@ class CannedQueryView(StoreView):
         self.base_location, self.content_location = self.get_locations(request, *args, **kwargs)
         query = self.get_query(request, *args, **kwargs)
 
-        context['results'] = self.endpoint.query(query)
+        context['results'] = self.endpoint.query(query, defer=True)
         context.update(self.get_additional_context(request, *args, **kwargs))
         context = self.finalize_context(request, context, *args, **kwargs)
 
         return self.render()
-
-    def undefer(self):
-        context = self.context
-        results = context.pop('results', False)
-        if not results:
-            return
-        sparql_results_type = results.get_sparql_results_type()
-        context['sparql_results_type'] = sparql_results_type
-        context[sparql_results_type] = results.get()
-        if sparql_results_type == 'resultset':
-            context['fields'] = results.get_fields()
-        elif sparql_results_type == 'graph':
-            graph = context['graph']
-            self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
-            subjects = self.get_subjects(graph)
-            context['subjects'] = map(self.resource, subjects)
-
-    def render_html_test(self, request, context, template_name):
-        return hasattr(super(CannedQueryView, self), 'render_html')
-
-    @renderer(format='html', mimetypes=('application/xhtml+xml', 'text/html'), name='HTML', test=render_html_test)
-    def render_html(self, request, context, template_name):
-        self.undefer()
-        return super(CannedQueryView, self).render_html(request, context, template_name)
 

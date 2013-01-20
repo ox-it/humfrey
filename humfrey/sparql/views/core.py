@@ -1,4 +1,5 @@
 import base64
+import functools
 import hashlib
 import httplib
 import math
@@ -20,8 +21,10 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
+from django_conneg.decorators import renderer
 from django_conneg.views import HTMLView
 
+from humfrey.linkeddata.resource import Resource
 from humfrey.linkeddata.views import MappingView
 from humfrey.misc.views import PassThroughView
 from humfrey.results.views.standard import RDFView, ResultSetView
@@ -85,6 +88,30 @@ class StoreView(View):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
+    def undefer(self):
+        context = self.context
+        results = context.pop('results', False)
+        if not results:
+            return
+        sparql_results_type = results.get_sparql_results_type()
+        context['sparql_results_type'] = sparql_results_type
+        context[sparql_results_type] = results.get()
+        if sparql_results_type == 'resultset':
+            context['fields'] = results.get_fields()
+        elif sparql_results_type == 'graph':
+            graph = context['graph']
+            self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
+            subjects = self.get_subjects(graph)
+            context['subjects'] = map(self.resource, subjects)
+
+    def render_html_test(self, request, context, template_name):
+        return hasattr(super(StoreView, self), 'render_html')
+
+    @renderer(format='html', mimetypes=('application/xhtml+xml', 'text/html'), name='HTML', test=render_html_test)
+    def render_html(self, request, context, template_name):
+        self.undefer()
+        return super(StoreView, self).render_html(request, context, template_name)
+
 class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
@@ -121,7 +148,8 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
         timeout = self._get_timeout(request)
         return self.endpoint.query(query,
                                    common_prefixes=common_prefixes,
-                                   timeout=timeout)
+                                   timeout=timeout,
+                                   defer=True)
 
     def get_format_choices(self):
         return (
