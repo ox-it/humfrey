@@ -11,6 +11,8 @@ from rdflib import ConjunctiveGraph, Graph, plugin
 from rdflib.parser import Parser
 from rdflib.serializer import Serializer
 
+from humfrey.utils.namespaces import NS
+
 from .base import StreamingParser, StreamingSerializer
 
 class _QueueGraph(Graph):
@@ -93,6 +95,8 @@ class RDFLibSerializer(StreamingSerializer):
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         queue = Queue.Queue()
         graph = ConjunctiveGraph()
+        for prefix, namespace_uri in NS.iteritems():
+            graph.namespace_manager.bind(prefix, namespace_uri)
         graph += list(triples)
         serializer_thread = threading.Thread(target=self._serialize_to_queue,
                                              args=(graph, queue))
