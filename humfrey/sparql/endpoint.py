@@ -50,12 +50,34 @@ def trim_indentation(s):
     return '\n'.join(trimmed)
 
 class Endpoint(object):
+    _supported_media_types = ['application/sparql-results+xml',
+                              'application/sparql-results+json',
+                              'text/plain',
+                              'text/turtle',
+                              'text/n3',
+                              'application/rdf+xml']
     def __init__(self, url, update_url=None, namespaces={}, preferred_media_types=()):
         self._url, self._update_url = url, update_url
         self._namespaces = NS.copy()
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
-        self._preferred_media_types = list(preferred_media_types)
+
+        # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
+        # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
+        # for crude benchmarking. We put the SRX/SRJ ones first to avoid getting
+        # text/plain responses for non-RDF-returning queries.
+        self._preferred_media_types = []
+        for media_type in preferred_media_types:
+            if media_type not in self._supported_media_types:
+                self._preferred_media_types.extend(['application/sparql-results+xml',
+                                                    'text/plain'])
+                break
+            self._preferred_media_types.append(media_type)
+        accept_header = self._supported_media_types[:]
+        for media_type in reversed(self._preferred_media_types):
+            accept_header.remove(media_type)
+            accept_header.insert(0, media_type)
+        self._accept_header = ', '.join('%s;q=%3.1f' % (imt, 1-i/10.0) for i, imt in enumerate(accept_header))
 
     def normalize_query(self, query, common_prefixes=True):
         query = trim_indentation(query)
@@ -78,24 +100,7 @@ class Endpoint(object):
             'query': query.encode('utf-8'),
         }))
 
-        # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
-        # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
-        # for crude benchmarking. We put the SRX/SRJ ones first to avoid getting
-        # text/plain responses for non-RDF-returning queries.
-        accept_header = ['application/sparql-results+xml',
-                         'application/sparql-results+json',
-                         'text/plain',
-                         'text/turtle',
-                         'text/n3',
-                         'application/rdf+xml']
-        for media_type in reversed(self._preferred_media_types):
-            media_type = media_type.split(';')[0].strip()
-            if media_type in accept_header:
-                # Move it to the front
-                accept_header.remove(media_type)
-                accept_header.insert(0, media_type)
-        accept_header = ['%s;q=%3.1f' % (imt, 1-i/10.0) for i, imt in enumerate(accept_header)]
-        request.headers['Accept'] = ', '.join(accept_header)
+        request.headers['Accept'] = self._accept_header
         request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
             request.headers['Timeout'] = str(timeout)
