@@ -3,6 +3,7 @@ import abc
 import rdflib
 
 from humfrey.sparql.results import SparqlResultList
+from humfrey.utils.namespaces import NS
 
 class ModeError(Exception):
     pass
@@ -110,6 +111,8 @@ class StreamingParser(object):
                 self._cached_get = self.get_boolean()
             elif sparql_results_type == 'graph':
                 graph = rdflib.ConjunctiveGraph()
+                for prefix, namespace_uri in NS.iteritems():
+                    graph.namespace_manager.bind(prefix, namespace_uri)
                 graph += self.get_triples()
                 self._cached_get = graph
             else:
