@@ -56,7 +56,7 @@ class CannedQueryView(StoreView):
         context['sparql_results_type'] = sparql_results_type
         context[sparql_results_type] = results.get()
         if sparql_results_type == 'resultset':
-            context['fields'] == results.get_fields()
+            context['fields'] = results.get_fields()
         elif sparql_results_type == 'graph':
             graph = context['graph']
             self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
