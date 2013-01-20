@@ -34,9 +34,9 @@ class RDFXMLSerializer(StreamingSerializer):
         # Triples
         for s, p, o in triples:
             if s != last_subject:
-                if self.last_subject is not None:
+                if last_subject is not None:
                     yield '  </rdf:Description>\n'
-                self.last_subject = s
+                last_subject = s
                 if isinstance(s, URIRef):
                     yield '  <rdf:Description rdf:about=%s>\n' % quoteattr(s).encode('utf-8')
                 elif isinstance(s, BNode):
@@ -46,7 +46,7 @@ class RDFXMLSerializer(StreamingSerializer):
 
             if not isinstance(p, URIRef):
                 raise AssertionError("Unexpected predicate term: %r (%r)" % (type(p), p))
-            for prefix, uri in self.namespaces:
+            for prefix, uri in namespaces:
                 if p.startswith(uri) and self.localpart.match(p[len(uri):]):
                     tag_name = '%s:%s' % (prefix, p[len(uri):])
                     yield '    <%s' % tag_name.encode('utf-8')
@@ -70,6 +70,6 @@ class RDFXMLSerializer(StreamingSerializer):
             else:
                 raise AssertionError("Unexpected object term: %r (%r)" % (type(o), o))
 
-        if self.last_subject is not None:
+        if last_subject is not None:
             yield '  </rdf:Description>\n'
         yield '</rdf:RDF>\n'
