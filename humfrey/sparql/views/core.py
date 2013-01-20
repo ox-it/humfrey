@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
 from django_conneg.decorators import renderer
-from django_conneg.views import HTMLView
+from django_conneg.views import ContentNegotiatedView, HTMLView
 
 from humfrey.linkeddata.resource import Resource
 from humfrey.linkeddata.views import MappingView
@@ -59,7 +59,11 @@ class StoreView(View):
     @property
     def endpoint(self):
         if not hasattr(self, '_endpoint'):
-            preferred_media_types = [m.value for r in self.request.renderers for m in r.mimetypes]
+            if isinstance(self, ContentNegotiatedView):
+                self.set_renderers()
+                preferred_media_types = [m.value for r in self.request.renderers for m in r.mimetypes]
+            else:
+                preferred_media_types = ()
             self._endpoint = Endpoint(self.store.query_endpoint,
                                       preferred_media_types=preferred_media_types)
         return self._endpoint
