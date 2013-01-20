@@ -162,7 +162,6 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         for query in subject.get_queries():
             graph += self.endpoint.query(query)
             queries.append(query)
-        graph += get_labels(graph, self.endpoint, mapping=False)
 
         licenses, datasets = set(), set()
         for graph_name in graph.subjects(NS['ov'].describes):
