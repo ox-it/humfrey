@@ -17,16 +17,10 @@ from django.conf import settings
 import rdflib
 import pytz
 
-try:
-    from rdflib.plugins.parsers.ntriples import NTriplesParser # 3.0
-except ImportError:
-    from rdflib.syntax.parsers.ntriples import NTriplesParser # 2.4
-
 from humfrey.utils.namespaces import NS, expand
 from humfrey.sparql.models import Store
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.streaming.ntriples import NTriplesSource
-from humfrey.streaming.rdfxml import RDFXMLSink
+from humfrey.streaming import parser_by_extension, serializer_by_extension
 from humfrey.update.uploader import Uploader
 
 DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
@@ -117,9 +111,16 @@ class DatasetArchiver(object):
 
             sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
             try:
+                parser_class = parser_by_extension(nt_name)
+                serializer_class = serializer_by_extension(rdf_name)
+
+                parser = parser_class(sort.stdout)
+                triples = itertools.chain(self._get_metadata(rdflib.URIRef(''),
+                                                             archive_graph_name),
+                                          parser.get_triples())
+                serializer = serializer_class(triples)
                 # Use a relative reference (to the current document) in the dump file.
-                RDFXMLSink(rdf_out, triples=itertools.chain(self._get_metadata(rdflib.URIRef(''), archive_graph_name),
-                                                            NTriplesSource(sort.stdout)))
+                serializer.serialize(rdf_out)
             finally:
                 # Make sure stdout gets closed so that if the try block raises
                 # an exception we don't keep a sort process hanging around.
