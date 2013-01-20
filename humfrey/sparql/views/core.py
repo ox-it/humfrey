@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import httplib
-import operator
 import math
 import pickle
 import threading
@@ -21,23 +20,15 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 
-from django_conneg.decorators import renderer
-from django_conneg.http import MediaType
 from django_conneg.views import HTMLView
 
 from humfrey.linkeddata.views import MappingView
 from humfrey.misc.views import PassThroughView
 from humfrey.results.views.standard import RDFView, ResultSetView
-from humfrey.results.views.feed import FeedView
-from humfrey.results.views.spreadsheet import SpreadsheetView
-from humfrey.results.views.geospatial import KMLView
-from humfrey.streaming.base import StreamingParser
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
-from humfrey.utils.statsd import statsd
 
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.sparql.results import SparqlResultList
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store
 
