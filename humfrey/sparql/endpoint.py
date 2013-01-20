@@ -92,7 +92,7 @@ class Endpoint(object):
             query = ''.join(prefixes + q)
         return query
 
-    def query(self, query, common_prefixes=True, timeout=None, log_failure=True, preferred_media_types=()):
+    def query(self, query, common_prefixes=True, timeout=None, log_failure=True, preferred_media_types=(), defer=False):
         original_query = query
         query = self.normalize_query(query, common_prefixes)
 
@@ -129,6 +129,8 @@ class Endpoint(object):
             logger.debug("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
             statsd.timing('humfrey.sparql-query.duration', (time.time() - start_time)*1000)
             statsd.incr('humfrey.sparql-query.success')
+            if not defer:
+                result = result.get()
             return result
         except Exception:
             try:
