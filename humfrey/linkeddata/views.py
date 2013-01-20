@@ -8,7 +8,7 @@ class MappingView(View):
     id_mapping = getattr(settings, 'ID_MAPPING', ())
     doc_view = ('data', 'doc-generic')
     desc_view = ('data', 'desc')
-    
+
     if getattr(settings, 'RESOURCE_REGISTRY', None):
         resource_registry = ResourceRegistry._get_object(settings.RESOURCE_REGISTRY)
     else:
