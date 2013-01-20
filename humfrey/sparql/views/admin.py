@@ -83,7 +83,7 @@ class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
             return self.not_authorized(request)
         return super(StoreChooseMixin, self).get(request, *args, **kwargs)
 
-class GraphListView(StoreChooseMixin, RDFView, HTMLView, CannedQueryView, MappingView):
+class GraphListView(StoreChooseMixin, CannedQueryView, RDFView, HTMLView, MappingView):
     query = """
         CONSTRUCT {
          ?g a sd:Graph ;
@@ -102,7 +102,7 @@ class GraphListView(StoreChooseMixin, RDFView, HTMLView, CannedQueryView, Mappin
     """
 
     template_name = 'sparql/graph-list'
-    def get_subjects(self, request, graph):
+    def get_subjects(self, graph):
         return sorted(graph.subjects(NS.rdf.type, NS.sd.Graph))
     def get_additional_context(self, request):
         return {'store': self.store}
