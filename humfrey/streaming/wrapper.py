@@ -67,6 +67,9 @@ class RDFLibParser(StreamingParser):
         raise TypeError("This is a graph parser")
 
     def get_triples(self):
+        if getattr(self, '_get_triples_called', False):
+            raise AssertionError("Can only call get_triples once")
+        self._get_triples_called = True
         self.mode = 'parse'
         queue = Queue.Queue()
         parser_thread = threading.Thread(target=self._parse_to_queue,
