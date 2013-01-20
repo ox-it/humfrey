@@ -33,11 +33,19 @@ class RDFLibParser(StreamingParser):
     def rdflib_parser(self):
         pass
 
+    @abc.abstractproperty
+    def parser_args(self):
+        pass
+    @abc.abstractproperty
+    def parser_kwargs(self):
+        pass
+
     def _parse_to_queue(self, stream, queue):
         parser = self.rdflib_parser()
         store = _QueueGraph(queue)
         try:
-            parser.parse(stream, store, **self.parser_kwargs)
+            parser.parse(stream, store,
+                         *self.parser_args, **self.parser_kwargs)
         except:
             queue.put(('exception', sys.exc_info()))
         else:
@@ -106,12 +114,15 @@ class RDFLibSerializer(StreamingSerializer):
         else:
             queue.put(('sentinel', None)) # Sentinel
 
-def get_rdflib_parser(name, media_type, plugin_name):
+def get_rdflib_parser(name, media_type, plugin_name,
+                      parser_args=(), parser_kwargs={}):
     rdflib_parser = plugin.get(plugin_name, Parser)
     return type(name,
                 (RDFLibParser,),
                 {'media_type': media_type,
-                 'rdflib_parser': rdflib_parser})
+                 'rdflib_parser': rdflib_parser,
+                 'parser_args': parser_args,
+                 'parser_kwargs': parser_kwargs})
 
 def get_rdflib_serializer(name, media_type, plugin_name):
     rdflib_serializer = plugin.get(plugin_name, Serializer)

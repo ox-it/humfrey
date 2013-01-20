@@ -15,7 +15,8 @@ from .wrapper import get_rdflib_parser, get_rdflib_serializer
 
 from .encoding import coerce_triple_iris
 
-RDFXMLParser = get_rdflib_parser('RDFXMLParser', 'application/rdf+xml', 'xml')
+RDFXMLParser = get_rdflib_parser('RDFXMLParser', 'application/rdf+xml', 'xml',
+                                 parser_kwargs={'preserve_bnode_ids': True})
 
 TurtleParser = get_rdflib_parser('TurtleParser', 'text/turtle', 'turtle')
 TurtleSerializer = get_rdflib_serializer('TurtleSerializer', 'text/turtle', 'turtle')
