@@ -5,7 +5,7 @@ except ImportError: # rdflib 2.4.x
 
 from .base import StreamingParser, StreamingSerializer
 
-__all__ = ['NTriplesSource', 'NTriplesSink']
+__all__ = ['NTriplesParser', 'NTriplesSerializer']
 
 class NTriplesParser(StreamingParser):
     media_type = 'text/plain'

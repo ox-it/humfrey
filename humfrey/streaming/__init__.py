@@ -69,16 +69,14 @@ for f in formats:
 parsers = dict((f['media_type'], f['parser']) for f in formats if f.get('parser'))
 serializers = dict((f['media_type'], f['serializer']) for f in formats if f.get('serializer'))
 
-def RDFSource(source, parser_kwargs={}):
-    """
-    Returns an iterator over the triples encoded in source, based on the
-    file extension in source.name.
-    """
-    name, ext = os.path.splitext(source.name)
-    if ext in _source_types:
-        triples = _source_types[ext](source, parser_kwargs=parser_kwargs)
-        return coerce_triple_iris(triples)
-    else:
-        raise AssertionError("File did not have an expected extension. " +
-                             "Was '{0}'; should be one of {1}".format(ext,
-                                                                      ', '.join(_source_types)))
+def format_by_extension(ext):
+    ext = ext.rsplit('.', 1)[-1]
+    for format_spec in formats:
+        if format['format'] == ext:
+            return format_spec
+    raise KeyError
+
+def parser_by_extension(ext):
+    return format_by_extension(ext)['parser']
+def serializer_by_extension(ext):
+    return format_by_extension(ext)['serializer']
