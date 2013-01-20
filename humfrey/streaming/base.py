@@ -41,6 +41,12 @@ class StreamingParser(object):
         Use this to work out if the stream can be passed on unparsed.
         """
 
+    @abc.abstractproperty
+    def format_type(self):
+        """
+        Either 'sparql-results' or 'graph'.
+        """
+
     @abc.abstractmethod
     def get_sparql_results_type(self):
         """

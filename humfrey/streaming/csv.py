@@ -11,6 +11,7 @@ def _quote(value):
 
 class CSVSerializer(StreamingSerializer):
     media_type = 'text/csv'
+    format_type = 'sparql-results'
     supported_results_types = ('resultset', 'boolean')
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):

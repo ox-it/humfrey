@@ -29,6 +29,8 @@ class _QueueStream(object):
         self._queue.put(('data', data))
 
 class RDFLibParser(StreamingParser):
+    format_type = 'graph'
+
     @abc.abstractproperty
     def rdflib_parser(self):
         pass

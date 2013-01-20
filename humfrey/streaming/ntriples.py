@@ -9,6 +9,7 @@ __all__ = ['NTriplesSource', 'NTriplesSink']
 
 class NTriplesParser(StreamingParser):
     media_type = 'text/plain'
+    format_type = 'graph'
 
     def get_sparql_results_type(self):
         self.mode = 'parse'

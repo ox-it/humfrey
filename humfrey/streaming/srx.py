@@ -63,6 +63,7 @@ class SRXParser(StreamingParser):
             self.content.append(data)
 
     media_type = 'application/sparql-results+xml'
+    format_type = 'sparql-results'
 
     def get_sparql_results_type(self):
         if hasattr(self, '_sparql_results_type'):

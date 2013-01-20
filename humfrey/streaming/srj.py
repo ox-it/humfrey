@@ -17,6 +17,7 @@ _type_mapping = {'uri': lambda v: rdflib.URIRef(v['value']),
 
 class SRJParser(StreamingParser):
     media_type = 'application/sparql-results+json'
+    format_type = 'sparql-results'
 
     def get_sparql_results_type(self):
         if hasattr(self, '_sparql_results_type'):
