@@ -63,18 +63,29 @@ class HTMLSanitizerTestCase(unittest.TestCase):
                </xhtml:p>
                <xhtml:p>Intended Audience: Humanities DPhils</xhtml:p>
             </div>""", """<div>
-               <p><span><div>
+               <p>
+                  <span>
+                     <div>
                         
-                        <span></span>
+                           
+                        
+                        
+                           
+                              
+                                 <span></span>
                                  <div>Foo</div>
-                                 <div>Bar<br></div>
+                                 <div>Bar<br>
+                                 </div>
                               
                            
                         
                      </div>
-                     <ul><span></span>
+                     <ul>
+                        <span></span>
                         
-                     </ul><span><p></p>
+                     </ul>
+                     <span>
+                        <p></p>
                      </span>
                   </span>
                </p>
