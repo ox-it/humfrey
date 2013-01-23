@@ -31,6 +31,7 @@ class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
        'django.contrib.auth.tests.decorators',
        'django.contrib.auth.tests.signals',
        'django.contrib.auth.tests.views',
+       'django_conneg.tests.basic_auth_middleware',
        'object_permissions.tests.backend',
        'object_permissions.tests.groups',
        'object_permissions.tests.permissions',
