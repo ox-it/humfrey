@@ -5,6 +5,7 @@ from django.conf import settings
 from humfrey.update.transform.base import Transform, TransformException
 
 from humfrey.sparql.endpoint import Endpoint
+from humfrey.streaming import serialize
 
 class NoSuchFile(TransformException):
     pass
@@ -27,9 +28,6 @@ class Construct(Transform):
 
         with open(transform_manager('nt'), 'w') as output:
             transform_manager.start(self, [])
-            result = endpoint.query(query)
-
-            result.serialize(output, 'nt')
-
+            serialize(endpoint.query(query, defer=True), output)
             transform_manager.end([output.name])
         return output.name
