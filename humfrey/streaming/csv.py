@@ -22,6 +22,6 @@ class CSVSerializer(StreamingSerializer):
                 yield ','.join(_quote(value) for value in binding)
                 yield '\n'
         elif sparql_results_type == 'boolean':
-            yield 'true' if boolean else 'false\n'
+            yield 'true\n' if boolean else 'false\n'
         else:
             raise TypeError("Unexpected result type: {0}".format(sparql_results_type))
