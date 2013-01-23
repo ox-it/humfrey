@@ -70,7 +70,7 @@ class SRJSerializer(StreamingSerializer):
         buffer_write('{\n')
         if sparql_results_type == 'boolean':
             buffer_write('  "head": {},\n')
-            buffer_write('  "boolean": %s\n' % ('true' if boolean else 'false'))
+            buffer_write('  "boolean": %s' % ('true' if boolean else 'false'))
         elif sparql_results_type == 'resultset':
             buffer_write('  "head": {\n')
             buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(field) for field in fields))
@@ -105,6 +105,8 @@ class SRJSerializer(StreamingSerializer):
                     j += 1
 
                 buffer_write('\n      }')
+            buffer_write('\n    ]')
+            buffer_write('\n  }')
 
 
             if buffer.tell() > 65000: # Almost 64k
@@ -112,8 +114,6 @@ class SRJSerializer(StreamingSerializer):
                 buffer.seek(0)
                 buffer.truncate()
 
-        buffer_write('\n    ]\n')
-        buffer_write('  }\n')
-        buffer_write('}')
+        buffer_write('\n}')
         yield buffer.getvalue()
         buffer.close()
