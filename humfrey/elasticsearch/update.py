@@ -49,7 +49,7 @@ class IndexUpdater(object):
         endpoint = Endpoint(store.query_endpoint)
 
         logger.debug("Performing SPARQL query.", extra={'query': index.query})
-        results = endpoint.query(index.query)
+        results = endpoint.query(index.query, defer=True).get_bindings()
         logger.debug("SPARQL server started returning results.")
 
         try:
