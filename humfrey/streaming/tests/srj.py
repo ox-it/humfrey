@@ -11,7 +11,6 @@ class SRJRendererTestCase(unittest.TestCase):
 
     def testValidSRJResultSet(self):
         data = ''.join(SRJSerializer(TEST_RESULTSET))
-        print data
 
         target_data_filename = os.path.join(imp.find_module('humfrey')[1], 'tests', 'data', 'linkeddata', 'srj_resultset.json')
         with open(target_data_filename, 'rb') as json_file:
