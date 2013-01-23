@@ -1,4 +1,5 @@
 import abc
+import types
 
 import rdflib
 
@@ -139,12 +140,12 @@ class StreamingSerializer(object):
 
         sparql_results_type, fields, bindings, boolean, triples = None, None, None, None, None
 
-        if isinstance(results, rdflib.ConjunctiveGraph):
-            sparql_results_type, triples = 'graph', results
-        elif isinstance(results, bool):
+        if isinstance(results, bool):
             sparql_results_type, boolean = 'boolean', results
         elif isinstance(results, SparqlResultList):
             sparql_results_type, fields, bindings = 'resultset', results.fields, results
+        elif isinstance(results, (list, types.GeneratorType, rdflib.ConjunctiveGraph)):
+            sparql_results_type, triples = 'graph', results
         elif isinstance(results, StreamingParser):
             sparql_results_type = results.get_sparql_results_type()
             if sparql_results_type == 'resultset':

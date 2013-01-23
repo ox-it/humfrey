@@ -72,7 +72,7 @@ serializers = dict((f['media_type'], f['serializer']) for f in formats if f.get(
 def format_by_extension(ext):
     ext = ext.rsplit('.', 1)[-1]
     for format_spec in formats:
-        if format['format'] == ext:
+        if format_spec['format'] == ext:
             return format_spec
     raise KeyError
 
@@ -80,3 +80,11 @@ def parser_by_extension(ext):
     return format_by_extension(ext)['parser']
 def serializer_by_extension(ext):
     return format_by_extension(ext)['serializer']
+
+def parse(f, extension=None):
+    parser = parser_by_extension(extension or f.name)
+    return parser(f)
+
+def serialize(data, f, extension=None):
+    serializer = serializer_by_extension(extension or f.name)
+    serializer(data).serialize(f)

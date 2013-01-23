@@ -4,7 +4,6 @@ import hashlib
 import itertools
 import logging
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -20,7 +19,7 @@ import pytz
 from humfrey.utils.namespaces import NS, expand
 from humfrey.sparql.models import Store
 from humfrey.sparql.endpoint import Endpoint
-from humfrey.streaming import parser_by_extension, serializer_by_extension
+from humfrey.streaming import parse, serialize
 from humfrey.update.uploader import Uploader
 
 DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
@@ -111,16 +110,10 @@ class DatasetArchiver(object):
 
             sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
             try:
-                parser_class = parser_by_extension(nt_name)
-                serializer_class = serializer_by_extension(rdf_name)
-
-                parser = parser_class(sort.stdout)
                 triples = itertools.chain(self._get_metadata(rdflib.URIRef(''),
                                                              archive_graph_name),
-                                          parser.get_triples())
-                serializer = serializer_class(triples)
-                # Use a relative reference (to the current document) in the dump file.
-                serializer.serialize(rdf_out)
+                                          parse(sort.stdout, 'nt').get_triples())
+                serialize(triples, rdf_out)
             finally:
                 # Make sure stdout gets closed so that if the try block raises
                 # an exception we don't keep a sort process hanging around.

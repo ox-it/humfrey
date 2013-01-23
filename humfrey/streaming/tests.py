@@ -6,7 +6,7 @@ from django.utils import unittest
 import rdflib
 
 from humfrey.utils import namespaces
-from humfrey.sparql.results import Result, SparqlResultList, SparqlResultSet
+from humfrey.sparql.results import Result, SparqlResultList
 from . import srx, encoding
 
 _TEST_BNODE = rdflib.BNode()

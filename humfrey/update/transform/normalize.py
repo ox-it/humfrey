@@ -16,7 +16,7 @@ import pytz
 from rdflib import Literal, BNode, URIRef
 
 from humfrey.update.transform.base import Transform
-from humfrey.streaming import RDFSource, RDFXMLSink
+from humfrey.streaming import parse, serialize
 from humfrey.utils.namespaces import NS, expand, HUMFREY
 from humfrey.sparql.endpoint import Endpoint
 
@@ -249,11 +249,11 @@ class Normalize(Transform):
 
         while self.normalizations:
             with open(input, 'r') as source:
-                pipeline = RDFSource(source, parser_kwargs={'preserve_bnode_ids': True})
+                pipeline = parse(source).get_triples()
                 for normalization in self.normalizations:
                     pipeline = normalization(pipeline)
                 with open(transform_manager('rdf'), 'w') as target:
-                    RDFXMLSink(target, triples=pipeline)
+                    serialize(pipeline, target)
 
             input = target.name
             self.normalizations = [n for n in self.normalizations if not n.done]
