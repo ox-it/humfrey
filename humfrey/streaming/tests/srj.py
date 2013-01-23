@@ -7,7 +7,7 @@ from humfrey.utils import json
 from .. import SRJSerializer
 from .data import TEST_RESULTSET
 
-class SRJRendererTestCase(unittest.TestCase):
+class SRJSerializerTestCase(unittest.TestCase):
 
     def testValidSRJResultSet(self):
         data = ''.join(SRJSerializer(TEST_RESULTSET))
