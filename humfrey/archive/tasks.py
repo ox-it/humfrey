@@ -50,7 +50,7 @@ class DatasetArchiver(object):
 
     def _graph_created(self, graph_name):
         query = "SELECT ?created WHERE {{ {0} dcterms:created ?created }}".format(graph_name.n3())
-        results = self.endpoint.query(query).get()
+        results = self.endpoint.query(query)
         if results:
             return results[0].created
         else:
@@ -113,7 +113,7 @@ class DatasetArchiver(object):
                 triples = itertools.chain(self._get_metadata(rdflib.URIRef(''),
                                                              archive_graph_name),
                                           parse(sort.stdout, 'nt').get_triples())
-                serialize(triples, rdf_out)
+                serialize(triples, rdf_out, rdf_name)
             finally:
                 # Make sure stdout gets closed so that if the try block raises
                 # an exception we don't keep a sort process hanging around.
@@ -194,7 +194,7 @@ class DatasetArchiver(object):
         timestamps.pop()
 
         last_timestamp = timestamps.pop(0)[0]
-        for timestamp, filename in timestamps:
+        for timestamp, filename in list(timestamps):
             for limit in limits:
                 if timestamp < limit['limit']:
                     # The limit doesn't apply as this archive is too far in
