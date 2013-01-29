@@ -203,7 +203,10 @@ class DatasetArchiver(object):
                 if limit['epoch'](last_timestamp) == limit['epoch'](timestamp):
                     # The archive is in the same partition as the one before
                     # it, and is therefore unnecessary.
-                    os.unlink(filename)
+                    try:
+                        os.unlink(filename)
+                    except OSError:
+                        logger.exception("Couldn't find file to delete")
                 else:
                     break
             last_timestamp = timestamp
