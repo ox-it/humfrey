@@ -92,7 +92,11 @@ class GraphListView(StoreChooseMixin, CannedQueryView, RDFView, HTMLView, Mappin
            dcterms:created ?created ;
            dcterms:modified ?modified
         } WHERE {
-          GRAPH ?g { ?s ?p ?o } .
+          {
+            SELECT DISTINCT ?g {
+              GRAPH ?g { ?s ?p ?o }
+            }
+          }
           OPTIONAL { ?g rdfs:label ?label } .
           OPTIONAL { ?g dcterms:publisher ?publisher } .
           OPTIONAL { ?g dcterms:license ?license } .
