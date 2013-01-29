@@ -146,6 +146,8 @@ class StreamingSerializer(object):
             sparql_results_type, fields, bindings = 'resultset', results.fields, results
         elif isinstance(results, (list, types.GeneratorType, rdflib.ConjunctiveGraph)):
             sparql_results_type, triples = 'graph', results
+        elif hasattr(results, '__iter__'):
+            sparql_results_type, triples = 'graph', results
         elif isinstance(results, StreamingParser):
             sparql_results_type = results.get_sparql_results_type()
             if sparql_results_type == 'resultset':
