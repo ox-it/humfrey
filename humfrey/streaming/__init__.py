@@ -74,7 +74,7 @@ def format_by_extension(ext):
     for format_spec in formats:
         if format_spec['format'] == ext:
             return format_spec
-    raise KeyError
+    raise KeyError(ext)
 
 def parser_by_extension(ext):
     return format_by_extension(ext)['parser']
