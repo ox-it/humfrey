@@ -6,6 +6,18 @@ from django_conneg.decorators import renderer
 from django_conneg.views import ContentNegotiatedView
 
 from humfrey import streaming
+from humfrey.streaming.base import StreamingParser
+
+def get_renderer_test(serializer_class):
+    def test(self, request, context, template_name):
+        if isinstance(context.get('results'), StreamingParser):
+            return serializer_class.format_type == context['results'].format_type
+        if serializer_class.format_type == 'sparql-results':
+            return 'bindings' in context or 'boolean' in context
+        elif serializer_class.format_type == 'graph':
+            return 'graph' in context
+        else:
+            return False
 
 def get_renderer(streaming_format):
     serializer_class = streaming_format['serializer']
@@ -14,7 +26,8 @@ def get_renderer(streaming_format):
     @renderer(format=streaming_format['format'],
               mimetypes=(mimetype,),
               name=streaming_format['name'],
-              priority=streaming_format.get('priority', 1))
+              priority=streaming_format.get('priority', 1),
+              test=get_renderer_test(serializer_class))
     def render(self, request, context, template_name):
         results = context.get('results') \
                or context.get('graph') \
