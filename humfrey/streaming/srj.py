@@ -12,8 +12,8 @@ from .base import StreamingParser, StreamingSerializer
 
 _type_mapping = {'uri': lambda v: rdflib.URIRef(v['value']),
                  'bnode': lambda v: rdflib.BNode(v['value']),
-                 'literal': lambda v: rdflib.Literal(v['value'], datatype=v['datatype']),
-                 'typed-literal': lambda v: rdflib.Literal(v['value'], language=v.get('xml:lang'))}
+                 'literal': lambda v: rdflib.Literal(v['value'], datatype=v.get('xml:lang')),
+                 'typed-literal': lambda v: rdflib.Literal(v['value'], language=v['datatype'])}
 
 class SRJParser(StreamingParser):
     media_type = 'application/sparql-results+json'
