@@ -59,7 +59,7 @@ def node2(obj):
 
 @register.filter
 def property(obj, value):
-    if obj is None:
+    if not isinstance(obj, BaseResource):
         return
     return obj.get_one_of(*value.split(','))
 
