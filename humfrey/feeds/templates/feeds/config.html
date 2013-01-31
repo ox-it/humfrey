@@ -1,0 +1,17 @@
+{% extends "feeds/base.html" %}
+
+{% block title %}Configure feed: {{ feed.plural_name|capfirst }}{% endblock %}
+
+{% block content %}
+  <h1>Configure feed: {{ feed.plural_name|capfirst }}</h1>
+  
+  <form method="get">
+    <table>
+      {{ form }}
+    </table>
+    <p>
+      <input type="submit" value="Update" formaction="?">
+      <input type="submit" value="Get feed" formaction="{% url feeds:feed-render feed.slug %}">
+    </p>
+  </form>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% load humfrey_desc %}
+    <h2 itemprop="name">{{ subject.label }}</h2>
+    {% if subject.foaf_homepage %}<a itemprop="url" href="{{ subject.foaf_homepage }}">Homepage</a>{% endif %}
+    {% if subject.description %}
+      <div itemprop="description">{{ subject.description|node }}</div>
+    {% endif %}
