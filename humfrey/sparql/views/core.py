@@ -102,11 +102,22 @@ class StoreView(View):
         context[sparql_results_type] = results.get()
         if sparql_results_type == 'resultset':
             context['fields'] = results.get_fields()
+            context['bindings'] = context['resultset']
         elif sparql_results_type == 'graph':
             graph = context['graph']
             self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
-            subjects = self.get_subjects(graph)
-            context['subjects'] = map(self.resource, subjects)
+            subjects = map(self.resource, self.get_subjects(graph))
+            self.sort_subjects(subjects)
+            context['subjects'] = subjects
+
+    def get_subjects(self, graph):
+        return graph.objects(rdflib.URIRef(self.request.build_absolute_uri()),
+                             NS.foaf.topic)
+
+    def sort_subjects(self, subjects):
+        def k(s):
+            return unicode(s.label)
+        subjects.sort(key=k)
 
     def render_html_test(self, request, context, template_name):
         return hasattr(super(StoreView, self), 'render_html')
