@@ -207,8 +207,7 @@ class DatasetArchiver(object):
                         os.unlink(filename)
                     except OSError:
                         logger.exception("Couldn't find file to delete")
-                else:
-                    break
+                break
             last_timestamp = timestamp
 
 @task(name='humfrey.archive.update_dataset_archives')
