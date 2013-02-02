@@ -2,8 +2,11 @@ import imp
 import os.path
 
 from rdflib import Graph, plugin
-from rdflib.parser import Parser
-from rdflib.serializer import Serializer
+
+try:
+    from rdflib.serializer import Serializer # rdflib 3.x
+except ImportError:
+    from rdflib.syntax.serializer import Serializer # rdflib 2.4.x
 
 from .base import StreamingParser, StreamingSerializer
 from .srx import SRXParser, SRXSerializer
