@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.utils.importlib import import_module
 
+__all__ = ['FEEDS', 'FEED_META']
+
 FEEDS = getattr(settings, 'HUMFREY_FEEDS', {}).copy()
 FEED_META = {}
 for slug in list(FEEDS):
@@ -14,4 +16,5 @@ for slug in list(FEEDS):
     FEEDS[slug] = feed.as_view(slug=slug, meta=meta)
     FEED_META[slug] = meta
 
-del mod_name, class_name, slug, feed, meta
+if FEEDS:
+    del mod_name, class_name, slug, feed, meta
