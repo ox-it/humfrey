@@ -13,8 +13,8 @@ try:  # rdflib 3.x
     from rdflib.parser import Parser
     from rdflib.serializer import Serializer
 except ImportError:  # rdflib 2.4.x
-    from rdflib.syntax.parser import Parser
-    from rdflib.syntax.serializer import Serializer
+    from rdflib.syntax.parsers import Parser
+    from rdflib.syntax.serializers import Serializer
 
 from humfrey.utils.namespaces import NS
 

@@ -3,10 +3,10 @@ import os.path
 
 from rdflib import Graph, plugin
 
-try:
-    from rdflib.serializer import Serializer # rdflib 3.x
-except ImportError:
-    from rdflib.syntax.serializer import Serializer # rdflib 2.4.x
+try: # rdflib 3.x
+    from rdflib.serializer import Serializer
+except ImportError: # rdflib 2.4
+    from rdflib.syntax.serializers import Serializer
 
 from .base import StreamingParser, StreamingSerializer
 from .srx import SRXParser, SRXSerializer
@@ -21,7 +21,10 @@ from .encoding import coerce_triple_iris
 RDFXMLParser = get_rdflib_parser('RDFXMLParser', 'application/rdf+xml', 'xml',
                                  parser_kwargs={'preserve_bnode_ids': True})
 
-TurtleParser = get_rdflib_parser('TurtleParser', 'text/turtle', 'turtle')
+try: # rdflib 3.x
+    TurtleParser = get_rdflib_parser('TurtleParser', 'text/turtle', 'turtle')
+except Exception: # rdflib 2.4
+    TurtleParser = get_rdflib_parser('TurtleParser', 'text/turtle', 'n3')
 TurtleSerializer = get_rdflib_serializer('TurtleSerializer', 'text/turtle', 'turtle')
 
 N3Parser = get_rdflib_parser('N3Parser', 'text/n3', 'n3')
