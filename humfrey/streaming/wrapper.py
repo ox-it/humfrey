@@ -8,8 +8,13 @@ import sys
 import threading
 
 from rdflib import ConjunctiveGraph, Graph, plugin
-from rdflib.parser import Parser
-from rdflib.serializer import Serializer
+
+try:  # rdflib 3.x
+    from rdflib.parser import Parser
+    from rdflib.serializer import Serializer
+except ImportError:  # rdflib 2.4.x
+    from rdflib.syntax.parser import Parser
+    from rdflib.syntax.serializer import Serializer
 
 from humfrey.utils.namespaces import NS
 
