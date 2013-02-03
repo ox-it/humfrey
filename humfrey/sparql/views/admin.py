@@ -4,16 +4,14 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
-from django_conneg.conneg import Conneg
 from django_conneg.views import ContentNegotiatedView, HTMLView, JSONView
 
-from .core import StoreView, QueryView
 from humfrey.linkeddata.resource import ResourceRegistry
 from humfrey.linkeddata.views import MappingView
 from humfrey.desc import views as desc_views
 from humfrey.misc import views as misc_views
 from humfrey.results.views.standard import RDFView
-from humfrey.sparql.views import StoreView, CannedQueryView
+from humfrey.sparql.views import StoreView, QueryView, CannedQueryView
 from humfrey.sparql.models import Store
 from humfrey.utils.namespaces import NS
 
@@ -29,9 +27,7 @@ class IndexView(HTMLView, JSONView):
 class StoreChooseMixin(object):
     @property
     def doc_view(self):
-        return ('admin', 'sparql-admin:view',
-                (), {},
-                (), {'store': self.store_name})
+        return reverse('sparql-admin:view', kwargs={'store': self.store_name})
     desc_view = doc_view
 
     id_mapping = ()

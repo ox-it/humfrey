@@ -56,9 +56,12 @@ def doc_forwards(uri, graph=None, described=None):
     if described == False:
         return DocURLs(encoded_uri, encoded_uri.replace('%', '%%'))
 
-    view_name = get_doc_view() if described else get_desc_view()
+    url = get_doc_view() if described else get_desc_view()
+    if isinstance(url, tuple):
+        # This used to return a tuple, now it returns the URL directly
+        url = reverse_full(*url)
 
-    base = '%s?%s' % (reverse_full(*view_name),
+    base = '%s?%s' % (url,
                       urllib.urlencode((('uri', encoded_uri),)))
 
     return DocURLs(base,
@@ -85,7 +88,7 @@ def doc_backward(url, formats=None):
     url, format = match.group('url'), match.group('format')
     if format and formats is not None and format not in formats:
         url, format = '%s.%s' % (url, format), None
-    
+
     if with_hosts:
         url_part = url
     else:

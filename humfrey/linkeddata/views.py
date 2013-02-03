@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.views.generic import View
 
 from humfrey.linkeddata.mappingconf import set_id_mapping, set_doc_view, set_desc_view, set_resource_registry
@@ -6,8 +7,14 @@ from humfrey.linkeddata.resource import base_resource_registry, ResourceRegistry
 
 class MappingView(View):
     id_mapping = getattr(settings, 'ID_MAPPING', ())
-    doc_view = ('data', 'doc-generic')
-    desc_view = ('data', 'desc')
+
+    @property
+    def doc_view(self):
+        return reverse('doc-generic')
+
+    @property
+    def desc_view(self):
+        return reverse('desc')
 
     if getattr(settings, 'RESOURCE_REGISTRY', None):
         resource_registry = ResourceRegistry._get_object(settings.RESOURCE_REGISTRY)
