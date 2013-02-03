@@ -6,6 +6,7 @@ import abc
 import Queue
 import sys
 import threading
+from xml.sax.saxutils import prepare_input_source
 
 from rdflib import ConjunctiveGraph, Graph, plugin
 
@@ -52,8 +53,9 @@ class RDFLibParser(StreamingParser):
     def _parse_to_queue(self, stream, queue):
         parser = self.rdflib_parser()
         store = _QueueGraph(queue)
+        source = prepare_input_source(stream)
         try:
-            parser.parse(stream, store,
+            parser.parse(source, store,
                          *self.parser_args, **self.parser_kwargs)
         except:
             queue.put(('exception', sys.exc_info()))
