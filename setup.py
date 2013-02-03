@@ -2,7 +2,7 @@ from distutils.core import setup
 from distutils.command.install import INSTALL_SCHEMES
 import os
 
-from humfrey import __version__
+from humfrey import __version__, source_homepage
 
 #################################
 # BEGIN borrowed from Django #
@@ -63,12 +63,12 @@ for line in open('requirements.txt'):
 setup(
     name='humfrey',
     description='A Django-based RESTful linked data frontend for SPARQL endpoints.',
-    author='Oxford University Computing Services',
+    author='IT Services, University of Oxford',
     author_email='opendata@oucs.ox.ac.uk',
     version=__version__,
     packages=packages,
     license='BSD',
-    url='https://github.com/oucs/humfrey',
+    url=source_homepage,
     long_description=open('README.rst').read(),
     classifiers=['Development Status :: 4 - Beta',
                  'Framework :: Django',

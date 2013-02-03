@@ -1,7 +1,7 @@
 Source: python-django-humfrey
 Section: python
 Priority: extra
-Maintainer: Alexander Dutton <alexander.dutton@oucs.ox.ac.uk>
+Maintainer: Alexander Dutton <alexander.dutton@it.ox.ac.uk>
 Build-Depends: debhelper (>= 7.0.50~),
                python-all,
                python-support,
@@ -18,8 +18,8 @@ Build-Depends: debhelper (>= 7.0.50~),
                python-unittest2
 Standards-Version: 3.8.4
 X-Python-Version: >= 2.6
-Homepage: https://github.com/oucs/humfrey
-Vcs-Git: git://github.com/oucs/humfrey.git
+Homepage: https://github.com/ox-it/humfrey
+Vcs-Git: git://github.com/ox-it/humfrey.git
 
 Package: python-django-humfrey
 Section: python
