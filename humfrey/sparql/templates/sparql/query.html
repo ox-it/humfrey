@@ -28,7 +28,6 @@
 
       <p>Query took {{ results.duration|floatformat:2 }} seconds to complete.</p>
 
-{{ results.get_sparql_results_type}}
     {% if results.get_sparql_results_type == "resultset" %}
       {% include "sparql/resultset.html" %}
     {% endif %}
