@@ -88,7 +88,9 @@ class StoreView(View):
         if False and types:
             types = pickle.loads(base64.b64decode(types))
         else:
-            types = set(rdflib.URIRef(r.type) for r in self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3()))
+            results = self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3(),
+                                          preferred_media_types=())
+            types = set(rdflib.URIRef(r.type) for r in results)
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 

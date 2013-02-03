@@ -62,22 +62,25 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
+        self._accept_header = self._get_accept_header(preferred_media_types)
+
+    def _get_accept_header(self, preferred_media_types=()):
         # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
         # See http://blogs.oucs.ox.ac.uk/opendata/2012/12/05/benchmarking-rdflib-parsers/
         # for crude benchmarking. We put the SRX/SRJ ones first to avoid getting
         # text/plain responses for non-RDF-returning queries.
-        self._preferred_media_types = []
+        media_types = []
         for media_type in preferred_media_types:
             if media_type not in self._supported_media_types:
-                self._preferred_media_types.extend(['application/sparql-results+xml',
-                                                    'text/plain'])
+                media_types.extend(['application/sparql-results+xml',
+                                    'text/plain'])
                 break
-            self._preferred_media_types.append(media_type)
-        accept_header = self._supported_media_types[:]
-        for media_type in reversed(self._preferred_media_types):
+            media_types.append(media_type)
+        accept_header = media_types[:]
+        for media_type in reversed(media_types):
             accept_header.remove(media_type)
             accept_header.insert(0, media_type)
-        self._accept_header = ', '.join('%s;q=%3.1f' % (imt, 1-i/10.0) for i, imt in enumerate(accept_header))
+        return ', '.join('%s;q=%3.1f' % (imt, 1-i/10.0) for i, imt in enumerate(accept_header))
 
     def normalize_query(self, query, common_prefixes=True):
         query = trim_indentation(query)
@@ -92,7 +95,7 @@ class Endpoint(object):
             query = ''.join(prefixes + q)
         return query
 
-    def query(self, query, common_prefixes=True, timeout=None, log_failure=True, preferred_media_types=(), defer=False):
+    def query(self, query, common_prefixes=True, timeout=None, log_failure=True, preferred_media_types=None, defer=False):
         original_query = query
         query = self.normalize_query(query, common_prefixes)
 
@@ -100,7 +103,10 @@ class Endpoint(object):
             'query': query.encode('utf-8'),
         }))
 
-        request.headers['Accept'] = self._accept_header
+        if preferred_media_types is not None:
+            request.headers['Accept'] = self._get_accept_header(preferred_media_types)
+        else:
+            request.headers['Accept'] = self._accept_header
         request.headers['User-Agent'] = USER_AGENTS['agent']
         if timeout:
             request.headers['Timeout'] = str(timeout)
