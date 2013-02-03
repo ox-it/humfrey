@@ -72,6 +72,10 @@ def doc_forward(uri, graph=None, described=None, format=None):
 
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
 
+def _get_host_path(url):
+    parsed_url = urlparse.urlparse(url)
+    return '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)
+
 def doc_backward(url, formats=None):
     """
     Determines the URI a doc page is about.
@@ -80,8 +84,10 @@ def doc_backward(url, formats=None):
     """
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
-    host_path = '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)
-    if host_path == reverse_full(*get_doc_view()):
+    doc_view_url = get_doc_view()
+    if isinstance(doc_view_url, tuple):
+        doc_view_url = reverse_full(*doc_view_url)
+    if _get_host_path(url) == doc_view_url:
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)
