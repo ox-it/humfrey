@@ -94,23 +94,45 @@ class StoreView(View):
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
 
+    def update_context_for_deferral(self):
+        """
+        Adds elements to the context for undeferring and accessing elements of
+        the query response from a template.
+        """
+        def deferred(name):
+            def f():
+                self.undefer()
+                return self.context['_'+name]
+            return f
+        for name in ('subjects', 'fields', 'bindings', 'graph'):
+            self.context[name] = deferred(name)
+
     def undefer(self):
+        """
+        Undefers parsing of a query response in the context.
+
+        The parsed query results are put back in the context in appropriately
+        named variables. Can be called more than once, with successive calls
+        as no-ops. Access the results using the names without underscores (as
+        placed in the context by calling update_context_for_deferral()), to
+        only undefer if necessary.
+        """
         context = self.context
-        results = context.pop('results', False)
+        results = context.pop('results', None)
         if not results:
             return
         sparql_results_type = results.get_sparql_results_type()
-        context['sparql_results_type'] = sparql_results_type
-        context[sparql_results_type] = results.get()
+        context['_sparql_results_type'] = sparql_results_type
+        context['_' + sparql_results_type] = results.get()
         if sparql_results_type == 'resultset':
-            context['fields'] = results.get_fields()
-            context['bindings'] = context['resultset']
+            context['_fields'] = results.get_fields()
+            context['_bindings'] = context['resultset']
         elif sparql_results_type == 'graph':
-            graph = context['graph']
+            graph = context['_graph']
             self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
             subjects = map(self.resource, self.get_subjects(graph))
             self.sort_subjects(subjects)
-            context['subjects'] = subjects
+            context['_subjects'] = subjects
 
     def get_subjects(self, graph):
         return graph.objects(rdflib.URIRef(self.request.build_absolute_uri()),
@@ -120,14 +142,6 @@ class StoreView(View):
         def k(s):
             return unicode(s.label)
         subjects.sort(key=k)
-
-    def render_html_test(self, request, context, template_name):
-        return hasattr(super(StoreView, self), 'render_html')
-
-    @renderer(format='html', mimetypes=('application/xhtml+xml', 'text/html'), name='HTML', test=render_html_test)
-    def render_html(self, request, context, template_name):
-        self.undefer()
-        return super(StoreView, self).render_html(request, context, template_name)
 
 class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
