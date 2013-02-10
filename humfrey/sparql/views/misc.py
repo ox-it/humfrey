@@ -2,8 +2,6 @@ import functools
 
 from django_conneg.decorators import renderer
 
-from humfrey.linkeddata.resource import Resource
-from humfrey.sparql.utils import get_labels
 from .core import StoreView
 
 class CannedQueryView(StoreView):
@@ -22,9 +20,6 @@ class CannedQueryView(StoreView):
         """
         return None, None
 
-    def get_subjects(self, graph):
-        return ()
-
     def get_additional_context(self, request, *args, **kwargs):
         return {}
 
@@ -42,6 +37,7 @@ class CannedQueryView(StoreView):
         query = self.get_query(request, *args, **kwargs)
 
         context['results'] = self.endpoint.query(query, defer=True)
+        self.update_context_for_deferral()
         context.update(self.get_additional_context(request, *args, **kwargs))
         context = self.finalize_context(request, context, *args, **kwargs)
 
