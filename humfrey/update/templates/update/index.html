@@ -68,7 +68,7 @@ ul.update-definitions li p {
           {% endif %}</td>
           <td><a href="{% url update:log-list definition.slug %}">Log</a></td>
           <td>{% if definition|can_execute:user %}{% if definition.status == 'idle' %}
-            <form method="post" action="{% url update:definition-detail definition.slug %}">
+            <form method="post" action="{% url update:definition-detail definition.slug %}">{% csrf_token %}
               <input type="hidden" name="action" value="execute"/>
               <input type="submit" value="Queue for execution"/>
             </form>
