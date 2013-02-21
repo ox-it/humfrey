@@ -5,7 +5,7 @@ from django.forms.models import inlineformset_factory
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse, resolve
 
-from .models import UpdateDefinition, UpdatePipeline, LocalFile
+from .models import UpdateDefinition, UpdatePipeline
 from .utils import evaluate_pipeline
 
 class UpdateDefinitionForm(forms.ModelForm):
@@ -40,7 +40,3 @@ UpdatePipelineFormset = inlineformset_factory(UpdateDefinition,
                                               UpdatePipelineForm,
                                               can_delete=True,
                                               extra=2)
-
-class CreateFileForm(forms.ModelForm):
-    class Meta:
-        model = LocalFile
