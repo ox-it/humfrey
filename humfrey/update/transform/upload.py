@@ -70,8 +70,9 @@ class Upload(Transform):
                 created = modified
 
         graph += (
-            (self.graph_name, NS['dcterms'].modified, modified),
-            (self.graph_name, NS['dcterms'].created, created),
+            (self.graph_name, NS.rdf.type, NS.sd.Graph),
+            (self.graph_name, NS.dcterms.modified, modified),
+            (self.graph_name, NS.dcterms.created, created),
         )
 
         logger.debug("About to serialize")
