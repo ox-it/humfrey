@@ -4,11 +4,9 @@ import urlparse
 import wsgiref.util
 
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.views.generic import View
 from django_conneg.views import HTMLView
-
 
 # Only create FeedView class if feedparser and pytz are importable.
 # This will make feedparser and pytz optional dependencies if one
