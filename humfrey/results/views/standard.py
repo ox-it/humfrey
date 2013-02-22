@@ -18,6 +18,7 @@ def get_renderer_test(serializer_class):
             return 'graph' in context
         else:
             return False
+    return test
 
 def get_renderer(streaming_format):
     serializer_class = streaming_format['serializer']
