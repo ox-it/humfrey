@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import types
+
 from django.http import HttpResponse
 
 from django_conneg.decorators import renderer
@@ -34,6 +36,8 @@ def get_renderer(streaming_format):
                or context.get('graph') \
                or context.get('bindings') \
                or context.get('boolean')
+        if isinstance(results, types.FunctionType):
+            results = results()
         try:
             data = iter(serializer_class(results))
             return HttpResponse(data, mimetype=mimetype)
