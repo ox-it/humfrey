@@ -144,10 +144,6 @@ class StreamingSerializer(object):
             sparql_results_type, boolean = 'boolean', results
         elif isinstance(results, SparqlResultList):
             sparql_results_type, fields, bindings = 'resultset', results.fields, results
-        elif isinstance(results, (list, types.GeneratorType, rdflib.ConjunctiveGraph)):
-            sparql_results_type, triples = 'graph', results
-        elif hasattr(results, '__iter__'):
-            sparql_results_type, triples = 'graph', results
         elif isinstance(results, StreamingParser):
             sparql_results_type = results.get_sparql_results_type()
             if sparql_results_type == 'resultset':
@@ -159,6 +155,11 @@ class StreamingSerializer(object):
             elif sparql_results_type == 'graph':
                 triples = results.get_triples()
                 fields, bindings, boolean = None, None, None
+        # Assume iterable-ish things are graphs / lists of triples
+        elif isinstance(results, (list, types.GeneratorType, rdflib.ConjunctiveGraph)):
+            sparql_results_type, triples = 'graph', results
+        elif hasattr(results, '__iter__'):
+            sparql_results_type, triples = 'graph', results
         else:
             raise TypeError("{0} object cannot be serialized".format(type(results)))
 
