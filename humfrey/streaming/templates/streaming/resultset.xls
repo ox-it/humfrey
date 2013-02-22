@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <style type="text/css">
+      th { font-weight: bold; }
+	  td { border: 1px solid black; }
+    </style>
+  </head>
+  <body>
+    <table>
+		<thead>
+			<tr>
+				{% for field in fields %}
+						  <th>{{ field }}</th>
+				{% endfor %}
+			</tr>
+		</thead>
+		<tbody>
+			{% for binding in bindings %}
+				<tr class="row-{% cycle "odd" "even" %}">
+					{% for cell in binding %}
+						<td>{{ cell|default_if_none:"" }}</td>
+					{% endfor %}
+				</tr>
+			{% empty %}
+			<tr><td colspan="{{ fields|length }}">No results found</td></tr>
+			{% endfor %}
+		</tbody>
+    </table>
+  </body>
+</html>

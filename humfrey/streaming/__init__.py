@@ -14,6 +14,7 @@ from .srj import SRJParser, SRJSerializer
 from .csv import CSVSerializer
 from .rdfxml import RDFXMLSerializer
 from .ntriples import NTriplesParser, NTriplesSerializer
+from .xls import XLSSerializer
 from .wrapper import get_rdflib_parser, get_rdflib_serializer
 
 from .encoding import coerce_triple_iris
@@ -46,6 +47,8 @@ formats = [
      'parser': TurtleParser, 'serializer': TurtleSerializer},
     {'format': 'n3', 'name': 'Notation3',
      'parser': N3Parser, 'serializer': N3Serializer},
+    {'format': 'xls', 'name': 'Excel Spreadsheet (XLS)',
+     'parser': None, 'serializer': XLSSerializer},
 ]
 
 # Register the RDF/JSON and JSON-LD serializer plugins if available
