@@ -56,6 +56,7 @@ class SRJParser(StreamingParser):
 class SRJSerializer(StreamingSerializer):
     media_type = 'application/sparql-results+json'
     supported_results_types = ('resultset', 'boolean')
+    format_type = 'sparql-results'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         if sparql_results_type not in ('resultset', 'boolean'):

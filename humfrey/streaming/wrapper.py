@@ -98,6 +98,7 @@ class RDFLibParser(StreamingParser):
 
 class RDFLibSerializer(StreamingSerializer):
     supported_results_types = ('graph',)
+    format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         queue = Queue.Queue()

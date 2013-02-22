@@ -19,6 +19,7 @@ class RDFXMLSerializer(StreamingSerializer):
     localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
     supported_results_types = ('graph',)
     media_type = 'application/rdf+xml'
+    format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         namespaces = sorted((NS).items())

@@ -51,6 +51,7 @@ class NTriplesParser(StreamingParser):
 class NTriplesSerializer(StreamingSerializer):
     media_type = 'text/plain'
     supported_results_types = ('graph',)
+    format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         for triple in triples:
