@@ -7,17 +7,12 @@ from humfrey.update.transform.base import Transform, TransformException
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.streaming import serialize
 
-class NoSuchFile(TransformException):
-    pass
-class PermissionDeniedToLocalFile(TransformException):
-    pass
-
 class Construct(Transform):
     def __init__(self, query):
         self.query = query
     def execute(self, transform_manager):
 
-        endpoint = Endpoint(transform_manager.store.query_endpoint)
+        endpoint = Endpoint(transform_manager.store.query_endpoint, preferred_media_types=('text/plain',))
 
         if isinstance(self.query, basestring):
             query = self.query
