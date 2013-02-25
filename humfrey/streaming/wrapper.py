@@ -20,6 +20,7 @@ except ImportError:  # rdflib 2.4.x
 from humfrey.utils.namespaces import NS
 
 from .base import StreamingParser, StreamingSerializer
+from .encoding import coerce_triple_iris
 
 class _QueueGraph(Graph):
     def __init__(self, queue, *args, **kwargs):
@@ -75,7 +76,7 @@ class RDFLibParser(StreamingParser):
     def get_boolean(self):
         raise TypeError("This is a graph parser")
 
-    def get_triples(self):
+    def _get_triples(self):
         if getattr(self, '_get_triples_called', False):
             raise AssertionError("Can only call get_triples once")
         self._get_triples_called = True
@@ -95,6 +96,9 @@ class RDFLibParser(StreamingParser):
                 raise value[0], value[1], value[2]
 
         parser_thread.join()
+
+    def get_triples(self):
+        return coerce_triple_iris(self._get_triples())
 
 class RDFLibSerializer(StreamingSerializer):
     supported_results_types = ('graph',)

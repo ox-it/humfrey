@@ -17,8 +17,6 @@ from .ntriples import NTriplesParser, NTriplesSerializer
 from .xls import XLSSerializer
 from .wrapper import get_rdflib_parser, get_rdflib_serializer
 
-from .encoding import coerce_triple_iris
-
 RDFXMLParser = get_rdflib_parser('RDFXMLParser', 'application/rdf+xml', 'xml',
                                  parser_kwargs={'preserve_bnode_ids': True})
 
