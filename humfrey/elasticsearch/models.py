@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from celery.execute import send_task
 from django.conf import settings
@@ -6,7 +7,6 @@ from django.db import models
 
 from humfrey.sparql.models import Store
 from humfrey.update.models import UpdateDefinition
-from humfrey.utils import json
 
 INDEX_STATUS_CHOICES = (
     ('idle', 'Idle'),
