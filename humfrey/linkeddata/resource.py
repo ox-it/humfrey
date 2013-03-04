@@ -248,11 +248,12 @@ class BaseResource(object):
 
     @property
     def label(self):
+        """
+        Returns a label, falling back to a URI or '<unnamed>' if node is blank.
+        """
         if '_label' not in self.__dict__:
-            labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
-            if labels:
-                self._label = self.localised(labels)[0]
-            else:
+            self._label = self.actual_label
+            if not self._label:
                 if isinstance(self._identifier, URIRef):
                     self._label = self.label2
                 elif self.rdf_type:
@@ -277,6 +278,19 @@ class BaseResource(object):
                 if LOCALPART_RE.match(localpart):
                     return '%s:%s' % (prefix, localpart)
         return self._identifier
+
+    @property
+    def actual_label(self):
+        """
+        Finds a label predicate, or returns None
+        """
+        if '_actual_label' not in self.__dict__:
+            labels = list(itertools.chain(*[self.get_all(p) for p in self._LABEL_PROPERTIES]))
+            if labels:
+                self._actual_label = self.localised(labels)[0]
+            else:
+                self._actual_label = None
+        return self._actual_label
 
     @property
     @cache_per_identifier
