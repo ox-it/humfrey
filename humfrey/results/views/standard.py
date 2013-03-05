@@ -1,10 +1,12 @@
 from __future__ import absolute_import
 
+import itertools
 import types
 
 from django.http import HttpResponse
 
 from django_conneg.decorators import renderer
+from django_conneg.http import MediaType
 from django_conneg.views import ContentNegotiatedView
 
 from humfrey import streaming
@@ -40,7 +42,16 @@ def get_renderer(streaming_format):
             results = results()
         try:
             data = iter(serializer_class(results))
-            return HttpResponse(data, mimetype=mimetype)
+            media_type = MediaType(mimetype)
+            # JSONP, for JSON-derived media types 
+            if media_type.type[:2] == ('application', 'json') and 'callback' in request.GET:
+                actual_mimetype = 'text/javascript'
+                data = itertools.chain([request.GET['callback'], '('],
+                                       data,
+                                       [');\n'])
+            else:
+                actual_mimetype = mimetype
+            return HttpResponse(data, mimetype=actual_mimetype)
         except TypeError:
             return NotImplemented
     render.__name__ = 'render_%s' % streaming_format['format']
