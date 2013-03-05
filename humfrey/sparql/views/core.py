@@ -146,6 +146,8 @@ class StoreView(View):
 class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetView):
     QUERY_CHANNEL = 'humfrey:sparql:query-channel'
 
+    _force_fallback_format = 'html'
+
     template_name = 'sparql/query'
 
     default_timeout = None # Override this with some number of seconds
