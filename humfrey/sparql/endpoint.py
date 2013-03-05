@@ -23,6 +23,9 @@ def is_qname(uri):
 
 logger = logging.getLogger(__name__)
 
+class QueryError(Exception):
+    pass
+
 def trim_indentation(s):
     """Taken from PEP-0257"""
     if not s:
@@ -119,7 +122,10 @@ class Endpoint(object):
 
         try:
             logging.debug("Querying %r", self._url)
-            response = urllib2.urlopen(request)
+            try:
+                response = urllib2.urlopen(request)
+            except urllib2.HTTPError, e:
+                raise QueryError(e.read())
 
             time_to_start = time.time() - start_time
 
