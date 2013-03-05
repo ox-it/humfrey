@@ -31,7 +31,7 @@ from humfrey.results.views.standard import RDFView, ResultSetView
 from humfrey.utils.views import RedisView
 from humfrey.utils.namespaces import NS
 
-from humfrey.sparql.endpoint import Endpoint
+from humfrey.sparql.endpoint import Endpoint, QueryError
 from humfrey.sparql.forms import SparqlQueryForm
 from humfrey.sparql.models import Store
 
@@ -204,18 +204,23 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
         })
 
         if form.is_valid():
-            results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
-            context['additional_headers']['X-Humfrey-SPARQL-Duration'] = results.duration
+            try:
+                results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
+            except QueryError, e:
+                context['error'] = e.message
+                context['status_code'] = e.status_code
+            else:
+                context['additional_headers']['X-Humfrey-SPARQL-Duration'] = results.duration
 
-            context['queries'] = [results.query]
-            context['duration'] = results.duration
-            context['results'] = results
+                context['queries'] = [results.query]
+                context['duration'] = results.duration
+                context['results'] = results
 
-            if results.format_type == 'sparql-results':
-                return self._sparql_results_view(request, context)
-            elif results.format_type == 'graph':
-                return self._graph_view(request, context)
-            raise AssertionError("Unexpected format type: {0}".format(results.format_type))
+                if results.format_type == 'sparql-results':
+                    return self._sparql_results_view(request, context)
+                elif results.format_type == 'graph':
+                    return self._graph_view(request, context)
+                raise AssertionError("Unexpected format type: {0}".format(results.format_type))
 
         return self.render()
 

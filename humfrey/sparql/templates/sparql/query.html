@@ -21,6 +21,14 @@
 
 {% block content %}
     <h1>SPARQL{% if store %} ({{ store.name }}){% endif %}</h1>
+    
+    {% if error %}
+    <section>
+      <h2>Error</h2>
+      
+      <pre>{{ error }}</pre>
+    </section>
+    {% endif %}
 
     {% if results %}
     <section>
