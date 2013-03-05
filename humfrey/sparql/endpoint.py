@@ -143,11 +143,11 @@ class Endpoint(object):
                 raise AssertionError("Unexpected content-type: %s" % content_type)
             result.query = query
             result.duration = time.time() - start_time
+            if not defer:
+                result = result.get()
             logger.debug("SPARQL query: %r; took %.2f (%.2f) seconds\n", original_query, time.time() - start_time, time_to_start)
             statsd.timing('humfrey.sparql-query.duration', (time.time() - start_time)*1000)
             statsd.incr('humfrey.sparql-query.success')
-            if not defer:
-                result = result.get()
             return result
         except Exception:
             try:
