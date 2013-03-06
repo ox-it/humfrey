@@ -5,10 +5,6 @@ import logging
 import tempfile
 import time
 import urllib2
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 import rdflib
 import redis
@@ -17,6 +13,7 @@ from django.conf import settings
 
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.update.tasks.retrieve import USER_AGENTS
+from humfrey.utils import json
 
 logger = logging.getLogger(__name__)
 
