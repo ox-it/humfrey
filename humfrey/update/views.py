@@ -1,4 +1,5 @@
 import datetime
+import httplib
 
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
@@ -12,8 +13,7 @@ from django.utils.decorators import method_decorator
 from django_conneg.views import HTMLView, JSONView
 from django_conneg.http import HttpResponseSeeOther
 
-from object_permissions import get_users_any
-from object_permissions.views.permissions import view_permissions
+from guardian.shortcuts import get_objects_for_user, get_perms, assign_perm
 
 from humfrey.update.models import UpdateDefinition, UpdateLog, UpdateLogRecord
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset
@@ -21,8 +21,7 @@ from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset
 class IndexView(HTMLView):
     @method_decorator(login_required)
     def get(self, request):
-        definitions = UpdateDefinition.objects.all().order_by('title')
-        definitions = [d for d in definitions if d.can_view(request.user)]
+        definitions = get_objects_for_user(request.user, 'update.view_updatedefinition')
 
         context = {
             'update_definitions': definitions,
@@ -32,31 +31,36 @@ class IndexView(HTMLView):
         return self.render(request, context, 'update/index')
 
 class DefinitionDetailView(HTMLView):
+    template_name = 'update/definition-detail'
+
     def common(self, request, slug=None):
         if slug:
             obj = get_object_or_404(UpdateDefinition, slug=slug)
+            perms = get_perms(request.user, obj)
         else:
             obj = UpdateDefinition(owner=request.user)
+            perms = ['view_updatedefinition', 'change_updatedefinition']
 
         form = UpdateDefinitionForm(request.POST or None, instance=obj)
         pipelines = UpdatePipelineFormset(request.POST or None, instance=obj)
 
-        return {
+        self.context.update({
             'object': obj,
             'form': form,
             'pipelines': pipelines,
-        }
+            'perms': perms,
+        })
 
     @method_decorator(login_required)
     def get(self, request, slug=None):
-        context = self.common(request, slug)
-        if not context['object'].can_view(request.user):
+        self.common(request, slug)
+        if 'view_updatedefinition' not in self.context['perms']:
             raise PermissionDenied
-
-        return self.render(request, context, 'update/definition-detail')
+        return self.render()
 
     @method_decorator(login_required)
     def post(self, request, slug=None):
+        self.common(request, slug)
         action = request.POST.get('action', '').lower()
         if action == 'delete':
             return self.delete(request, slug)
@@ -68,13 +72,12 @@ class DefinitionDetailView(HTMLView):
             return HttpResponseBadRequest("action must empty or missing, 'delete', 'execute' or 'update'")
 
     def update(self, request, slug=None):
-        context = self.common(request, slug)
-        if not context['object'].can_change(request.user):
+        if 'change_updatedefinition' not in self.context['perms']:
             raise PermissionDenied
-        form, pipelines = context['form'], context['pipelines']
+        form, pipelines = self.context['form'], self.context['pipelines']
 
         if not (form.is_valid() and pipelines.is_valid()):
-            return self.render(request, context, 'update/definition-detail')
+            return self.render()
 
         form.save()
         pipelines.save()
@@ -88,35 +91,26 @@ class DefinitionDetailView(HTMLView):
 
     @method_decorator(login_required)
     def delete(self, request, slug=None):
-        if not slug:
-            raise Http404
-        obj = get_object_or_404(UpdateDefinition, slug=slug)
-
-        if obj.can_delete(request.user):
-            obj.delete()
-            return self.render(request, {'object': obj}, 'update/definition-deleted')
+        if 'delete_updatedefinition' in self.context['perms']:
+            self.context['object'].delete()
+            return self.render(template_name='update/definition-deleted')
         else:
             raise PermissionDenied
 
     def execute(self, request, slug=None):
-        if not slug:
-            raise Http404
-        obj = get_object_or_404(UpdateDefinition, slug=slug)
-
-        if not obj.can_execute(request.user):
+        if 'execute_updatedefinition' not in self.context['perms']:
             raise PermissionDenied
 
         try:
-            update_log = obj.queue('web', request.user)
+            update_log = self.context['object'].queue('web', request.user)
         except UpdateDefinition.AlreadyQueued:
-            context = {'status_code': 409,
-                       'success': False,
-                       'object': obj}
+            self.context.update({'status_code': httplib.CONFLICT,
+                                 'success': False})
         else:
-            context = {'success': True,
-                       'object': obj,
-                       'update_log': update_log}
-        return self.render(request, context, 'update/definition-queued')
+            self.context.update({'status_code': httplib.ACCEPTED,
+                                 'success': True,
+                                 'update_log': update_log})
+        return self.render(template_name='update/definition-queued')
 
 
 class UpdateLogView(HTMLView, JSONView):

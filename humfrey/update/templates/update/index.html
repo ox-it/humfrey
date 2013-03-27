@@ -1,4 +1,4 @@
-{% extends "update/base.html" %}{% load humfrey_update %}
+{% extends "update/base.html" %}{% load humfrey_update %}{% load guardian_tags %}
 
 {% block title %}Updater status{% endblock %}
 
@@ -50,7 +50,7 @@ ul.update-definitions li p {
           <th>Log</th>
           <th>Execute</th>
       <tbody>
-    {% for definition in update_definitions %}
+    {% for definition in update_definitions %}{% get_obj_perms request.user for definition as "definition_perms" %}
         <tr class="outcome-{{ definition.last_log.level }}">
           <td>
             <a href="{{ definition.last_log.get_absolute_url }}">
@@ -63,11 +63,11 @@ ul.update-definitions li p {
           <td>{{ definition.last_started|timesince }} ago</td>
           <td>{{ definition.last_completed|timesince }} ago</td>
           <td>{{ definition.get_status_display }}</td>
-          <td>{% if definition|can_change:user %}
+          <td>{% if 'change_updatedefinition' in definition_perms %}
             <a href="{% url update:definition-detail definition.slug %}">Edit</a>
           {% endif %}</td>
           <td><a href="{% url update:log-list definition.slug %}">Log</a></td>
-          <td>{% if definition|can_execute:user %}{% if definition.status == 'idle' %}
+          <td>{% if 'execute_updatedefinition' in definition_perms %}{% if definition.status == 'idle' %}
             <form method="post" action="{% url update:definition-detail definition.slug %}">{% csrf_token %}
               <input type="hidden" name="action" value="execute"/>
               <input type="submit" value="Queue for execution"/>

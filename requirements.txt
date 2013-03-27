@@ -1,7 +1,7 @@
 Django>=1.3
 django-conneg>=0.6
 django_hosts
-django-object-permissions
+django-guardian
 junitxml
 lxml
 mock

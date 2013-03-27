@@ -11,14 +11,13 @@ from django_hosts.reverse import reverse_full
 import rdflib
 
 from humfrey.sparql.endpoint import Endpoint
+from humfrey.sparql.models import DEFAULT_STORE_SLUG
 from humfrey.utils.namespaces import NS, HUMFREY, expand
 
 from humfrey.linkeddata.resource import Resource
 from humfrey.linkeddata.uri import doc_forward
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_STORE_NAME = getattr(settings, 'DEFAULT_STORE_NAME', 'public')
 
 _dataset_query = """
     DESCRIBE ?dataset ?publisher ?contact WHERE {
@@ -90,7 +89,7 @@ def _find(graph, subject, path, datatypes=None, all=False):
 def upload_dataset_metadata(update_log, graphs, updated):
     slug = update_log.update_definition.slug
     
-    graphs = graphs.get(DEFAULT_STORE_NAME)
+    graphs = graphs.get(DEFAULT_STORE_SLUG)
 
     if not graphs:
         logger.debug("No graphs updated for %r; aborting", slug)

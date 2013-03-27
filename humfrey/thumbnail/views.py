@@ -23,15 +23,18 @@ IMAGE_TYPES = set(map(expand, getattr(settings, 'IMAGE_TYPES', ('foaf:depiction'
 
 class ThumbnailView(StoreView):
     image_types = IMAGE_TYPES
-
-    def dispatch(self, request):
-        if 'store' in request.GET:
-            self._store = get_object_or_404(Store, slug=request.GET['store'])
-            if not self._store.can_query(request.user):
-                raise Http404
-        return super(ThumbnailView, self).dispatch(request)
+    
+    @property
+    def store(self):
+        if not hasattr(self, '_store'):
+            store_slug = self.request.GET.get('store', settings.DEFAULT_STORE)
+            self._store = get_object_or_404(Store, slug=store_slug)
+        return self._store
 
     def get(self, request):
+        if not request.user.has_perm('sparql.query_store', self.store):
+            raise Http404
+
         try:
             url = rdflib.URIRef(request.GET['url'])
         except KeyError:

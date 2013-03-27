@@ -38,10 +38,10 @@
     </tbody>
   </table>
 
-  {% if object|can_change:user %}
+  {% if "change_updatedefinition" in perms %}
     <input type="submit" name="action" value="{{ object.pk|yesno:"Update,Create" }}"/>
   {% endif %}
-  {% if object|can_delete:user and object.pk %}
+  {% if "delete_updatedefinition" in perms %}
     <div style="float:right">
       <input type="submit" name="action" value="Delete"/>
     </div>

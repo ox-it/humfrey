@@ -15,8 +15,6 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from object_permissions import register
-
 from humfrey.sparql.models import Store
 from humfrey.update.fields import EncryptedCharField
 from humfrey.update.utils import evaluate_pipeline
@@ -27,12 +25,6 @@ DEFINITION_STATUS_CHOICES = (
     ('queued', 'Queued'),
     ('active', 'Active'),
 )
-
-def permission_check(model, perm):
-    name = 'update.%s_%s' % (perm, model)
-    def f(self, user):
-        return user.has_perm(name) or user.has_perm(name, self)
-    return f
 
 class UpdateDefinition(models.Model):
 
@@ -60,19 +52,11 @@ class UpdateDefinition(models.Model):
     class Meta:
         ordering = ('title',)
         permissions = (
-            ("admin", "May use the dataset update admin pages"),
             ("view_updatedefinition", "Can view the update definition"),
             ("execute_updatedefinition", "Can perform an update"),
             ("administer_updatedefinition", "Can administer an update definition"),
         )
 
-    can_view = permission_check('updatedefinition', 'view')
-    can_change = permission_check('updatedefinition', 'change')
-    can_execute = permission_check('updatedefinition', 'execute')
-    can_delete = permission_check('updatedefinition', 'delete')
-    can_administer = permission_check('updatedefinition', 'administer')
-    receives_notifications = permission_check('updatedefinition', 'notifications')
-    
     def queue(self, silent=False, trigger=None, user=None):
         if self.status != 'idle':
             if silent:
@@ -143,15 +127,6 @@ class UpdateDefinition(models.Model):
             self.periodic_task.crontab.delete()
             self.periodic_task.delete()
         
-
-register(['update.administer_updatedefinition',
-          'update.view_updatedefinition',
-          'update.change_updatedefinition',
-          'update.execute_updatedefinition',
-          'update.delete_updatedefinition',
-          'update.notifications_updatedefinition'],
-         UpdateDefinition, 'update')
-
 class WithLevels(object):
     levels = {'errors': {'label': 'errors',
                          'icon': 'gnome-icons/32x32/dialog-error.png'},

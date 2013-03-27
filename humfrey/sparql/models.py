@@ -1,15 +1,10 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import User, Group
 
 from .endpoint import Endpoint
 
-from object_permissions import register
-
-def permission_check(model, perm):
-    name = 'sparql.%s_%s' % (perm, model)
-    def f(self, user):
-        return user.has_perm(name) or user.has_perm(name, self)
-    return f
+DEFAULT_STORE_SLUG = getattr(settings, 'DEFAULT_STORE_SLUG', 'public')
 
 class Store(models.Model):
     slug = models.SlugField(primary_key=True)
@@ -18,10 +13,6 @@ class Store(models.Model):
     query_endpoint = models.URLField()
     update_endpoint = models.URLField(null=True, blank=True)
     graph_store_endpoint = models.URLField(null=True, blank=True)
-
-    can_administer = permission_check('store', 'administer')
-    can_query = permission_check('store', 'query')
-    can_update = permission_check('store', 'update')
 
     def __unicode__(self):
         return self.name
@@ -33,11 +24,6 @@ class Store(models.Model):
         permissions = (('administer_store', 'can administer'),
                        ('query_store', 'can query'),
                        ('update_store', 'can update'))
-
-register(['sparql.administer_store',
-          'sparql.query_store',
-          'sparql.update_store'],
-         Store, 'sparql')
 
 class UserPrivileges(models.Model):
     user = models.ForeignKey(User, null=True, blank=True)
