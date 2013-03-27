@@ -96,50 +96,5 @@ ul.update-definitions li p {
     
     <div style="clear:both;"/>
   </section>
-  
-  <section>
-    <h2>Update queue</h2>
-  
-    <table>
-      <thead>
-        <tr>
-          <th>Identifier</th>
-          <th>Name</th>
-          <th>Queued</th>
-          <th>Trigger</th>
-          <th>User</th>
-        </tr>
-      </thead>
-      <tbody>{% for item in update_queue %}
-        <tr>
-          <td>{% if item.update_definition|can_view:user %}
-            <a href="{{ item.update_definition.get_absolute_url }}">{{ item.update_definition.slug }}</a>
-          {% else %}
-            {{ item.update_definition.slug }}
-          {% endif %}</td>
-          <td>{{ item.update_definition.title }}</td>
-          <td>{{ item.queued|timesince }} ago</td>
-          <td>{{ item.trigger }}</td>
-          <td>{{ item.user }}</td>
-        </tr>{% empty %}
-        <tr>
-          <td colspan="5">The update queue is empty.</td>
-        </tr>{% endfor %}
-      </tbody>
-    </table>
-  </section>
 
-  <section>
-    <h2>Upload queue</h2>
-  
-    {% if upload_queue %}
-    <ul>
-    {% for item in upload_queue %}
-      <li>{{ item.graph_name }}; queued for {{ item.queued_at|timesince }}</li>
-    {% endfor %}
-    </ul>
-    {% else %}
-    <p>The upload queue is empty.</p>
-    {% endif %}
-    </section>
 {% endblock %}
