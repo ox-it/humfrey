@@ -60,7 +60,6 @@ class DefinitionDetailView(HTMLView):
 
     @method_decorator(login_required)
     def post(self, request, slug=None):
-        self.common(request, slug)
         action = request.POST.get('action', '').lower()
         if action == 'delete':
             return self.delete(request, slug)
@@ -72,6 +71,7 @@ class DefinitionDetailView(HTMLView):
             return HttpResponseBadRequest("action must empty or missing, 'delete', 'execute' or 'update'")
 
     def update(self, request, slug=None):
+        self.common(request, slug)
         if 'change_updatedefinition' not in self.context['perms']:
             raise PermissionDenied
         form, pipelines = self.context['form'], self.context['pipelines']
@@ -91,6 +91,7 @@ class DefinitionDetailView(HTMLView):
 
     @method_decorator(login_required)
     def delete(self, request, slug=None):
+        self.common(request, slug)
         if 'delete_updatedefinition' in self.context['perms']:
             self.context['object'].delete()
             return self.render(template_name='update/definition-deleted')
@@ -137,7 +138,7 @@ class UpdateLogListView(UpdateLogView):
     @method_decorator(login_required)
     def get(self, request, slug):
         definition = get_object_or_404(UpdateDefinition, slug=slug)
-        if not definition.can_view:
+        if not request.user.has_perm('update_view_updatedefinition', definition):
             raise PermissionDenied
         context = {
             'definition': definition,
@@ -149,7 +150,7 @@ class UpdateLogDetailView(UpdateLogView):
     @method_decorator(login_required)
     def get(self, request, slug, id):
         definition = get_object_or_404(UpdateDefinition, slug=slug)
-        if not definition.can_view:
+        if not request.user.has_perm('update_view_updatedefinition', definition):
             raise PermissionDenied
         log = get_object_or_404(definition.update_log, id=id)
         context = {

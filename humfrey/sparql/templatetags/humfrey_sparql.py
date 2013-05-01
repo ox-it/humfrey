@@ -7,15 +7,15 @@ register = template.Library()
 
 @register.filter
 def can_administer_store(store, user):
-    return store.can_administer(user)
+    return user.has_perm(store, 'sparql.administer_store')
 
 @register.filter
 def can_query_store(store, user):
-    return store.can_query(user)
+    return user.has_perm(store, 'sparql.query_store')
 
 @register.filter
 def can_update_store(store, user):
-    return store.can_update(user)
+    return user.has_perm(store, 'sparql.update_store')
 
 @register.filter
 def uri(v):

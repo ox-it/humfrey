@@ -34,11 +34,11 @@ class StoreChooseMixin(object):
     resource_registry = ResourceRegistry()
 
     # These are sensible defaults.
-    permission_requirements = {'get': 'can_query',
-                               'post': 'can_update',
-                               'put': 'can_update',
-                               'delete': 'can_update',
-                               'head': 'can_query'}
+    permission_requirements = {'get': 'sparql.query_store',
+                               'post': 'sparql.update_store',
+                               'put': 'sparql.update_store',
+                               'delete': 'sparql.delete_store',
+                               'head': 'sparql.query_store'}
 
     def dispatch(self, request, *args, **kwargs):
         self.store_name = kwargs.pop('store')
@@ -46,8 +46,7 @@ class StoreChooseMixin(object):
         if not hasattr(self, method):
             pass
         if method in self.permission_requirements:
-            permission_checker = getattr(self.store, self.permission_requirements[method])
-            if not permission_checker(request.user):
+            if not request.user.has_perm(self.permission_requirements[method], self.store):
                 setattr(self, method, self.not_authorized)
         elif method != 'options':
             setattr(self, method, self.not_authorized)
@@ -63,21 +62,17 @@ class DocView(StoreChooseMixin, desc_views.DocView):
     check_canonical = False
 
 class QueryView(StoreChooseMixin, QueryView):
-    permission_requirements = {'get': 'can_query',
-                               'post': 'can_query',
-                               'head': 'can_query'}
+    permission_requirements = {'get': 'sparql.query_store',
+                               'post': 'sparql.query_store',
+                               'head': 'sparql.query_store'}
 
 class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
     def get_target_url(self, request):
-        if request.method != 'GET' and not self.store.can_update(request.user):
-            raise PermissionDenied
         return "{0}?{1}".format(self.store.graph_store_endpoint,
                                 urllib.urlencode({'graph': request.GET['graph']}))
 
     def post(self, request, *args, **kwargs):
-        if not self.store.can_query(request.user):
-            return self.not_authorized(request)
-        return super(StoreChooseMixin, self).get(request, *args, **kwargs)
+        return super(GraphDataView, self).get(request, *args, **kwargs)
 
 class GraphListView(StoreChooseMixin, CannedQueryView, RDFView, HTMLView, MappingView):
     query = """
@@ -128,9 +123,9 @@ if 'humfrey.elasticsearch' in settings.INSTALLED_APPS:
         pass
 
     class ElasticSearchPassThroughView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
-        permission_requirements = {'get': 'can_query',
-                                   'post': 'can_query',
-                                   'head': 'can_query'}
+        permission_requirements = {'get': 'sparql.query_store',
+                                   'post': 'sparql.query_store',
+                                   'head': 'sparql.query_store'}
         def get_target_url(self, request, index=None):
             params = {'host': settings.ELASTICSEARCH_SERVER['host'],
                       'port': settings.ELASTICSEARCH_SERVER['port'],
