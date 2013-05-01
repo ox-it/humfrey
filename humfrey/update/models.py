@@ -26,11 +26,10 @@ DEFINITION_STATUS_CHOICES = (
     ('active', 'Active'),
 )
 
+class UpdateDefinitionAlreadyQueued(AssertionError):
+    pass
+
 class UpdateDefinition(models.Model):
-
-    class AlreadyQueued(AssertionError):
-        pass
-
     slug = models.SlugField(primary_key=True)
     title = models.CharField(max_length=80)
     description = models.TextField(blank=True)
@@ -61,7 +60,7 @@ class UpdateDefinition(models.Model):
         if self.status != 'idle':
             if silent:
                 return
-            raise self.AlreadyQueued()
+            raise UpdateDefinitionAlreadyQueued()
         self.status = 'queued'
         self.last_queued = datetime.datetime.now()
     

@@ -15,7 +15,7 @@ from django_conneg.http import HttpResponseSeeOther
 
 from guardian.shortcuts import get_objects_for_user, get_perms, assign_perm
 
-from humfrey.update.models import UpdateDefinition, UpdateLog, UpdateLogRecord
+from humfrey.update.models import UpdateDefinition, UpdateLog, UpdateLogRecord, UpdateDefinitionAlreadyQueued
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset
 
 class IndexView(HTMLView):
@@ -104,7 +104,7 @@ class DefinitionDetailView(HTMLView):
 
         try:
             update_log = self.context['object'].queue('web', request.user)
-        except UpdateDefinition.AlreadyQueued:
+        except UpdateDefinitionAlreadyQueued:
             self.context.update({'status_code': httplib.CONFLICT,
                                  'success': False})
         else:
