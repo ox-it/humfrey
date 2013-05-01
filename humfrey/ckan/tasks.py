@@ -10,6 +10,7 @@ from django.conf import settings
 from django_hosts.reverse import reverse_full
 import rdflib
 
+from humfrey.signals import graphs_updated
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.sparql.models import DEFAULT_STORE_SLUG
 from humfrey.utils.namespaces import NS, HUMFREY, expand
@@ -85,14 +86,13 @@ def _find(graph, subject, path, datatypes=None, all=False):
     elif objects:
         return iter(objects).next()
 
-@task(name='humfrey.ckan.upload_dataset_metadata')
-def upload_dataset_metadata(update_log, graphs, updated):
-    slug = update_log.update_definition.slug
-    
-    graphs = graphs.get(DEFAULT_STORE_SLUG)
+@task(name='humfrey.ckan.upload_dataset_metadata', ignore_result=True)
+def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
+    if store.slug != DEFAULT_STORE_SLUG:
+        return
 
     if not graphs:
-        logger.debug("No graphs updated for %r; aborting", slug)
+        logger.debug("No graphs updated for %r; aborting", store.slug)
         return
 
     if not getattr(settings, 'CKAN_API_KEY', None):
@@ -102,12 +102,12 @@ def upload_dataset_metadata(update_log, graphs, updated):
     client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
 
     endpoint = Endpoint(settings.ENDPOINT_QUERY)
-    query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for s, g in graphs)
+    query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for g in graphs)
     graph = endpoint.query(query)
 
     datasets = list(graph.subjects(NS.rdf.type, NS.void.Dataset))
     if len(datasets) != 1:
-        logger.debug("Expected one dataset for %r, got %d", slug, len(datasets))
+        logger.debug("Expected one dataset; got %d", len(datasets))
         return
     dataset = Resource(datasets[0], graph, endpoint)
 
@@ -117,7 +117,8 @@ def upload_dataset_metadata(update_log, graphs, updated):
 
     package_name = find('skos:notation', HUMFREY.theDataHubDatasetName)
     if not package_name:
-        package_name = patterns.get('name', '%s') % slug
+        return
+        #package_name = patterns.get('name', '%s') % slug
 
     package_title = patterns.get('title', '%s') % dataset.label
 
@@ -193,4 +194,4 @@ def upload_dataset_metadata(update_log, graphs, updated):
         logger.info("Updating %r at thedatahub.org", package_name)
         client.package_entity_put(package_entity)
 
-
+graphs_updated.connect(upload_dataset_metadata.delay)

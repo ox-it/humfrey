@@ -21,6 +21,7 @@ from humfrey.sparql.models import Store
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.streaming import parse, serialize
 from humfrey.update.uploader import Uploader
+from humfrey.signals import update_completed
 
 DATASET_NOTATION = getattr(settings, 'DATASET_NOTATION', None)
 if DATASET_NOTATION:
@@ -210,11 +211,10 @@ class DatasetArchiver(object):
                 break
             last_timestamp = timestamp
 
-@task(name='humfrey.archive.update_dataset_archives')
-def update_dataset_archives(update_log, graphs, updated):
-    for store_slug in graphs:
-        store = Store.objects.get(slug=store_slug)
-        graph_names = graphs[store.slug]
+@task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
+def update_dataset_archives(sender, update_definition, store_graphs, when, **kwargs):
+    for store in store_graphs:
+        graph_names = store_graphs[store]
         endpoint = Endpoint(store.query_endpoint)
 
         if DATASET_NOTATION:
@@ -237,6 +237,7 @@ def update_dataset_archives(update_log, graphs, updated):
         for dataset in datasets:
             logger.debug("Archiving dataset: %s", dataset)
             notation = datasets[dataset]
-            archiver = DatasetArchiver(store, dataset, notation, updated)
+            archiver = DatasetArchiver(store, dataset, notation, when)
             archiver.archive()
 
+update_completed.connect(update_dataset_archives.delay)

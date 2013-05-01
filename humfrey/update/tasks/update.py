@@ -1,5 +1,4 @@
 from celery.task import task
-from celery.execute import send_task
 
 import collections
 import contextlib
@@ -19,6 +18,7 @@ from django.conf import settings
 from humfrey.update.models import UpdateDefinition, UpdateLogRecord
 from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
+from humfrey.signals import graphs_updated, update_completed
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class _TransformHandler(logging.Handler):
             self.ignore = False
 
 class TransformManager(object):
-    def __init__(self, update_log, output_directory, parameters, force, graphs_touched, store):
+    def __init__(self, update_log, output_directory, parameters, force, store_graphs, store):
         self.update_log = update_log
         self.owner = update_log.update_definition.owner
         self.output_directory = output_directory
@@ -77,7 +77,7 @@ class TransformManager(object):
 
         self.counter = 0
         self.transforms = []
-        self.graphs_touched = graphs_touched
+        self.store_graphs = store_graphs
         self.store = store
 
     def __call__(self, extension=None, name=None):
@@ -98,7 +98,7 @@ class TransformManager(object):
         self.transforms.append(self.current)
         del self.current
     def touched_graph(self, graph_name):
-        self.graphs_touched[self.store.slug].add(graph_name)
+        self.store_graphs[self.store].add(graph_name)
     def not_changed(self):
         if not self.force:
             raise NotChanged()
@@ -130,7 +130,7 @@ def logged(update_log):
                         .filter(slug=update_log.update_definition.slug) \
                         .update(status='idle', last_completed=update_log.completed)
 
-@task(name='humfrey.update.update')
+@task(name='humfrey.update.update', ignore_result=True)
 def update(update_log=None, slug=None, trigger=None):
     if slug:
         update_definition = UpdateDefinition.objects.get(slug=slug)
@@ -139,7 +139,8 @@ def update(update_log=None, slug=None, trigger=None):
     elif not update_log:
         raise ValueError("One of update_log and slug needs to be provided.")
     
-    graphs_touched = collections.defaultdict(set)
+    # A mapping from Store to graph names
+    store_graphs = collections.defaultdict(set)
 
     variables = update_log.update_definition.variables.all()
     variables = dict((v.name, v.value) for v in variables)
@@ -152,7 +153,7 @@ def update(update_log=None, slug=None, trigger=None):
                                                      output_directory,
                                                      variables,
                                                      force=update_log.forced,
-                                                     graphs_touched=graphs_touched,
+                                                     store_graphs=store_graphs,
                                                      store=store)
     
                 try:
@@ -164,17 +165,24 @@ def update(update_log=None, slug=None, trigger=None):
                     transform(transform_manager)
                 except NotChanged:
                     logger.info("Aborted update as data hasn't changed")
-                except TransformException, e:
+                except TransformException:
                     logger.exception("Transform failed.")
-                except Exception, e:
+                except Exception:
                     logger.exception("Transform failed, perhaps ungracefully.")
                 finally:
-                    pass#shutil.rmtree(output_directory)
+                    shutil.rmtree(output_directory)
 
     updated = _time_zone.localize(datetime.datetime.now())
+    
+    store_graphs = dict((store, frozenset(store_graphs[store])) for store in store_graphs)
 
-    for t in getattr(settings, 'DEPENDENT_TASKS', {}).get('humfrey.update.update', ()):
-        
-        send_task(t, kwargs={'update_log': update_log,
-                             'graphs': graphs_touched,
-                             'updated': updated})
+    for store in store_graphs:
+        graphs_updated.send(update,
+                            store=store,
+                            graphs=store_graphs[store],
+                            when=updated)
+
+    update_completed.send(update,
+                          update_definition=update_log.update_definition,
+                          store_graphs=store_graphs,
+                          when=updated)
