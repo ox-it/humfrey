@@ -99,6 +99,11 @@ class DefinitionDetailView(HTMLView):
             raise PermissionDenied
 
     def execute(self, request, slug=None):
+        obj = get_object_or_404(UpdateDefinition, slug=slug)
+        self.context.update({
+            'object': obj,
+            'perms': get_perms(request.user, obj),
+        })
         if 'execute_updatedefinition' not in self.context['perms']:
             raise PermissionDenied
 
