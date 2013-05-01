@@ -85,7 +85,7 @@ class GraphListView(StoreChooseMixin, CannedQueryView, RDFView, HTMLView, Mappin
         } WHERE {
           {
             SELECT DISTINCT ?g {
-              GRAPH ?g { ?s ?p ?o }
+              GRAPH ?g { }
             }
           }
           OPTIONAL { ?g rdfs:label ?label } .
