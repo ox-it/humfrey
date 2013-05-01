@@ -3,7 +3,7 @@
   {% if hit.source.image %}
     <img class="search-item-image" src="{% thumbnail hit.source.image width=200 height=120 %}" alt=""/>
   {% endif %}
-  <h3><a href="{{ hit.url }}">{{ hit.source.label }}</a></h3>
+  <h3><a href="{{ hit.url }}">{{ hit.source.fullyQualifiedLabel|default:hit.source.label }}</a></h3>
   {% if hit.source.type.label %}
     <span class="search-item-type">{{ hit.source.type.label|capfirst }}</span>
   {% endif %}
