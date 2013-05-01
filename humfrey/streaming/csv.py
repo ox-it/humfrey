@@ -4,7 +4,7 @@ from .base import StreamingSerializer
 def _quote(value):
     if value is None:
         return ''
-    value = value.replace('"', '""')
+    value = value.replace('"', '""').encode('utf-8')
     if any(bad_char in value for bad_char in '\n" ,'):
         value = '"%s"' % value
     return value
