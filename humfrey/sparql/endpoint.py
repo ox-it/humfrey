@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 class QueryError(Exception):
     def __init__(self, message, status_code):
-        self.message, self.status_code = message, status_code
+        self.status_code = status_code
+        super(QueryError, self).__init__(message)
 
 def trim_indentation(s):
     """Taken from PEP-0257"""
