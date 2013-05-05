@@ -365,13 +365,12 @@ class Tel(object):
     _TYPES = {'Voice': 'voice', 'Fax': 'fax'}
     _TYPES = dict((NS['v'][a], l) for a, l in _TYPES.iteritems())
     def render(self):
-        value = self.get('rdf:value')
         types = []
         for t in self._graph.objects(self._identifier, NS['rdf'].type):
             if t in self._TYPES:
                 types.append(self._TYPES[t])
         types = ', '.join(escape(t) for t in types) if types else 'unknown'
-        return mark_safe('<a href="tel:%s">%s</a> (%s)' % (escape(value), escape(value), types))
+        return mark_safe('<a href="%s">%s</a> (%s)' % (escape(self._identifier), escape(self.label), types))
 
 class Class(object):
     types = ('rdfs:Class', 'owl:Class')
