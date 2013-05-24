@@ -13,7 +13,7 @@
 {% endif %}
   </p>
   
-  <p>You may wish to <a href="{% url update:index %}">return to the
+  <p>You may wish to <a href="{% url "update:index" %}">return to the
      dataset updater page</a> or the
      <a href="{{ update_log.get_absolute_url }}">log page</a>.</p>
 {% endblock %}

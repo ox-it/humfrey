@@ -6,7 +6,7 @@
   <h1>Feeds</h1>
   
   <dl>{% for feed in feeds %}
-    <dt><a href="{% url feeds:feed-config feed.slug %}">{{ feed.plural_name|capfirst }}</a></dt>
+    <dt><a href="{% url "feeds:feed-config" feed.slug %}">{{ feed.plural_name|capfirst }}</a></dt>
     <dd>{{ feed.description }}</dd>{% endfor %}
   </dl>
 {% endblock %}

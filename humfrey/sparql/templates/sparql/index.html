@@ -18,10 +18,10 @@
     <tbody>{% for store in stores %}
       <tr>
         <td>{{ store.name }}</td>
-        <td><a href="{% url sparql-admin:query store.slug %}">Query</a></td>
-        <td><a href="{% url sparql-admin:data store.slug %}">Data</a></td>{% if with_elasticsearch %}
-        <td><a href="{% url sparql-admin:search store.slug %}">Search</a></td>
-        <td><a href="{% url sparql-admin:elasticsearch store.slug %}">ElasticSearch search endpoint</a></td>{% endif %}
+        <td><a href="{% url "sparql-admin:query" store.slug %}">Query</a></td>
+        <td><a href="{% url "sparql-admin:data" store.slug %}">Data</a></td>{% if with_elasticsearch %}
+        <td><a href="{% url "sparql-admin:search" store.slug %}">Search</a></td>
+        <td><a href="{% url "sparql-admin:elasticsearch" store.slug %}">ElasticSearch search endpoint</a></td>{% endif %}
       </tr>{% empty %}
       <tr>
         <td colspan="2">You do not have access to any stores.</td>

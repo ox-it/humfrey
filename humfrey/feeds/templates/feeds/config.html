@@ -11,7 +11,7 @@
     </table>
     <p>
       <input type="submit" value="Update" formaction="?">
-      <input type="submit" value="Get feed" formaction="{% url feeds:feed-render feed.slug %}">
+      <input type="submit" value="Get feed" formaction="{% url "feeds:feed-render" feed.slug %}">
     </p>
   </form>
 {% endblock %}

@@ -5,7 +5,7 @@
 {% block content %}
   <h1>Log {{ log.id }} for {{ definition }}</h1>
   
-  <p><a href="{% url update:log-list definition.slug %}">Back to all logs for <em>{{ definition }}</em></a>
+  <p><a href="{% url "update:log-list" definition.slug %}">Back to all logs for <em>{{ definition }}</em></a>
   
   <table>
     <tbody>

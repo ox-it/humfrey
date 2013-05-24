@@ -64,11 +64,11 @@ ul.update-definitions li p {
           <td>{{ definition.last_completed|timesince }} ago</td>
           <td>{{ definition.get_status_display }}</td>
           <td>{% if 'change_updatedefinition' in definition_perms %}
-            <a href="{% url update:definition-detail definition.slug %}">Edit</a>
+            <a href="{% url "update:definition-detail" definition.slug %}">Edit</a>
           {% endif %}</td>
-          <td><a href="{% url update:log-list definition.slug %}">Log</a></td>
+          <td><a href="{% url "update:log-list" definition.slug %}">Log</a></td>
           <td>{% if 'execute_updatedefinition' in definition_perms %}{% if definition.status == 'idle' %}
-            <form method="post" action="{% url update:definition-detail definition.slug %}">{% csrf_token %}
+            <form method="post" action="{% url "update:definition-detail" definition.slug %}">{% csrf_token %}
               <input type="hidden" name="action" value="execute"/>
               <input type="submit" value="Queue for execution"/>
             </form>
@@ -88,7 +88,7 @@ ul.update-definitions li p {
       </tbody>{% if perms.update.add_updatedefinition %}
       <tfoot>
         <tr>
-          <td colspan="5"><a href="{% url update:definition-create %}">Create new</a></td>
+          <td colspan="5"><a href="{% url "update:definition-create" %}">Create new</a></td>
         </tr>
       </tfoot>{% endif %}
     </table>
