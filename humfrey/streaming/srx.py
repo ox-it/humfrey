@@ -42,7 +42,7 @@ class SRXParser(StreamingParser):
             self.content = []
 
         def end_element(self, name):
-            content = ''.join(self.content) if self.content else None
+            content = ''.join(self.content)
             if name == (self.srx_ns + ' result'):
                 self.queue.put(self.result)
                 self.result = None
@@ -57,7 +57,6 @@ class SRXParser(StreamingParser):
                 self.binding = rdflib.BNode(content)
             elif name == (self.srx_ns + ' literal'):
                 self.binding = rdflib.Literal(content, **self.literal_kwargs)
-            content = None
 
         def char_data(self, data):
             self.content.append(data)
