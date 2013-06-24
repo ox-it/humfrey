@@ -34,6 +34,7 @@ Depends: ${misc:Depends},
          python-lxml,
          python-tz,
          python-rdflib,
+         python-crypto,
          python-redis
 Description: Framework for linked data RDF sites built on Django
  humfrey is a collection of Django apps for building linked data sites, which
