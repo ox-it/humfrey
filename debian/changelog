@@ -1,4 +1,4 @@
-python-django-humfrey (0.3.9) unstable; urgency=low
+django-humfrey (0.3.10) unstable; urgency=low
 
   * Improved thumbnailing architecture
   * Better support for multiple stores
