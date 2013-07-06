@@ -126,8 +126,9 @@ class Endpoint(object):
             logging.debug("Querying %r", self._url)
             try:
                 response = urllib2.urlopen(request)
-            except urllib2.HTTPError, e:
-                raise QueryError(e.read(), e.code)
+            except urllib2.HTTPError as e:
+                error_content = e.read()
+                raise QueryError(error_content, e.code)
 
             time_to_start = time.time() - start_time
 
