@@ -33,7 +33,6 @@ class SRXParser(StreamingParser):
                 self.result = {}
             elif name == (self.srx_ns + ' binding'):
                 self.binding_name = attrs['name']
-                self.binding = None
             elif name == (self.srx_ns + ' literal'):
                 # rdflib will turn the datatype into a URIRef for us
                 self.literal_kwargs = {'lang': attrs.get(self.xml_ns + ' lang'),
