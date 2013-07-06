@@ -124,6 +124,9 @@ class StreamingParser(object):
                 self._cached_get = graph
             else:
                 raise AssertionError("Unexpected results type: {0}".format(sparql_results_type))
+            for name in ('query', 'duration'):
+                if hasattr(self, name):
+                    setattr(self._cached_get, name, getattr(self, name))
         return self._cached_get
 
 class StreamingSerializer(object):
