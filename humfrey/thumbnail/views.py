@@ -10,8 +10,9 @@ from PIL import Image
 
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from django.http import HttpResponse, Http404, HttpResponseBadRequest
+from django.http import HttpResponse, Http404
 from django.views.generic import View
+from django_conneg.http import HttpBadRequest
 
 from humfrey.utils.namespaces import expand
 from humfrey.sparql.models import Store
@@ -32,7 +33,7 @@ class ThumbnailView(StoreView):
         return self._store
 
     def get(self, request):
-        if not request.user.has_perm('sparql.query_store', self.store):
+        if 's' not in request.GET and not request.user.has_perm('sparql.query_store', self.store):
             raise Http404
 
         try:
@@ -53,7 +54,7 @@ class ThumbnailView(StoreView):
         
         if 's' in request.GET:
             if request.META['QUERY_STRING'] != encode_parameters(url, width, height):
-                return HttpResponseBadRequest()
+                raise HttpBadRequest("Invalid s parameter")
         elif not self.image_types & self.get_types(url):
                 raise Http404
 
