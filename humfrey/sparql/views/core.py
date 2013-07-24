@@ -60,7 +60,7 @@ class StoreView(View):
     def endpoint(self):
         if not hasattr(self, '_endpoint'):
             if isinstance(self, ContentNegotiatedView):
-                self.set_renderers()
+                self.set_renderers(early=True)
                 preferred_media_types = [m.value for r in self.request.renderers for m in r.mimetypes]
             else:
                 preferred_media_types = ()
