@@ -6,6 +6,8 @@ import rdflib
 from humfrey.sparql.results import SparqlResultList
 from humfrey.utils.namespaces import NS
 
+from humfrey.utils.statsd import statsd
+
 class ModeError(Exception):
     pass
 
@@ -139,7 +141,11 @@ class StreamingSerializer(object):
         results = self._results
 
         if isinstance(results, StreamingParser) and results.media_type == self.media_type:
+            statsd.incr('humfrey.streaming.pass-through.yes')
             return iter(results)
+        else:
+            print results.media_type, self.media_type
+            statsd.incr('humfrey.streaming.pass-through.no')
 
         sparql_results_type, fields, bindings, boolean, triples = None, None, None, None, None
 

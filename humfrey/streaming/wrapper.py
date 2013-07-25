@@ -8,7 +8,7 @@ import sys
 import threading
 from xml.sax.saxutils import prepare_input_source
 
-from rdflib import ConjunctiveGraph, Graph, plugin
+from rdflib import Graph, plugin
 
 try:  # rdflib 3.x
     from rdflib.parser import Parser
@@ -18,6 +18,7 @@ except ImportError:  # rdflib 2.4.x
     from rdflib.syntax.serializers import Serializer
 
 from humfrey.utils.namespaces import NS
+from humfrey.utils.statsd import statsd
 
 from .base import StreamingParser, StreamingSerializer
 from .encoding import coerce_triple_iris
@@ -84,18 +85,18 @@ class RDFLibParser(StreamingParser):
         queue = Queue.Queue()
         parser_thread = threading.Thread(target=self._parse_to_queue,
                                          args=(self._stream, queue))
-        parser_thread.start()
 
-        while True:
-            type, value = queue.get()
-            if type == 'triple':
-                yield value
-            elif type == 'sentinel':
-                break
-            elif type == 'exception':
-                raise value[0], value[1], value[2]
-
-        parser_thread.join()
+        with statsd.timer('humfrey.streaming.rdflib-parser.' + self.plugin_name):
+            parser_thread.start()
+            while True:
+                type, value = queue.get()
+                if type == 'triple':
+                    yield value
+                elif type == 'sentinel':
+                    break
+                elif type == 'exception':
+                    raise value[0], value[1], value[2]
+            parser_thread.join()
 
     def get_triples(self):
         return coerce_triple_iris(self._get_triples())
@@ -106,24 +107,27 @@ class RDFLibSerializer(StreamingSerializer):
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         queue = Queue.Queue()
-        graph = ConjunctiveGraph()
+        graph = Graph()
         for prefix, namespace_uri in NS.iteritems():
             graph.namespace_manager.bind(prefix, namespace_uri)
-        graph += list(triples)
+
+        triples = list(triples)
+        with statsd.timer('humfrey.streaming.rdflib-serializer.add-triples.' + self.plugin_name):
+            graph += triples
         serializer_thread = threading.Thread(target=self._serialize_to_queue,
                                              args=(graph, queue))
-        serializer_thread.start()
 
-        while True:
-            type, value = queue.get()
-            if type == 'data':
-                yield value
-            elif type == 'sentinel':
-                break
-            elif type == 'exception':
-                raise value[0], value[1], value[2]
-
-        serializer_thread.join()
+        with statsd.timer('humfrey.streaming.rdflib-serializer.serialize.' + self.plugin_name):
+            serializer_thread.start()
+            while True:
+                type, value = queue.get()
+                if type == 'data':
+                    yield value
+                elif type == 'sentinel':
+                    break
+                elif type == 'exception':
+                    raise value[0], value[1], value[2]
+            serializer_thread.join()
 
     def _serialize_to_queue(self, graph, queue):
         serializer = self.rdflib_serializer(graph)
@@ -140,7 +144,8 @@ def get_rdflib_parser(name, media_type, plugin_name,
     rdflib_parser = plugin.get(plugin_name, Parser)
     return type(name,
                 (RDFLibParser,),
-                {'media_type': media_type,
+                {'plugin_name': plugin_name,
+                 'media_type': media_type,
                  'rdflib_parser': rdflib_parser,
                  'parser_args': parser_args,
                  'parser_kwargs': parser_kwargs})
@@ -149,5 +154,6 @@ def get_rdflib_serializer(name, media_type, plugin_name):
     rdflib_serializer = plugin.get(plugin_name, Serializer)
     return type(name,
                 (RDFLibSerializer,),
-                {'media_type': media_type,
+                {'plugin_name': plugin_name,
+                 'media_type': media_type,
                  'rdflib_serializer': rdflib_serializer})
