@@ -1,7 +1,7 @@
 import imp
 import os.path
 
-from rdflib import Graph, plugin
+import rdflib
 
 try: # rdflib 3.x
     from rdflib.serializer import Serializer
@@ -51,23 +51,23 @@ formats = [
 
 # Register the RDF/JSON and JSON-LD serializer plugins if available
 try:
-    imp.find_module('rdfextras.serializers.rdfjson')
-except ImportError:
+    rdflib.plugin.get('rdf-json', rdflib.parser.Parser)
+except rdflib.plugin.PluginException:
     pass
 else:
-    plugin.register("rdf-json", Serializer, 'rdfextras.serializers.rdfjson', 'RdfJsonSerializer')
+    RDFJSONParser = get_rdflib_parser('RDFJSONParser', 'application/rdf+json', 'rdf-json')
     RDFJSONSerializer = get_rdflib_serializer('RDFJSONSerializer', 'application/rdf+json', 'rdf-json')
-    formats.append({'format': 'rdfjson', 'name': 'RDF/JSON',
-                    'parser': None, 'serializer': RDFJSONSerializer})
+    formats.append({'format': 'rdf-json', 'name': 'RDF/JSON',
+                    'parser': RDFJSONParser, 'serializer': RDFJSONSerializer})
 try:
-    imp.find_module('rdfextras.serializers.jsonld')
-except ImportError:
+    rdflib.plugin.get('json-ld', rdflib.parser.Parser)
+except rdflib.plugin.PluginException:
     pass
 else:
-    plugin.register("json-ld", Serializer, 'rdfextras.serializers.jsonld', 'JsonLDSerializer')
-    JSONLDSerializer = get_rdflib_parser('JSONLDSerializer', 'application/ld+json', 'json-ld')
-    formats.append({'format': 'jsonld', 'name': 'JSON-LD',
-                    'parser': None, 'serializer': JSONLDSerializer})
+    JSONLDParser = get_rdflib_parser('JSONLDParser', 'application/ld+json', 'json-ld')
+    JSONLDSerializer = get_rdflib_serializer('JSONLDSerializer', 'application/ld+json', 'json-ld')
+    formats.append({'format': 'json-ld', 'name': 'JSON-LD',
+                    'parser': JSONLDParser, 'serializer': JSONLDSerializer})
 
 for f in formats:
     f['media_type'] = f['serializer'].media_type
