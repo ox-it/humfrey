@@ -187,7 +187,7 @@ class SearchView(OpenSearchView, ElasticSearchView):
         if not query:
             return {}
         results = self.context
-    	
+
         facet_labels = set()
         for key in query['facets']:
             meta = results['facets'][key]['meta'] = query['facets'][key]
@@ -311,20 +311,30 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
             'filter': {'and': []},
         }
 
-        # Parse query parameters of the form 'filter.FIELDNAME'.
-        for key in list(parameters):
-            parameter = parameters[key]
-            if key.startswith('filter.'):
-                if not parameter:
-                    del parameters[key]
-                    continue
-                elif parameter == '-':
-                    filter = {'missing': {'field': key[7:]}}
+        # Parse query parameters of the form 'FTYPE.FIELDNAME'.
+        filter_fields = set()
+        for key in list(self.request.GET):
+            if '.' not in key:
+                continue
+            ftype, field = key.split('.', 1)
+            value = self.request.GET[key]
+            if not value:
+                del(self.request.GET[key])
+                continue
+            
+            if ftype == 'filter':
+                if value == '-':
+                    filter = {'missing': {'field': field}}
                 else:
-                    if key.endswith('.uri') and ':' in parameter:
-                        parameter = expand(parameter)
-                    filter = {'term': {key[7:]: parameter}}
-                query['filter']['and'].append(filter)
+                    if field.endswith('.uri') and ':' in value:
+                        value = expand(value)
+                    filter = {'term': {field: value}}
+            elif ftype in ('gt', 'gte', 'lt', 'lte'):
+                filter = {'range': {field : {ftype: value}}}
+            else:
+                continue
+            query['filter']['and'].append(filter)
+            filter_fields.add(field)
 
         if self.facets:
             # Copy the facet definitions as we'll be playing with them shortly.
@@ -335,7 +345,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
             if 'filter' in query:
                 for facet in facets.itervalues():
                     for filter in query['filter']['and']:
-                        if facet['terms']['field'] not in (filter.get('term') or filter['missing']):
+                        if facet['terms']['field'] not in filter_fields:
                             if 'facet_filter' not in facet:
                                 facet['facet_filter'] = {'and': []}
                             facet['facet_filter']['and'].append(filter)
@@ -344,6 +354,11 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
         # If default_types set, add a filter to restrict the results.
         if self.default_types and 'type' not in self.request.GET:
             query['filter']['and'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
+
+        if not query['filter']['and']:
+            del query['filter']['and']
+        if not query['filter']:
+            del query['filter']
 
         return query
 
