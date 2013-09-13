@@ -3,6 +3,7 @@ try:
 except ImportError:
     import json
 import logging
+import pprint
 import urllib2
 import urlparse
 
@@ -33,6 +34,7 @@ class ElasticSearchEndpoint(object):
                                     path, '', ''))
 
     def query(self, query):
+        logger.debug("Query: %s", pprint.pprint(query))
         request = urllib2.Request(self.search_url, json.dumps(query))
         request.add_header("User-Agent", USER_AGENTS['agent'])
         response = json.load(urllib2.urlopen(request))
