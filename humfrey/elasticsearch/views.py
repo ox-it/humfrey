@@ -1,10 +1,6 @@
 from __future__ import division
 
 import copy
-try:
-    import simplejson as json
-except ImportError:
-    import json
 import math
 import re
 import urllib
@@ -20,6 +16,7 @@ from humfrey.sparql.utils import get_labels
 from humfrey.linkeddata.uri import doc_forwards
 from humfrey.linkeddata.views import MappingView
 from humfrey.utils.namespaces import expand, contract
+from humfrey.utils import json
 
 from .forms import SearchForm
 from .query import ElasticSearchEndpoint
