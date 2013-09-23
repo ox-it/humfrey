@@ -131,7 +131,7 @@ class IndexUpdater(object):
                     value = value.toPython()
                 except ValueError:
                     raise
-                if isinstance(value, datetime.datetime):
+                if isinstance(value, (datetime.date, datetime.datetime)):
                     value = value.isoformat()
             x = dst
             for i in key.split('_')[:-1]:
