@@ -179,27 +179,37 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
 
         # Parse query parameters of the form 'FTYPE.FIELDNAME'.
         filter_fields = set()
-        for key in list(self.request.GET):
+        for key, values in self.request.GET.lists:
+            ftype, field = key.split('.', 1)
             if '.' not in key:
                 continue
-            ftype, field = key.split('.', 1)
-            value = self.request.GET[key]
-            if not value:
-                del(self.request.GET[key])
-                continue
-            
-            if ftype == 'filter':
-                if value == '-':
-                    filter = {'missing': {'field': field}}
-                else:
+            filters = []
+            for value in values:
+                if not value:
+                    continue
+
+                if ftype == 'filter':
+                    if value == '-':
+                        filter = {'missing': {'field': field}}
+                    else:
+                        if field.endswith('.uri') and ':' in value:
+                            value = expand(value)
+                        filter = {'term': {field: value}}
+                elif ftype == 'not':
                     if field.endswith('.uri') and ':' in value:
                         value = expand(value)
-                    filter = {'term': {field: value}}
-            elif ftype in ('gt', 'gte', 'lt', 'lte'):
-                filter = {'range': {field : {ftype: value}}}
+                    filter = {'not': {'term': {field: value}}}
+                elif ftype in ('gt', 'gte', 'lt', 'lte'):
+                    filter = {'range': {field : {ftype: value}}}
+                else:
+                    continue
+                filters.append(filter)
+            if len(filters) == 1:
+                query['filters']['and'].append(filters[0])
+            elif len(filters) > 1:
+                query['filters']['and'].append({'or': filters})
             else:
                 continue
-            query['filter']['and'].append(filter)
             filter_fields.add(field)
 
         if self.facets:
