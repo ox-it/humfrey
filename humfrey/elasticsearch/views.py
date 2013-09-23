@@ -1,7 +1,9 @@
 from __future__ import division
 
+import calendar
 import copy
 import math
+import time
 import re
 import urllib
 
@@ -197,6 +199,8 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
                         value = expand(value)
                     filter = {'not': {'term': {field: value}}}
                 elif ftype in ('gt', 'gte', 'lt', 'lte'):
+                    if value == 'now':
+                        value = int(calendar.timegm(time.gmtime()) * 1000)
                     filter = {'range': {field : {ftype: value}}}
                 else:
                     continue
