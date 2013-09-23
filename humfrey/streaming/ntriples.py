@@ -54,5 +54,5 @@ class NTriplesSerializer(StreamingSerializer):
     format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
-        for triple in triples:
-            yield u'{0} {1} {2} .\n'.format(*triple).encode('utf-8')
+        for s, p, o in triples:
+            yield u'{0} {1} {2} .\n'.format(s.n3(), p.n3(), o.n3()).encode('utf-8')
