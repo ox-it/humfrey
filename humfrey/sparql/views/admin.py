@@ -46,7 +46,9 @@ class StoreChooseMixin(object):
         if not hasattr(self, method):
             pass
         if method in self.permission_requirements:
-            if not request.user.has_perm(self.permission_requirements[method], self.store):
+            perm = self.permission_requirements[method]
+            if not request.user.has_perm(perm) and \
+               not request.user.has_perm(perm, self.store):
                 setattr(self, method, self.not_authorized)
         elif method != 'options':
             setattr(self, method, self.not_authorized)
