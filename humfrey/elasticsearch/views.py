@@ -178,10 +178,10 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
 
         # Parse query parameters of the form 'FTYPE.FIELDNAME'.
         filter_fields = set()
-        for key, values in self.request.GET.lists:
-            ftype, field = key.split('.', 1)
+        for key, values in self.request.GET.lists():
             if '.' not in key:
                 continue
+            ftype, field = key.split('.', 1)
             filters = []
             for value in values:
                 if not value:
