@@ -67,7 +67,7 @@ class Endpoint(object):
         self._namespaces.update(namespaces)
         self._cache = defaultdict(dict)
 
-        self._accept_header = self._get_accept_header(preferred_media_types)
+        self._accept_header = self._get_accept_header(preferred_media_types or self._supported_media_types)
 
     def _get_accept_header(self, preferred_media_types=()):
         # We're quickest at parsing N-Triples (text/plain), then Turtle, then RDF/XML
@@ -112,13 +112,13 @@ class Endpoint(object):
             # Pick the quickest to parse, as it will never be passed through
             # verbatim.
             preferred_media_types = ()
-        if preferred_media_types is not None:
-            request.headers['Accept'] = self._get_accept_header(preferred_media_types)
+        if preferred_media_types:
+            request.add_header('Accept', self._get_accept_header(preferred_media_types))
         else:
-            request.headers['Accept'] = self._accept_header
-        request.headers['User-Agent'] = USER_AGENTS['agent']
+            request.add_header('Accept', self._accept_header)
+        request.add_header('User-Agent', USER_AGENTS['agent'])
         if timeout:
-            request.headers['Timeout'] = str(timeout)
+            request.add_header('Timeout', str(timeout))
 
         start_time = time.time()
 
