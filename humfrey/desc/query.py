@@ -19,7 +19,7 @@ class OxPointsQuery(object):
             'cur': cur,
             'about': about
         }
-        
+
     def get_describe(self):
         return 'DESCRIBE ?uri WHERE { GRAPH ?g { %s } }' + ' . '.join(self.get_clauses())
     def get_ask(self):
@@ -80,6 +80,4 @@ if __name__ == '__main__':
     query = OxPointsQuery(endpoint)
     graph = query.perform()
     print graph.serialize()
-
-
 

@@ -47,7 +47,6 @@ class ElasticSearchView(HTMLView, JSONPView, MappingView, StoreView):
     
     def get_results(self, query):
         results = self.search_endpoint.query(query)
-        print results
 
         results['q'] = query
 
