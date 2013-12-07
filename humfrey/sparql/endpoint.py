@@ -111,7 +111,7 @@ class Endpoint(object):
         if not defer:
             # Pick the quickest to parse, as it will never be passed through
             # verbatim.
-            preferred_media_types = ()
+            preferred_media_types = self._supported_media_types
         if preferred_media_types:
             request.add_header('Accept', self._get_accept_header(preferred_media_types))
         else:

@@ -89,7 +89,7 @@ class StoreView(View):
             types = pickle.loads(base64.b64decode(types))
         else:
             results = self.endpoint.query('SELECT ?type WHERE { %s a ?type }' % uri.n3(),
-                                          preferred_media_types=())
+                                          preferred_media_types=('application/sparql-results+xml',))
             types = set(rdflib.URIRef(r.type) for r in results)
             cache.set(key_name, base64.b64encode(pickle.dumps(types)), 1800)
         return types
