@@ -23,7 +23,7 @@ image_logger = logging.getLogger('humfrey.utils.resource.image')
 
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
-IRI = re.compile(u'^([^\\<>"{}|^`\x00-\x20])*$')
+IRI = re.compile(ur'^([^\\<>"{}|\[\]^`\x00-\x20])*$')
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
