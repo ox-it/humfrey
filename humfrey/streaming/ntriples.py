@@ -30,7 +30,7 @@ class NTriplesParser(StreamingParser):
         parser.sink = self.Sink(self)
         self.triple = None
         while True:
-            parser.line = self._stream.readline().strip()
+            parser.line = self._stream.readline().strip().decode('utf-8')
             if not parser.line:
                 break
             try:
