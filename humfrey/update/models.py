@@ -54,6 +54,7 @@ class UpdateDefinition(models.Model):
             ("view_updatedefinition", "Can view the update definition"),
             ("execute_updatedefinition", "Can perform an update"),
             ("administer_updatedefinition", "Can administer an update definition"),
+            ("viewlogs_updatedefinition", "Can view the logs for an update definition"),
         )
 
     def queue(self, silent=False, trigger=None, user=None):

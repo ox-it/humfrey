@@ -143,7 +143,7 @@ class UpdateLogListView(UpdateLogView):
     @method_decorator(login_required)
     def get(self, request, slug):
         definition = get_object_or_404(UpdateDefinition, slug=slug)
-        if not request.user.has_perm('update_view_updatedefinition', definition):
+        if not request.user.has_perm('update_viewlogs_updatedefinition', definition):
             raise PermissionDenied
         context = {
             'definition': definition,
@@ -155,7 +155,7 @@ class UpdateLogDetailView(UpdateLogView):
     @method_decorator(login_required)
     def get(self, request, slug, id):
         definition = get_object_or_404(UpdateDefinition, slug=slug)
-        if not request.user.has_perm('update_view_updatedefinition', definition):
+        if not request.user.has_perm('update_viewlogs_updatedefinition', definition):
             raise PermissionDenied
         log = get_object_or_404(definition.update_log, id=id)
         context = {
