@@ -1,3 +1,9 @@
+django-humfrey (0.4) unstable; urgency=low
+
+  * New release
+
+ -- Alexander Dutton <alexander.dutton@it.ox.ac.uk>  Wed, 26 Feb 2014 10:20:31 +0000
+
 django-humfrey (0.3.10) unstable; urgency=low
 
   * Improved thumbnailing architecture
