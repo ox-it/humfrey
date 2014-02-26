@@ -205,9 +205,9 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
                     continue
                 filters.append(filter)
             if len(filters) == 1:
-                query['filters']['and'].append(filters[0])
+                query['filter']['and'].append(filters[0])
             elif len(filters) > 1:
-                query['filters']['and'].append({'or': filters})
+                query['filter']['and'].append({'or': filters})
             else:
                 continue
             filter_fields.add(field)
