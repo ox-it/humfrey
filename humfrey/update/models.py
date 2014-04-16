@@ -57,7 +57,7 @@ class UpdateDefinition(models.Model):
             ("viewlogs_updatedefinition", "Can view the logs for an update definition"),
         )
 
-    def queue(self, silent=False, trigger=None, user=None):
+    def queue(self, silent=False, trigger=None, user=None, forced=False):
         if self.status != 'idle':
             if silent:
                 return
@@ -68,7 +68,8 @@ class UpdateDefinition(models.Model):
         update_log = UpdateLog.objects.create(update_definition=self,
                                               user=user,
                                               trigger=trigger or '',
-                                              queued=self.last_queued)
+                                              queued=self.last_queued,
+                                              forced=forced)
     
         self.last_log = update_log
         self.save()
@@ -158,7 +159,7 @@ class WithLevels(object):
 class UpdateLog(models.Model, WithLevels):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
     user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
-    forced = models.BooleanField()
+    forced = models.BooleanField(default=False)
 
     trigger = models.CharField(max_length=80, blank=True)
     log_level = models.SmallIntegerField(null=True, blank=True)
