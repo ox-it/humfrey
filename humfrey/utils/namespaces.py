@@ -17,6 +17,7 @@ NS = {
     'fhs':            'http://vocab.ox.ac.uk/fhs/',
     'geo': 'http://www.w3.org/2003/01/geo/wgs84_pos#',
     'gr': 'http://purl.org/goodrelations/v1#',
+    'lyou': 'http://purl.org/linkingyou/',
     'oo': 'http://purl.org/openorg/',
     'org': 'http://www.w3.org/ns/org#',
     'ov': 'http://open.vocab.org/terms/',
