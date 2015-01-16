@@ -16,9 +16,9 @@ from django.conf import settings
 import rdflib
 import pytz
 
-from humfrey.utils.namespaces import NS, expand
-from humfrey.sparql.models import Store
+from humfrey.utils.namespaces import NS, expand, HUMFREY
 from humfrey.sparql.endpoint import Endpoint
+from humfrey.sparql.utils import get_labels, label_predicates
 from humfrey.streaming import parse, serialize
 from humfrey.update.uploader import Uploader
 from humfrey.signals import update_completed
@@ -76,11 +76,12 @@ class DatasetArchiver(object):
                 break
             out.write(chunk)
     
-    def _get_metadata(self, document_uri, graph_name):
+    def _get_metadata(self, document_uri, document_with_labels_uri, graph_name):
         metadata = rdflib.ConjunctiveGraph()
         metadata += [
             # Use a relative reference (to the current document) in the dump file.
             (self.dataset, NS.void.dataDump, document_uri),
+            (self.dataset, HUMFREY.dataDumpWithLabels, document_with_labels_uri),
             (document_uri, NS.rdf.type, NS.foaf.Document),
             (document_uri, NS.dc['format'], rdflib.Literal('application/rdf+xml')),
             (document_uri, NS.dcterms.modified, rdflib.Literal(self.updated)),
@@ -91,36 +92,59 @@ class DatasetArchiver(object):
         ]
         return metadata
 
+    def with_labels(self, triples):
+        subjects = set()
+        already_labelled = set()
+        for s, p, o in triples:
+            yield s, p, o
+            if p in label_predicates:
+                already_labelled.add(s)
+            if isinstance(s, rdflib.URIRef):
+                subjects.add(s)
+            if isinstance(o, rdflib.URIRef):
+                subjects.add(o)
+        for triple in get_labels(subjects - already_labelled, self.endpoint, mapping=False):
+            yield triple
+
     def archive(self):
         notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
 
         archive_path = os.path.join(SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
         archive_graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))
         data_dump_url = rdflib.URIRef('{0}archive/{1}/{2}/latest.rdf'.format(SOURCE_URL, self.store.slug, notation.replace('/', '-')))
+        data_dump_with_labels_url = rdflib.URIRef('{0}archive/{1}/{2}/latest-with-labels.rdf'.format(SOURCE_URL, self.store.slug, notation.replace('/', '-')))
 
         if not os.path.exists(archive_path):
             os.makedirs(archive_path, 0755)
 
         nt_fd, nt_name = tempfile.mkstemp('.nt')
         rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
+        rdf_with_labels_fd, rdf_with_labels_name = tempfile.mkstemp('.rdf')
         try:
             nt_out, rdf_out = os.fdopen(nt_fd, 'w'), os.fdopen(rdf_fd, 'w')
+            rdf_with_labels_out = os.fdopen(rdf_with_labels_fd, 'w')
             for graph_name in self.graph_names:
                 self._graph_triples(nt_out, graph_name)
             nt_out.close()
 
-            sort = subprocess.Popen(['sort', '-u', nt_name], stdout=subprocess.PIPE)
-            try:
+            with tempfile.TemporaryFile() as sorted_triples:
+                subprocess.call(['sort', '-u', nt_name], stdout=sorted_triples)
+
+                sorted_triples.seek(0)
                 triples = itertools.chain(self._get_metadata(rdflib.URIRef(''),
+                                                             data_dump_with_labels_url,
                                                              archive_graph_name),
-                                          parse(sort.stdout, 'nt').get_triples())
-                serialize(triples, rdf_out, rdf_name)
-            finally:
-                # Make sure stdout gets closed so that if the try block raises
-                # an exception we don't keep a sort process hanging around.
-                sort.stdout.close()
-                sort.wait()
-            rdf_out.close()
+                                          parse(sorted_triples, 'nt').get_triples())
+                serialize(triples, rdf_out, 'rdf')
+                rdf_out.close()
+
+                sorted_triples.seek(0)
+                triples = itertools.chain(self._get_metadata(rdflib.URIRef(''),
+                                                             data_dump_with_labels_url,
+                                                             archive_graph_name),
+                                          self.with_labels(parse(sorted_triples, 'nt').get_triples()))
+                serialize(triples, rdf_with_labels_out, 'rdf')
+                rdf_with_labels_out.close()
 
             previous_name = os.path.join(archive_path, 'latest.rdf')
             # Only update if the file has changed, or hasn't been archived before.
@@ -133,8 +157,11 @@ class DatasetArchiver(object):
                     os.unlink(previous_name)
                 os.symlink(new_name, previous_name)
 
+                new_with_labels_name = os.path.join(archive_path, 'latest-with-labels.rdf')
+                shutil.move(rdf_with_labels_name, new_with_labels_name)
+
                 # Upload the metadata to the store using an absolute URI.
-                metadata = self._get_metadata(data_dump_url, archive_graph_name)
+                metadata = self._get_metadata(data_dump_url, data_dump_with_labels_url, archive_graph_name)
                 Uploader.upload([self.store], archive_graph_name, graph=metadata)
         finally:
             os.unlink(nt_name)
@@ -182,7 +209,7 @@ class DatasetArchiver(object):
             dt, _ = os.path.splitext(filename)
             try:
                 timestamp = dateutil.parser.parse(dt)
-            except ValueError:
+            except (TypeError, ValueError):
                 continue
             timestamps.append((timestamp, os.path.join(archive_path, filename)))
         timestamps.sort()
