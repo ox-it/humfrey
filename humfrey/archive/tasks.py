@@ -159,6 +159,7 @@ class DatasetArchiver(object):
 
                 new_with_labels_name = os.path.join(archive_path, 'latest-with-labels.rdf')
                 shutil.move(rdf_with_labels_name, new_with_labels_name)
+                os.chmod(new_with_labels_name, 0644)
 
                 # Upload the metadata to the store using an absolute URI.
                 metadata = self._get_metadata(data_dump_url, data_dump_with_labels_url, archive_graph_name)
