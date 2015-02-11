@@ -179,7 +179,14 @@ class BaseResource(object):
             return Resource(values[0], self._graph, self._endpoint)
         else:
             return self.localised(values)[0]
-    __getattr__ = get
+
+    def __getattr__(self, name):
+        if name.startswith('__'):
+            raise AttributeError
+        try:
+            return self.get(name)
+        except KeyError:
+            raise AttributeError
 
     def get_one_of(self, *qnames):
         for qname in qnames:
