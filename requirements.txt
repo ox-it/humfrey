@@ -5,7 +5,7 @@ django-guardian
 junitxml
 lxml
 mock
-PIL
+Pillow
 python-memcached
 pytz
 PyYAML
