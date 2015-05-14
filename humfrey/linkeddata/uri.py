@@ -70,7 +70,7 @@ def doc_forwards(uri, graph=None, described=None):
 def doc_forward(uri, graph=None, described=None, format=None):
     return doc_forwards(uri, graph, described)[format]
 
-BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d]+))?$')
+BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d\-]+))?$')
 
 def _get_host_path(url):
     parsed_url = urlparse.urlparse(url)
