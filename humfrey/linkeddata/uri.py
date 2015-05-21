@@ -88,7 +88,7 @@ def doc_backward(url, formats=None):
     if isinstance(doc_view_url, tuple):
         doc_view_url = reverse_full(*doc_view_url)
     if _get_host_path(url) == urlparse.urljoin(_get_host_path(url), doc_view_url):
-        return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
+        return rdflib.URIRef(query.get('uri', [None])[0] or ''), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)
     url, format = match.group('url'), match.group('format')
