@@ -353,7 +353,7 @@ class Address(object):
     types = ('v:Address',)
     def render(self):
         address = []
-        for p in ('v:extended-address', 'v:street-address', 'v:locality', 'v:postal-code'):
+        for p in ('v:extended-address', 'v:street-address', 'v:locality', 'v:postal-code', 'v:country-name'):
             value = self.get(p)
             if value:
                 address.append(value)
