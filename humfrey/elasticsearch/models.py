@@ -25,7 +25,7 @@ class Index(models.Model):
     query = models.TextField()
 
     mapping = models.TextField(blank=True)
-    update_mapping = models.BooleanField()
+    update_mapping = models.BooleanField(default=False)
 
     groups = models.CharField(max_length=256, blank=True)
     update_after = models.ManyToManyField(UpdateDefinition, blank=True)

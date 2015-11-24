@@ -29,11 +29,12 @@ class UserPrivileges(models.Model):
     user = models.ForeignKey(User, null=True, blank=True)
     group = models.ForeignKey(Group, null=True, blank=True)
 
-    allow_concurrent_queries = models.BooleanField()
-    disable_throttle = models.BooleanField()
+    allow_concurrent_queries = models.BooleanField(default=False)
+    disable_throttle = models.BooleanField(default=False)
     throttle_threshold = models.FloatField(null=True, blank=True)
     deny_threshold = models.FloatField(null=True, blank=True)
     intensity_decay = models.FloatField(null=True, blank=True)
 
-    disable_timeout = models.BooleanField()
+    disable_timeout = models.BooleanField(default=False)
     maximum_timeout = models.IntegerField(null=True)
+
