@@ -9,14 +9,14 @@ except ImportError:
 import rdflib
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
 
 if 'django_hosts' in settings.INSTALLED_APPS:
-    from django_hosts.reverse import reverse_full
+    from django_hosts.resolvers import reverse
     with_hosts = True
 else:
+    from django.core.urlresolvers import reverse as _old_reverse
     def reverse_full(host, *args, **kwargs):
-        return reverse(*args, **kwargs)
+        return _old_reverse(*args, **kwargs)
     with_hosts = False
 
 from .mappingconf import get_id_mapping, get_doc_view, get_desc_view
