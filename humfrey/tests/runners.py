@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from django.test.simple import DjangoTestSuiteRunner, build_suite, reorder_suite
+from django.test.runner import DiscoverRunner
 from django.test import TestCase as DjangoTestCase
 from django.test._doctest import DocTestCase
 from django.db.models import get_app, get_apps
@@ -11,7 +12,7 @@ from django.utils.importlib import import_module
 from django.conf import settings
 
 
-class HumfreyTestSuiteRunner(DjangoTestSuiteRunner):
+class HumfreyTestSuiteRunner(DiscoverRunner):
     def run_suite(self, suite, **kwargs):
         if os.environ.get('HUMFREY_JUNIT_TEST'):
             import junitxml
