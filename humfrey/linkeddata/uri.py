@@ -61,8 +61,13 @@ def doc_forwards(uri, graph=None, described=None):
         # This used to return a tuple, now it returns the URL directly
         url = reverse_full(*url)
 
-    base = '%s?%s' % (url,
-                      urllib.urlencode((('uri', encoded_uri),)))
+    params = [('uri', encoded_uri)]
+    if not described:
+        from humfrey.desc.views import DescView
+        params.append(('token', DescView.get_uri_token(encoded_uri)))
+
+    base = '%s?%s' % (url, urllib.urlencode(params))
+    print base
 
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))

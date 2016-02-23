@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import re
 import urlparse
@@ -77,11 +78,22 @@ class DescView(MappingView, StoreView):
 
     Allows us to be lazy when determining whether to go on- or off-site.
     """
+
+    @classmethod
+    def get_uri_token(cls, uri):
+        return hashlib.sha1(settings.SECRET_KEY.encode() + uri.encode()).hexdigest()
+
     def get(self, request):
         uri = rdflib.URIRef(request.GET.get('uri', ''))
         try:
             url = urlparse.urlparse(uri)
         except Exception:
+            raise Http404
+        try:
+            token = request.GET['token']
+        except KeyError:
+            raise Http404
+        if token != self.get_uri_token(uri):
             raise Http404
         if not IRI.match(uri):
             return HttpResponseTemporaryRedirect(unicode(uri))
