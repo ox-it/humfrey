@@ -1,4 +1,5 @@
-from django_hosts.resolvers import reverse
+from django_hosts import reverse
+
 
 class PingbackMiddleware(object):
 	def process_response(self, request, response):
