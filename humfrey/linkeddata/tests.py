@@ -7,7 +7,7 @@ import urlparse
 import rdflib
 
 from django.core.urlresolvers import set_urlconf
-from django_hosts.reverse import get_host
+from django_hosts.resolvers import get_host
 
 from humfrey.linkeddata import mappingconf, resource
 from humfrey.linkeddata.uri import doc_forward, doc_backward
