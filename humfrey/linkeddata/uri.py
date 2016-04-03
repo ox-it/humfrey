@@ -81,10 +81,7 @@ def doc_backward(url, formats=None):
     if format and formats is not None and format not in formats:
         url, format = '%s.%s' % (url, format), None
 
-    if with_hosts:
-        url_part = url
-    else:
-        url_part = urlparse.urlparse(url).path
+    url_part = url
 
     for id_prefix, doc_prefix, is_local in get_id_mapping():
         doc_prefix = urlparse.urljoin(url, doc_prefix)
