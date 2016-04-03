@@ -10,15 +10,6 @@ import rdflib
 
 from django.conf import settings
 
-if 'django_hosts' in settings.INSTALLED_APPS:
-    from django_hosts.resolvers import reverse
-    with_hosts = True
-else:
-    from django.core.urlresolvers import reverse as _old_reverse
-    def reverse_full(host, *args, **kwargs):
-        return _old_reverse(*args, **kwargs)
-    with_hosts = False
-
 from .mappingconf import get_id_mapping, get_doc_view, get_desc_view
 
 class DocURLs(object):
@@ -57,9 +48,6 @@ def doc_forwards(uri, graph=None, described=None):
         return DocURLs(encoded_uri, encoded_uri.replace('%', '%%'))
 
     url = get_doc_view() if described else get_desc_view()
-    if isinstance(url, tuple):
-        # This used to return a tuple, now it returns the URL directly
-        url = reverse_full(*url)
 
     base = '%s?%s' % (url,
                       urllib.urlencode((('uri', encoded_uri),)))
@@ -85,8 +73,6 @@ def doc_backward(url, formats=None):
     parsed_url = urlparse.urlparse(url)
     query = parse_qs(parsed_url.query)
     doc_view_url = get_doc_view()
-    if isinstance(doc_view_url, tuple):
-        doc_view_url = reverse_full(*doc_view_url)
     if _get_host_path(url) == urlparse.urljoin(_get_host_path(url), doc_view_url):
         return rdflib.URIRef(query.get('uri', [None])[0]), query.get('format', [None])[0], False
 

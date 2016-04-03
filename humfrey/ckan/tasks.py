@@ -7,7 +7,7 @@ import logging
 from celery.task import task
 import ckanclient
 from django.conf import settings
-from django_hosts.reverse import reverse_full
+from django_hosts import reverse
 import rdflib
 
 from humfrey.signals import graphs_updated
@@ -147,7 +147,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
     if sparql_endpoint:
         sparql_endpoint = unicode(sparql_endpoint)
     else:
-        sparql_endpoint = 'http:' + reverse_full('data', 'sparql:endpoint')
+        sparql_endpoint = 'http:' + reverse('sparql:endpoint', host='data')
 
     tags = find('humfrey:theDataHubDatasetTag', all=True)
     groups = find('humfrey:theDataHubDatasetGroup', all=True)
