@@ -1,5 +1,5 @@
-Django<1.5
-django-conneg>=0.6
+Django
+django-conneg
 django_hosts
 django-guardian
 junitxml
@@ -13,9 +13,8 @@ rdflib
 redis
 simplejson
 unittest2
--e hg+https://code.google.com/p/rdfextras/@dd40b6c730c2#egg=rdfextras
 pyparsing
--e hg+https://bitbucket.org/alexsdutton/ckanclient#egg=ckanclient
+ckanapi
 django-celery
 psycopg2
 pycrypto
