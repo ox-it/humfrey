@@ -1,9 +1,9 @@
-from __future__ import division
+
 
 import hashlib
 import os
 import re
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 import rdflib
 from PIL import Image
@@ -67,7 +67,7 @@ class ThumbnailView(StoreView):
 
         if not os.path.exists(filename) or os.stat(filename).st_size == 0:
             open(filename, 'w').close()
-            temporary_filename, _ = urllib.urlretrieve(url)
+            temporary_filename, _ = urllib.request.urlretrieve(url)
             try:
                 try:
                     im = Image.open(temporary_filename)

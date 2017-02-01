@@ -1,14 +1,14 @@
 import base64
 import functools
 import hashlib
-import httplib
+import http.client
 import math
 import pickle
 import threading
 import time
-import urllib
-import urllib2
-import urlparse
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 
 from lxml import etree
@@ -76,7 +76,7 @@ class StoreView(View):
     def get_types(self, uri):
         if ' ' in uri:
             return set()
-        parsed = urlparse.urlparse(uri)
+        parsed = urllib.parse.urlparse(uri)
         if parsed.scheme == 'mailto':
             if parsed.netloc or not parsed.path:
                 return set()
@@ -130,7 +130,7 @@ class StoreView(View):
         elif sparql_results_type == 'graph':
             graph = context['_graph']
             self.resource = functools.partial(Resource, graph=graph, endpoint=self.endpoint)
-            subjects = map(self.resource, self.get_subjects(graph))
+            subjects = list(map(self.resource, self.get_subjects(graph)))
             self.sort_subjects(subjects)
             context['_subjects'] = subjects
 
@@ -140,7 +140,7 @@ class StoreView(View):
 
     def sort_subjects(self, subjects):
         def k(s):
-            return unicode(s.label)
+            return str(s.label)
         subjects.sort(key=k)
 
 class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetView):
@@ -208,7 +208,7 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
         if form.is_valid():
             try:
                 results = self.perform_query(request, query, form.cleaned_data['common_prefixes'])
-            except QueryError, e:
+            except QueryError as e:
                 context['error'] = e.message
                 context['status_code'] = e.status_code
             else:
@@ -296,7 +296,7 @@ class ProtectedQueryView(QueryView):
         uuids = client.smembers(self.user_queries_key.format(user_key))
         if not uuids:
             return
-        queries = map(self.unpack, client.mget([self.query_key.format(u) for u in uuids]))
+        queries = list(map(self.unpack, client.mget([self.query_key.format(u) for u in uuids])))
         for query in queries:
             if 'started' in query:
                 query['intensity'] = max(self.minimum_query_intensity,
@@ -447,22 +447,22 @@ class ProtectedQueryView(QueryView):
     def dispatch(self, request):
         try:
             return super(ProtectedQueryView, self).dispatch(request)
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             self.context.update({'error': {'message': e.read(),
                                            'status_code': e.code}})
             return self.error_view(request, self.context, self.error_template_name)
-        except self.SparqlViewException, e:
+        except self.SparqlViewException as e:
             self.context.update({'error': {'message': e.message,
-                                           'status_code': httplib.SERVICE_UNAVAILABLE}})
+                                           'status_code': http.client.SERVICE_UNAVAILABLE}})
             if hasattr(e, 'intensity'):
                 retry_after = int(math.ceil((e.intensity - self.deny_threshold) / self.intensity_decay) + 1)
                 self.context['additional_headers'].update({'X-Humfrey-SPARQL-Intensity': e.intensity,
                                                            'Retry-After': retry_after})
             return self.error_view(request, self.context, self.error_template_name)
-        except etree.XMLSyntaxError, e:
+        except etree.XMLSyntaxError as e:
             self.context.update({'error': {'message': "Your query could not be returned in the time allotted it.\n" \
                                                     + "Please try a simpler query or using LIMIT to reduce the number of returned results.",
-                                           'status_code': httplib.FORBIDDEN}})
+                                           'status_code': http.client.FORBIDDEN}})
             return self.error_view(request, self.context, self.error_template_name)
 
 class GraphStoreView(StoreView, PassThroughView):
@@ -472,7 +472,7 @@ class GraphStoreView(StoreView, PassThroughView):
         else:
             graph_url = request.build_absolute_uri()
         return '%s?%s' % (self.store.graph_store_endpoint,
-                          urllib.urlencode({'graph': graph_url.decode('utf-8')}))
+                          urllib.parse.urlencode({'graph': graph_url.decode('utf-8')}))
     def get_method(self, request, path=None, store=None):
         if request.method in ('HEAD', 'GET'):
             permission_check = self.store.can_query

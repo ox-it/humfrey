@@ -16,7 +16,7 @@ update_completed.connect(update_indexes_after_dataset_update.delay)
 
 @task(name='humfrey.elasticsearch.update_index', ignore_result=True)
 def update_index(index):
-    if isinstance(index, basestring):
+    if isinstance(index, str):
         index = Index.objects.get(slug=index)
     index.status = 'active'
     index.last_started = datetime.datetime.now()

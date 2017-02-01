@@ -1,11 +1,11 @@
-from __future__ import division
+
 
 import calendar
 import copy
 import math
 import time
 import re
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from django.http import HttpResponse
 from django_conneg.decorators import renderer
@@ -61,7 +61,7 @@ class ElasticSearchView(HTMLView, JSONPView, MappingView, StoreView):
     @classmethod
     def strip_underscores(cls, value):
         if isinstance(value, dict):
-            for key, subvalue in value.items():
+            for key, subvalue in list(value.items()):
                 if key.startswith('_'):
                     value[key[1:]] = value.pop(key)
                 cls.strip_underscores(subvalue)
@@ -118,7 +118,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
     @classmethod
     def strip_underscores(cls, value):
         if isinstance(value, dict):
-            for key, subvalue in value.items():
+            for key, subvalue in list(value.items()):
                 if key.startswith('_'):
                     value[key[1:]] = value.pop(key)
                 cls.strip_underscores(subvalue)
@@ -149,7 +149,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
             if context['page'] > context['page_count']:
                 query = copy.copy(request.GET)
                 query['page'] = context['page_count']
-                query = urllib.urlencode(query)
+                query = urllib.parse.urlencode(query)
                 return HttpResponseSeeOther('{path}?{query}'.format(path=request.path,
                                                                     query=query))
 
@@ -219,7 +219,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
             # Add facet filters for all active filters except any acting on this
             # particular facet.
             if 'filter' in query:
-                for facet in facets.itervalues():
+                for facet in facets.values():
                     for filter in query['filter']['and']:
                         if facet['terms']['field'] not in filter_fields:
                             if 'facet_filter' not in facet:
@@ -272,13 +272,13 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
                 for term in results['facets'][key]['terms']:
                     term['value'] = term['term']
 
-        labels = get_labels(map(rdflib.URIRef, facet_labels), endpoint=self.endpoint)
+        labels = get_labels(list(map(rdflib.URIRef, facet_labels)), endpoint=self.endpoint)
         for key in query['facets']:
             if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
                 for term in results['facets'][key]['terms']:
                     uri = rdflib.URIRef(term['term'])
                     if uri in labels:
-                        term['label'] = unicode(labels[uri])
+                        term['label'] = str(labels[uri])
 
         for hit in results['hits']['hits']:
             try:

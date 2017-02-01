@@ -24,7 +24,7 @@ class IndexAdminForm(forms.ModelForm):
             return
         try:
             json.loads(self.cleaned_data['mapping'])
-        except ValueError, e:
+        except ValueError as e:
             raise forms.ValidationError(e)
 
 class IndexAdmin(admin.ModelAdmin):

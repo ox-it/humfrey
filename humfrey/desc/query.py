@@ -11,7 +11,7 @@ class OxPointsQuery(object):
 
         self.date, self.scheme, identifier, self.relation, self.cur = date, scheme, identifier, relation, cur
 
-        self.types = map(self.quote, types)
+        self.types = list(map(self.quote, types))
         self.about = self.quote(about)
 
         self.params = {
@@ -79,5 +79,5 @@ if __name__ == '__main__':
     endpoint = sparql.Endpoint('http://localhost:3030/dataset/query')
     query = OxPointsQuery(endpoint)
     graph = query.perform()
-    print graph.serialize()
+    print(graph.serialize())
 

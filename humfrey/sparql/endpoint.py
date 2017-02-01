@@ -2,8 +2,7 @@ from collections import defaultdict
 import logging
 import sys
 import time
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
 
 import rdflib
 try:
@@ -36,14 +35,14 @@ def trim_indentation(s):
     # and split into a list of lines:
     lines = s.expandtabs().splitlines()
     # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxint
+    indent = sys.maxsize
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped:
             indent = min(indent, len(line) - len(stripped))
     # Remove indentation (first line is special):
     trimmed = [lines[0].strip()]
-    if indent < sys.maxint:
+    if indent < sys.maxsize:
         for line in lines[1:]:
             trimmed.append(line[indent:].rstrip())
     # Strip off trailing and leading blank lines:
@@ -92,7 +91,7 @@ class Endpoint(object):
         if common_prefixes:
             q = ['\n', query]
             prefixes = []
-            for prefix, uri in self._namespaces.iteritems():
+            for prefix, uri in self._namespaces.items():
                 if '%s:' % prefix in query:
                     prefixes.append((prefix, uri))
             prefixes.sort()
@@ -104,7 +103,7 @@ class Endpoint(object):
         original_query = query
         query = self.normalize_query(query, common_prefixes)
 
-        request = urllib2.Request(self._url, urllib.urlencode({
+        request = urllib.request.Request(self._url, urllib.parse.urlencode({
             'query': query.encode('utf-8'),
         }))
 
@@ -125,8 +124,8 @@ class Endpoint(object):
         try:
             logging.debug("Querying %r", self._url)
             try:
-                response = urllib2.urlopen(request)
-            except urllib2.HTTPError as e:
+                response = urllib.request.urlopen(request)
+            except urllib.error.HTTPError as e:
                 error_content = e.read()
                 raise QueryError(error_content, e.code)
 
@@ -162,12 +161,12 @@ class Endpoint(object):
             raise
 
     def update(self, query):
-        request = urllib2.Request(self._update_url, urllib.urlencode({
+        request = urllib.request.Request(self._update_url, urllib.parse.urlencode({
             'request': self._namespaces + query.encode('UTF-8'),
         }))
         request.headers['User-Agent'] = 'sparql.py'
 
-        urllib2.urlopen(request)
+        urllib.request.urlopen(request)
 
     def insert_data(self, triples, graph=None):
         triples = ' . '.join(' '.join(map(self.quote, triple)) for triple in triples)

@@ -1,7 +1,7 @@
 import hashlib
 import logging
 import re
-import urlparse
+import urllib.parse
 
 import rdflib
 
@@ -52,7 +52,7 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
         return HttpResponseSeeOther(description_url)
 
     def override_redirect(self, request, description_url, mimetypes):
-        url = urlparse.urlparse(description_url)
+        url = urllib.parse.urlparse(description_url)
         if 'django_hosts' in settings.INSTALLED_APPS:
             host, _ = self.hosts_middleware.get_host(url.netloc)
             urlconf = host.urlconf
@@ -86,7 +86,7 @@ class DescView(MappingView, StoreView):
     def get(self, request):
         uri = rdflib.URIRef(request.GET.get('uri', ''))
         try:
-            url = urlparse.urlparse(uri)
+            url = urllib.parse.urlparse(uri)
         except Exception:
             raise Http404
         try:
@@ -96,13 +96,13 @@ class DescView(MappingView, StoreView):
         if token != self.get_uri_token(uri):
             raise Http404
         if not IRI.match(uri):
-            return HttpResponseTemporaryRedirect(unicode(uri))
+            return HttpResponseTemporaryRedirect(str(uri))
         elif request.GET.get('source') == 'purl':
             return HttpResponseSeeOther(doc_forward(uri, described=True))
         elif self.get_types(uri):
             return HttpResponsePermanentRedirect(doc_forward(uri, described=True))
         elif url.scheme in ('http', 'https') and url.netloc and url.path.startswith('/'):
-            return HttpResponseTemporaryRedirect(unicode(uri))
+            return HttpResponseTemporaryRedirect(str(uri))
         else:
             raise Http404
 
@@ -144,7 +144,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
             logger.debug("Resource has no type, so is probably not known in these parts: %r", uri)
             raise Http404("Resource has no type, so is probably not known in these parts")
 
-        expected_doc_url = urlparse.urljoin(doc_url, doc_forward(uri, request, format=format, described=True))
+        expected_doc_url = urllib.parse.urljoin(doc_url, doc_forward(uri, request, format=format, described=True))
         if self.check_canonical and expected_doc_url != doc_url:
             logger.debug("Request for a non-canonical doc URL (%r) for %r, redirecting to %r", doc_url, uri, expected_doc_url)
             return HttpResponsePermanentRedirect(expected_doc_url)
@@ -165,7 +165,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         types = self.context['types']
 
         queries, graph = [], rdflib.ConjunctiveGraph()
-        for prefix, namespace_uri in NS.iteritems():
+        for prefix, namespace_uri in NS.items():
             graph.namespace_manager.bind(prefix, namespace_uri)
 
         graph += ((subject_uri, NS.rdf.type, t) for t in types)
@@ -201,7 +201,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
             'subject': subject,
             'licenses': [Resource(uri, graph, self.endpoint) for uri in licenses],
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
-            'queries': map(self.endpoint.normalize_query, queries),
+            'queries': list(map(self.endpoint.normalize_query, queries)),
             'template_name': self.template_name,
         })
 
@@ -244,7 +244,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
             module_name, attribute_name = name.rsplit('.', 1)
             try:
                 module = import_module(module_name)
-            except ImportError, e:
+            except ImportError as e:
                 raise ImproperlyConfigured('Error importing doc RDF processor module %s: "%s"' % (module_name, e))
             try:
                 processors.append(getattr(module, attribute_name))

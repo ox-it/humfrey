@@ -18,8 +18,7 @@ class HTMLSanitizerTestCaseMeta(type):
             attrs[f.__name__] = f
         return super(HTMLSanitizerTestCaseMeta, cls).__new__(cls, name, bases, attrs)
 
-class HTMLSanitizerTestCase(unittest.TestCase):
-    __metaclass__ = HTMLSanitizerTestCaseMeta
+class HTMLSanitizerTestCase(unittest.TestCase, metaclass=HTMLSanitizerTestCaseMeta):
     test_cases = {'bad_attribute': ("""<div badattr="foo">bar</div>""",
                                     """<div>bar</div>"""),
                   'strip_html_body': ("""<html><body><h1>Hello</h1></body></html>""",

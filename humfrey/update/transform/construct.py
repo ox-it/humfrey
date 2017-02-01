@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from django.conf import settings
 
 from humfrey.update.transform.base import Transform, TransformException
@@ -14,7 +12,7 @@ class Construct(Transform):
 
         endpoint = Endpoint(transform_manager.store.query_endpoint, preferred_media_types=('text/plain',))
 
-        if isinstance(self.query, basestring):
+        if isinstance(self.query, str):
             query = self.query
         else:
             query_filename = self.query.execute(transform_manager)

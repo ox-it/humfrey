@@ -1,8 +1,10 @@
-import httplib
+import http.client
 import logging
 import os
 import shutil
-import urllib2
+import urllib.request
+import urllib.error
+import urllib.parse
 
 from django.conf import settings
 import rdflib
@@ -17,10 +19,10 @@ logger = logging.getLogger(__name__)
 class VocabularyLoader(Transform):
     def execute(self, transform_manager):
 
-        for prefix, uri in NS.iteritems():
+        for prefix, uri in NS.items():
             try:
                 self.load_vocabulary(transform_manager, prefix, uri)
-            except Exception, e:
+            except Exception as e:
                 logger.exception("Failed to load vocabulary: %r from %r", prefix, uri)
 
     def load_vocabulary(self, transform_manager, prefix, uri):
@@ -39,7 +41,7 @@ class VocabularyLoader(Transform):
 
             logger.debug("About to fetch %r for vocabulary %r", uri, prefix)
 
-            if headers['status'] != httplib.OK:
+            if headers['status'] != http.client.OK:
                 logger.error("Failed to retrieve %r for vocabulary %r", uri, prefix, extra={'headers': headers})
                 return
             content_type = headers['content-type'].split(';')[0]

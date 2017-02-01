@@ -1,5 +1,3 @@
-from __future__ import with_statement, absolute_import
-
 try:
     import sharepoint
 except ImportError:

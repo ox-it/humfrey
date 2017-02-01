@@ -114,7 +114,7 @@ class DocViewTestCase(ClientTestCase, GraphTestMixin):
 
         url_tests = [
             # Test that percent-encoded URLs get decoded as UTF-8
-            ('/doc/fu%C3%9F', u'http://id.example.org/fuß', False),
+            ('/doc/fu%C3%9F', 'http://id.example.org/fuß', False),
         ]
 
         for url, uri, redirect in url_tests:

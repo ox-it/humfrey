@@ -11,14 +11,13 @@ from humfrey.utils.statsd import statsd
 class ModeError(Exception):
     pass
 
-class StreamingParser(object):
+class StreamingParser(object, metaclass=abc.ABCMeta):
     """
     Base class for streaming parsers.
 
     These expose the underlying stream as file-like objects, or can be
     used to parse the stream, but not both.
     """
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, stream, encoding='utf-8'):
         self._stream, self._encoding = stream, encoding
@@ -120,7 +119,7 @@ class StreamingParser(object):
                 self._cached_get = self.get_boolean()
             elif sparql_results_type == 'graph':
                 graph = rdflib.ConjunctiveGraph()
-                for prefix, namespace_uri in NS.iteritems():
+                for prefix, namespace_uri in NS.items():
                     graph.namespace_manager.bind(prefix, namespace_uri)
                 graph += self.get_triples()
                 self._cached_get = graph
@@ -131,9 +130,7 @@ class StreamingParser(object):
                     setattr(self._cached_get, name, getattr(self, name))
         return self._cached_get
 
-class StreamingSerializer(object):
-    __metaclass__ = abc.ABCMeta
-
+class StreamingSerializer(object, metaclass=abc.ABCMeta):
     def __init__(self, results):
         self._results = results
 

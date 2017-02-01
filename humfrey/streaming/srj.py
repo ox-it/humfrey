@@ -1,7 +1,4 @@
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 import rdflib
 
@@ -40,7 +37,7 @@ class SRJParser(StreamingParser):
         fields = self.get_fields()
 
         for binding in self._data['results']['bindings']:
-            for name, value in binding.iteritems():
+            for name, value in binding.items():
                 binding[name] = _type_mapping[value['type']](value)
             yield Result(fields, binding)
 
@@ -63,7 +60,7 @@ class SRJSerializer(StreamingSerializer):
             raise TypeError("Unexpected results type: {0}".format(sparql_results_type))
 
         # We'll spool to a buffer, and only yield when it gets a bit big.
-        buffer = StringIO()
+        buffer = io.StringIO()
 
         # Do these attribute lookups only once.
         json_dumps, json_dump, buffer_write = json.dumps, json.dump, buffer.write

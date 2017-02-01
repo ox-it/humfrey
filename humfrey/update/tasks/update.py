@@ -8,7 +8,7 @@ import os
 import pickle
 import shutil
 import tempfile
-import thread
+import _thread
 import traceback
 
 import pytz
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class _SameThreadFilter(logging.Filter):
     def __init__(self):
-        self.thread_ident = thread.get_ident()
+        self.thread_ident = _thread.get_ident()
     def filter(self, record):
         return record.thread == self.thread_ident
 
@@ -52,7 +52,7 @@ class _TransformHandler(logging.Handler):
         try:
             pickle.dumps(record)
         except Exception:
-            for key in record.keys():
+            for key in list(record.keys()):
                 try:
                     pickle.dumps(record[key])
                 except Exception:

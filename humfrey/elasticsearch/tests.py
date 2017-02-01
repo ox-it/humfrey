@@ -109,7 +109,7 @@ class ResultsParserTestCase(unittest.TestCase):
                     sort_recursive(subvalue)
                 value.sort()
             elif isinstance(value, dict):
-                for subvalue in value.itervalues():
+                for subvalue in value.values():
                     sort_recursive(subvalue)
 
         sort_recursive(actual)

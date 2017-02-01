@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import csv
 import datetime
 import decimal
@@ -50,10 +48,10 @@ class SpreadsheetToTEI(Transform):
                 generator.endElement('head')
 
                 for i, row in enumerate(sheet.rows):
-                    generator.startElement('row', {'n': unicode(int(i) + 1)})
+                    generator.startElement('row', {'n': str(int(i) + 1)})
                     for j, cell in enumerate(row.cells):
-                        generator.startElement('cell', {'n': unicode(j + 1)})
-                        generator.characters(unicode(cell))
+                        generator.startElement('cell', {'n': str(j + 1)})
+                        generator.characters(str(cell))
                         generator.endElement('cell')
                     generator.endElement('row')
                 generator.endElement('table')
@@ -89,7 +87,7 @@ class GnumericToTEI(SpreadsheetToTEI):
         def find_style(self, row, col):
             row, col = int(row), int(col)
             for sr in self.style_regions:
-                a = dict((k, int(v)) for k, v in sr.attrib.items())
+                a = dict((k, int(v)) for k, v in list(sr.attrib.items()))
                 if a['startCol'] <= col <= a['endCol'] and a['startRow'] <= row <= a['endRow']:
                     return sr
             else:
@@ -137,7 +135,7 @@ class GnumericToTEI(SpreadsheetToTEI):
 
     def sheets(self, input):
         input = etree.parse(gzip.GzipFile(input, mode='r'))
-        return itertools.imap(self.Sheet, input.xpath('gnm:Sheets/gnm:Sheet', namespaces=self.NS))
+        return map(self.Sheet, input.xpath('gnm:Sheets/gnm:Sheet', namespaces=self.NS))
 
 class ODSToTEI(SpreadsheetToTEI):
     NS = {
@@ -162,7 +160,7 @@ class ODSToTEI(SpreadsheetToTEI):
                 except (ValueError, IndexError):
                     repeated = 1
                 if row.xpath('((self::table:table-row | following-sibling::table:table-row)/table:table-cell/text:p)[1]', namespaces=ODSToTEI.NS):
-                    for n in xrange(repeated):
+                    for n in range(repeated):
                         yield ODSToTEI.Row(row)
 
     class Row(SpreadsheetToTEI.Row):
@@ -177,7 +175,7 @@ class ODSToTEI(SpreadsheetToTEI):
                 if value_type == 'date':
                     value = attrib['{%(office)s}date-value' % ODSToTEI.NS]
                     if len(value) == 10:
-                        value = datetime.date(*map(int, value.split('-')))
+                        value = datetime.date(*list(map(int, value.split('-'))))
                     else:
                         value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
                 elif value_type == 'currency':
@@ -200,14 +198,14 @@ class ODSToTEI(SpreadsheetToTEI):
                 except (ValueError, IndexError):
                     repeated = 1
                 if value or cell.xpath('following-sibling::table:table-cell/text:p', namespaces=ODSToTEI.NS):
-                    for n in xrange(repeated):
+                    for n in range(repeated):
                         yield value
 
     def sheets(self, input):
         zip = zipfile.ZipFile(input)
         try:
             input = etree.fromstring(zip.read('content.xml'))
-            return itertools.imap(self.Sheet, input.xpath('office:body/office:spreadsheet/table:table', namespaces=self.NS))
+            return map(self.Sheet, input.xpath('office:body/office:spreadsheet/table:table', namespaces=self.NS))
         finally:
             zip.close()
 

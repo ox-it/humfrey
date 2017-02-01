@@ -7,8 +7,9 @@ import os
 import shutil
 import subprocess
 import tempfile
-import urllib
-import urllib2
+import urllib.error
+import urllib.parse
+import urllib.request
 
 from celery.task import task
 import dateutil.parser
@@ -59,12 +60,12 @@ class DatasetArchiver(object):
 
     def _graph_triples(self, out, graph_name):
         url = '%s?%s' % (self.store.graph_store_endpoint,
-                         urllib.urlencode({'graph': graph_name}))
-        request = urllib2.Request(url)
+                         urllib.parse.urlencode({'graph': graph_name}))
+        request = urllib.request.Request(url)
         request.add_header('Accept', 'text/plain')
         try:
-            response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
+            response = urllib.request.urlopen(request)
+        except urllib.error.HTTPError as e:
             if e.code == 404:
                 logger.warning("Graph not found: %s", graph_name)
             else:
@@ -115,7 +116,7 @@ class DatasetArchiver(object):
         data_dump_with_labels_url = rdflib.URIRef('{0}archive/{1}/{2}/latest-with-labels.rdf'.format(SOURCE_URL, self.store.slug, notation.replace('/', '-')))
 
         if not os.path.exists(archive_path):
-            os.makedirs(archive_path, 0755)
+            os.makedirs(archive_path, 0o755)
 
         nt_fd, nt_name = tempfile.mkstemp('.nt')
         rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
@@ -152,14 +153,14 @@ class DatasetArchiver(object):
                 new_name = os.path.join(archive_path,
                                         self.updated.astimezone(pytz.utc).isoformat() + '.rdf')
                 shutil.move(rdf_name, new_name)
-                os.chmod(new_name, 0644)
+                os.chmod(new_name, 0o644)
                 if os.path.exists(previous_name):
                     os.unlink(previous_name)
                 os.symlink(new_name, previous_name)
 
                 new_with_labels_name = os.path.join(archive_path, 'latest-with-labels.rdf')
                 shutil.move(rdf_with_labels_name, new_with_labels_name)
-                os.chmod(new_with_labels_name, 0644)
+                os.chmod(new_with_labels_name, 0o644)
 
                 # Upload the metadata to the store using an absolute URI.
                 metadata = self._get_metadata(data_dump_url, data_dump_with_labels_url, archive_graph_name)

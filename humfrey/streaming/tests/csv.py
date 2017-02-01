@@ -1,7 +1,7 @@
-from __future__ import absolute_import
+
 
 import csv
-import StringIO
+import io
 import unittest
 
 from .. import CSVSerializer
@@ -12,12 +12,12 @@ class CSVRendererTestCase(unittest.TestCase):
         data = ''.join(CSVSerializer(TEST_RESULTSET))
 
         try:
-            data = csv.reader(StringIO.StringIO(data))
-        except Exception, e:
+            data = csv.reader(io.StringIO(data))
+        except Exception as e:
             raise AssertionError(e)
 
         # Pop the columns and make sure they match.
-        columns = data.next()
+        columns = next(data)
         self.assertEqual(columns, list(TEST_RESULTSET.fields))
 
         for result, target_result in zip(data, TEST_RESULTSET):
@@ -26,7 +26,7 @@ class CSVRendererTestCase(unittest.TestCase):
                 if target_term is None:
                     self.assertEqual(term, '')
                 else:
-                    self.assertEqual(term, unicode(target_term))
+                    self.assertEqual(term, str(target_term))
 
     def testValidCSVBoolean(self):
         for value in (True, False):

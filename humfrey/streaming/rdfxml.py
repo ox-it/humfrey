@@ -1,4 +1,4 @@
-import Queue
+import queue
 import re
 import sys
 import threading
@@ -16,7 +16,7 @@ from .base import StreamingParser, StreamingSerializer
 from .wrapper import get_rdflib_parser
 
 class RDFXMLSerializer(StreamingSerializer):
-    localpart = re.compile(ur'[A-Za-z_][A-Za-z_\d\-]+$')
+    localpart = re.compile(r'[A-Za-z_][A-Za-z_\d\-]+$')
     supported_results_types = ('graph',)
     media_type = 'application/rdf+xml'
     format_type = 'graph'

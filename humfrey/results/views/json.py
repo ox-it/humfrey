@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 try:
     import simplejson as json
 except ImportError:
@@ -20,9 +18,9 @@ class JSONRDFView(ContentNegotiatedView):
     def render_json_subject(self, graph, subject, seen=()):
         data, inv_data = {}, {}
         if isinstance(subject, rdflib.URIRef):
-            data['_uri'] = unicode(subject)
+            data['_uri'] = str(subject)
         elif isinstance(subject, rdflib.BNode):
-            data['_id'] = unicode(subject)
+            data['_id'] = str(subject)
         if subject in seen:
             data['_nested'] = True
             return data
@@ -32,7 +30,7 @@ class JSONRDFView(ContentNegotiatedView):
             data[contract(p, '_')] = objects = []
             for o in graph.objects(subject, p):
                 if isinstance(o, rdflib.Literal):
-                    objects.append(unicode(o))
+                    objects.append(str(o))
                 else:
                     objects.append(self.render_json_subject(graph, o, seen))
 
@@ -42,7 +40,7 @@ class JSONRDFView(ContentNegotiatedView):
                 if len(seen) >= 2 and o == seen[-2]:
                     continue
                 if isinstance(o, rdflib.Literal):
-                    objects.append(unicode(o))
+                    objects.append(str(o))
                 else:
                     objects.append(self.render_json_subject(graph, o, seen))
             if objects:
@@ -57,7 +55,7 @@ class JSONRDFView(ContentNegotiatedView):
 
     def render_json_data(self, context):
         def coerce_subject(subject):
-            if isinstance(subject, basestring):
+            if isinstance(subject, str):
                 return rdflib.URIRef(subject)
             elif isinstance(subject, BaseResource):
                 return subject._identifier

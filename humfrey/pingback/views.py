@@ -1,6 +1,6 @@
 import datetime
 from functools import partial
-from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
+from xmlrpc.server import SimpleXMLRPCDispatcher
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.generic import View
 

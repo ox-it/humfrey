@@ -33,7 +33,7 @@ class SRXParserTestCase(unittest.TestCase):
         results = SRXParser(f).get()
         try:
             self.assertIsInstance(results, SparqlResultList)
-            for actual, expected in itertools.izip_longest(results, TEST_RESULTSET):
+            for actual, expected in itertools.zip_longest(results, TEST_RESULTSET):
                 actual, expected = map_result(actual, actual_mapping), map_result(expected, expected_mapping)
                 self.assertEqual(actual, expected)
         finally:

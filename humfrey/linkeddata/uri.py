@@ -1,10 +1,7 @@
 import re
-import urllib
-import urlparse
-try:
-    from urlparse import parse_qs
-except ImportError:
-    from cgi import parse_qs
+import urllib.error
+import urllib.parse
+import urllib.request
 
 import rdflib
 
@@ -39,14 +36,14 @@ def doc_forwards(uri, graph=None, described=None):
     of uri. described is a ternary boolean (None for 'unknown').
     """
 
-    if isinstance(uri, unicode):
+    if isinstance(uri, str):
         encoded_uri = uri.encode('utf-8')
     else:
-        encoded_uri = urllib.unquote(uri)
+        encoded_uri = urllib.parse.unquote(uri)
 
     for id_prefix, doc_prefix, _ in get_id_mapping():
         if uri.startswith(id_prefix):
-            base = doc_prefix + urllib.quote(encoded_uri[len(id_prefix):])
+            base = doc_prefix + urllib.parse.quote(encoded_uri[len(id_prefix):])
             pattern = base.replace('%', '%%') + '.%(format)s'
             return DocURLs(base, pattern)
 
@@ -66,8 +63,8 @@ def doc_forwards(uri, graph=None, described=None):
         from humfrey.desc.views import DescView
         params.append(('token', DescView.get_uri_token(encoded_uri)))
 
-    base = '%s?%s' % (url, urllib.urlencode(params))
-    print base
+    base = '%s?%s' % (url, urllib.parse.urlencode(params))
+    print(base)
 
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
@@ -78,7 +75,7 @@ def doc_forward(uri, graph=None, described=None, format=None):
 BACKWARD_FORMAT_RE = re.compile(r'^(?P<url>.*?)(?:\.(?P<format>[a-z\d\-]+))?$')
 
 def _get_host_path(url):
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     return '//{0}{1}'.format(parsed_url.netloc, parsed_url.path)
 
 def doc_backward(url, formats=None):
@@ -87,12 +84,12 @@ def doc_backward(url, formats=None):
 
     Returns a tuple of (uri, format, canonical).
     """
-    parsed_url = urlparse.urlparse(url)
-    query = parse_qs(parsed_url.query)
+    parsed_url = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed_url.query)
     doc_view_url = get_doc_view()
     if isinstance(doc_view_url, tuple):
         doc_view_url = reverse_full(*doc_view_url)
-    if _get_host_path(url) == urlparse.urljoin(_get_host_path(url), doc_view_url):
+    if _get_host_path(url) == urllib.parse.urljoin(_get_host_path(url), doc_view_url):
         return rdflib.URIRef(query.get('uri', [None])[0] or ''), query.get('format', [None])[0], False
 
     match = BACKWARD_FORMAT_RE.match(url)
@@ -103,12 +100,12 @@ def doc_backward(url, formats=None):
     if with_hosts:
         url_part = url
     else:
-        url_part = urlparse.urlparse(url).path
+        url_part = urllib.parse.urlparse(url).path
 
     for id_prefix, doc_prefix, is_local in get_id_mapping():
-        doc_prefix = urlparse.urljoin(url, doc_prefix)
+        doc_prefix = urllib.parse.urljoin(url, doc_prefix)
         if url_part.startswith(doc_prefix):
             url_part = id_prefix + url_part[len(doc_prefix):]
-            return rdflib.URIRef(urllib.unquote(url_part)), format, is_local
+            return rdflib.URIRef(urllib.parse.unquote(url_part)), format, is_local
     else:
         return None, None, None

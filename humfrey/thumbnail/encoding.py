@@ -1,5 +1,5 @@
 from hashlib import sha256
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from django.conf import settings
 
@@ -10,7 +10,7 @@ def encode_parameters(url, width=None, height=None):
         params.append(('width', width))
     if height:
         params.append(('height', height))
-    query_string = urllib.urlencode(params)
+    query_string = urllib.parse.urlencode(params)
     params.append(('s', sha256(query_string).hexdigest()))
     params.pop(0) # Remove the key
-    return urllib.urlencode(params)
+    return urllib.parse.urlencode(params)

@@ -7,9 +7,9 @@ from rdflib import URIRef, BNode, ConjunctiveGraph
 from humfrey.utils.namespaces import contract, expand
 from .endpoint import Endpoint
 
-IRI = re.compile(u'^([^\\<>"{}|^`\x00-\x20])*$')
+IRI = re.compile('^([^\\<>"{}|^`\x00-\x20])*$')
 
-label_predicates = map(expand, ('rdfs:label', 'foaf:name', 'skos:prefLabel', 'dc:title', 'dcterms:title'))
+label_predicates = list(map(expand, ('rdfs:label', 'foaf:name', 'skos:prefLabel', 'dc:title', 'dcterms:title')))
 
 def language_key(value):
     if isinstance(value, (URIRef, BNode)):
@@ -26,7 +26,7 @@ def get_labels(subjects, endpoint=None, mapping=True):
                                    subjects.objects())
     if not endpoint:
         endpoint = Endpoint(settings.ENDPOINT_QUERY)
-    elif isinstance(endpoint, basestring):
+    elif isinstance(endpoint, str):
         endpoint = Endpoint(endpoint)
     elif hasattr(endpoint, 'query'):
         pass
@@ -35,15 +35,15 @@ def get_labels(subjects, endpoint=None, mapping=True):
 
     subjects = set(s for s in subjects if isinstance(s, URIRef) and IRI.match(s))
 
-    query = u"""
+    query = """
         CONSTRUCT {{
           ?s ?p ?label
         }} WHERE {{
           VALUES ?p {{ {predicates} }}
           VALUES ?s {{ {subjects} }}
           ?s ?p ?label
-        }}""".format(predicates=u' '.join(p.n3() for p in label_predicates),
-                     subjects=u' '.join(s.n3() for s in subjects))
+        }}""".format(predicates=' '.join(p.n3() for p in label_predicates),
+                     subjects=' '.join(s.n3() for s in subjects))
 
     graph = endpoint.query(query)
     

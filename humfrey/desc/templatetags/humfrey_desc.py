@@ -23,18 +23,18 @@ def node(obj):
     elif isinstance(obj, Literal) and obj.datatype in (NS.xtypes['Fragment-HTML'], NS.rdf['HTML'], NS.xtypes['Fragment-XHTML']):
         return humfrey.utils.templatetags.humfrey_sanitizer.sanitize_html(obj)
     elif isinstance(obj, Literal):
-        return mark_safe(escape(unicode(obj.toPython())).replace('\n', '<br/>\n'))
+        return mark_safe(escape(str(obj.toPython())).replace('\n', '<br/>\n'))
     else:
         return obj
 
 @register.filter
 def node_as_plain_text(obj):
     if isinstance(obj, BaseResource):
-        return unicode(obj.label)
+        return str(obj.label)
     if isinstance(obj, Literal):
-        return unicode(obj.toPython())
+        return str(obj.toPython())
     else:
-        return unicode(obj)
+        return str(obj)
 
 def get_list(resource):
     while resource and resource.rdf_first:
@@ -45,17 +45,17 @@ def get_list(resource):
 def node2(obj):
     if isinstance(obj, BaseResource):
         if obj.owl_unionOf:
-            return mark_safe(u'(%s)' % ' &#8746; '.join(map(node2, get_list(obj.get('owl:unionOf')))))
+            return mark_safe('(%s)' % ' &#8746; '.join(map(node2, get_list(obj.get('owl:unionOf')))))
         elif obj.owl_intersectionOf:
-            return mark_safe(u'(%s)' % ' &#8746; '.join(map(node2, get_list(obj.get('owl:intersectionOf')))))
+            return mark_safe('(%s)' % ' &#8746; '.join(map(node2, get_list(obj.get('owl:intersectionOf')))))
         elif isinstance(obj, URIRef):
-            return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(obj.doc_url), escape(obj.label2)))
+            return mark_safe('<a href=%s>%s</a>' % (quoteattr(obj.doc_url), escape(obj.label2)))
         else:
-            return mark_safe(u'<em>unnamed</em>')
+            return mark_safe('<em>unnamed</em>')
     elif isinstance(obj, Literal):
         return obj.toPython()
     else:
-        return unicode(obj)
+        return str(obj)
 
 @register.filter
 def property(obj, value):

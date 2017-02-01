@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import logging
 import os
 import subprocess
@@ -35,7 +33,7 @@ class XSLT(Transform):
         raise ImproperlyConfigured("Couldn't find saxon.")
 
     def execute(self, transform_manager, input):
-        if isinstance(self.template, basestring):
+        if isinstance(self.template, str):
             with open(transform_manager('xsl'), 'w') as xsl_shim:
                 xsl_shim.write(self._xsl_shim.format(quoteattr(self.template)))
             template_filename = xsl_shim.name
@@ -49,7 +47,7 @@ class XSLT(Transform):
                 popen_args = [self.saxon_path, input, template_filename]
 
                 # Pass the parameters to the template.
-                for item in self.params.iteritems():
+                for item in self.params.items():
                     popen_args.append('{0}={1}'.format(*item))
 
                 # Pass the store name to the template, but only if 'store'

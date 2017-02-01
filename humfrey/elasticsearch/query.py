@@ -3,8 +3,9 @@ try:
 except ImportError:
     import json
 import logging
-import urllib2
-import urlparse
+import urllib.error
+import urllib.parse
+import urllib.request
 
 from django.conf import settings
 
@@ -28,14 +29,14 @@ class ElasticSearchEndpoint(object):
             path = '/{0}/{1}/_search'.format(self.store, self.index)
         else:
             path = '/{0}/_search'.format(self.store)
-        return urlparse.urlunsplit(('http',
-                                    '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
-                                    path, '', ''))
+        return urllib.parse.urlunsplit(('http',
+                                        '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
+                                        path, '', ''))
 
     def query(self, query):
         logger.debug("Query: %s", query)
-        request = urllib2.Request(self.search_url, json.dumps(query))
+        request = urllib.request.Request(self.search_url, json.dumps(query))
         request.add_header("User-Agent", USER_AGENTS['agent'])
-        response = json.load(urllib2.urlopen(request))
+        response = json.load(urllib.request.urlopen(request))
         logger.debug("Query returned %d hits: %s", response['hits']['total'], query)
         return response

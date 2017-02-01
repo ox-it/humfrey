@@ -1,5 +1,5 @@
 import datetime
-import httplib
+import http.client
 
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
@@ -110,10 +110,10 @@ class DefinitionDetailView(HTMLView):
         try:
             update_log = self.context['object'].queue('web', request.user)
         except UpdateDefinitionAlreadyQueued:
-            self.context.update({'status_code': httplib.CONFLICT,
+            self.context.update({'status_code': http.client.CONFLICT,
                                  'success': False})
         else:
-            self.context.update({'status_code': httplib.ACCEPTED,
+            self.context.update({'status_code': http.client.ACCEPTED,
                                  'success': True,
                                  'update_log': update_log})
         return self.render(template_name='update/definition-queued')

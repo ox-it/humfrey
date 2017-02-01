@@ -51,18 +51,18 @@ PINGBACK = Namespace('http://purl.org/net/pingback/')
 
 NS.update(getattr(settings, 'ADDITIONAL_NAMESPACES', {}))
 
-INVERSE_NS = tuple((v, k) for k, v in sorted(NS.items(), key=lambda (k,v): -len(v)))
+INVERSE_NS = tuple((v, k) for k, v in sorted(list(NS.items()), key=lambda k_v: -len(k_v[1])))
 
 class _NS(dict):
     def __getattr__(self, key):
         return self[key]
 
-NS = _NS((k, Namespace(v)) for k, v in NS.iteritems())
+NS = _NS((k, Namespace(v)) for k, v in NS.items())
 
 def register(k, v):
     NS[k] = Namespace(v)
 
-is_localpart = re.compile(u"""^[A-Z _ a-z \xc0-\xd6 \xd8-\xf6 \xf8-\xff \u037f-\u1fff \u200c-\u218f]
+is_localpart = re.compile("""^[A-Z _ a-z \xc0-\xd6 \xd8-\xf6 \xf8-\xff \u037f-\u1fff \u200c-\u218f]
                                [A-Z _ a-z \xc0-\xd6 \xd8-\xf6 \xf8-\xff \u037f-\u1fff \u200c-\u218f \\- . \\d]*$""",
                           re.VERBOSE).match
 

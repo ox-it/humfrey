@@ -1,5 +1,5 @@
 import logging
-import Queue
+import queue
 import threading
 from xml.sax.saxutils import escape
 from xml.parsers import expat
@@ -49,7 +49,7 @@ class SRXParser(StreamingParser):
                 self.result[self.binding_name] = self.binding
                 self.binding_name, self.binding = None, None
             elif name == (self.srx_ns + ' boolean'):
-                self.queue.put(content == u'true')
+                self.queue.put(content == 'true')
             elif name == (self.srx_ns + ' uri'):
                 self.binding = rdflib.URIRef(content)
             elif name == (self.srx_ns + ' bnode'):
@@ -70,7 +70,7 @@ class SRXParser(StreamingParser):
 
         self._finished = False
 
-        self._queue = Queue.Queue(maxsize=128)
+        self._queue = queue.Queue(maxsize=128)
         self._thread = threading.Thread(target=self._parse)
         self._thread.start()
 

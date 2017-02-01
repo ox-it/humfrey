@@ -2,10 +2,10 @@
 Contains functions with extract triples from external resources.
 """
 
-from __future__ import with_statement
+
 
 import functools
-import urlparse
+import urllib.parse
 
 import lxml
 import pytz
@@ -35,10 +35,10 @@ def _extract_from_html(graph, response, filename, source, target):
     url = response['content-location']
 
     for anchor in html.xpath(".//a"):
-        href = urlparse.urlparse(urlparse.urljoin(url, anchor.get('href')))
+        href = urllib.parse.urlparse(urllib.parse.urljoin(url, anchor.get('href')))
         if not href[2]:
             href = href[:2] + ('/',) + href[3:]
-        href = urlparse.urlunparse(href)
+        href = urllib.parse.urlunparse(href)
         if href == target:
             break
     else:
@@ -74,7 +74,7 @@ def extract(pingback, response):
         (graph_name, NS.dcterms.modified, date(pingback.updated)),
         (graph_name, NS.dcterms.source, uri),
         (graph_name, NS.void.inDataset, settings.PINGBACK_DATASET),
-        (graph_name, NS.dcterms['title'], rdflib.Literal(u'Pingback from %s to %s' % (unicode(pingback.source), unicode(pingback.target)))),
+        (graph_name, NS.dcterms['title'], rdflib.Literal('Pingback from %s to %s' % (str(pingback.source), str(pingback.target)))),
     )
 
     try:

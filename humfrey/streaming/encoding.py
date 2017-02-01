@@ -12,7 +12,7 @@ from rdflib import URIRef
 def encode(char):
     return '%%%02X' % ord(char.group(0))
 
-characters_needing_encoding = re.compile(ur'[\^<>"{}|`\\\x00-\x20]', re.M)
+characters_needing_encoding = re.compile(r'[\^<>"{}|`\\\x00-\x20]', re.M)
 subn_characters = characters_needing_encoding.subn
 
 def coerce_triple_iris(triples):

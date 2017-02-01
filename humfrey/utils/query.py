@@ -1,5 +1,5 @@
 from collections import defaultdict, namedtuple
-from urlparse import urlparse
+from urllib.parse import urlparse
 import datetime, time
 import rdflib
 import sparql
@@ -16,7 +16,7 @@ class OxPointsQuery(object):
 
         self.date, self.scheme, identifier, self.relation, self.cur = date, scheme, identifier, relation, cur
 
-        self.types = map(self.quote, types)
+        self.types = list(map(self.quote, types))
         self.about = about
 
         self.params = {

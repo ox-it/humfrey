@@ -203,7 +203,7 @@ class UpdatePipeline(models.Model):
     def save(self, *args, **kwargs):
         try:
             evaluate_pipeline(self.value)
-        except (SyntaxError, NameError), e:
+        except (SyntaxError, NameError) as e:
             raise ValueError(e)
         return super(UpdatePipeline, self).save(*args, **kwargs)
 

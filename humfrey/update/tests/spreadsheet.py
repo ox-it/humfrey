@@ -22,7 +22,7 @@ EXPECTED = [{'name': 'Sheet1',
                       ['A natural number', '', '', '', 12345],
                       ['A decimal value', '', '', '', 12345.6789],
                       ['A percentage', '', '', '', Percentage('0.45', '45.00%')],
-                      ['A currency value', '', '', '', Currency('12.34', 'GBP', u'£12.34')],
+                      ['A currency value', '', '', '', Currency('12.34', 'GBP', '£12.34')],
                       [], [], [], [], [], [], [], [], [], [], [], [], [],
                       ['']*7 + ['All by itself']]},
             {'name': 'Sheet2',
@@ -36,21 +36,21 @@ class SpreadsheetTestCase(unittest2.TestCase):
                                   'data', 'spreadsheet')
 
     def checkData(self, sheets):
-        for s, (sheet, expected) in enumerate(itertools.izip_longest(sheets, EXPECTED)):
-            self.assert_(sheet is not None, "Missing sheet")
-            self.assert_(expected is not None, "Sheet missing")
+        for s, (sheet, expected) in enumerate(itertools.zip_longest(sheets, EXPECTED)):
+            self.assertTrue(sheet is not None, "Missing sheet")
+            self.assertTrue(expected is not None, "Sheet missing")
             self.assertEqual(sheet.name, expected['name'], 'Unexpected sheet name')
 
-            for i, (row, expected_row) in enumerate(itertools.izip_longest(sheet.rows, expected['data'])):
-                self.assert_(row is not None, "Missing row (%d:%d)" % (s + 1, i + 1))
+            for i, (row, expected_row) in enumerate(itertools.zip_longest(sheet.rows, expected['data'])):
+                self.assertTrue(row is not None, "Missing row (%d:%d)" % (s + 1, i + 1))
                 if expected_row is None:
-                    self.assert_(not any(row.cells), 'Row was supposed to be empty (%d)' % (i + 1))
+                    self.assertTrue(not any(row.cells), 'Row was supposed to be empty (%d)' % (i + 1))
                     continue
 
-                for j, (cell, expected_cell) in enumerate(itertools.izip_longest(row.cells, expected_row)):
-                    self.assert_(cell is not None, "Missing cell (%d:%d:%d)" % (s + 1, i + 1, j + 1))
+                for j, (cell, expected_cell) in enumerate(itertools.zip_longest(row.cells, expected_row)):
+                    self.assertTrue(cell is not None, "Missing cell (%d:%d:%d)" % (s + 1, i + 1, j + 1))
                     if expected_cell is None:
-                        self.assert_(not cell, "Cell was supposed to be empty (%d:%d:%d)" % (s + 1, i + 1, j + 1))
+                        self.assertTrue(not cell, "Cell was supposed to be empty (%d:%d:%d)" % (s + 1, i + 1, j + 1))
                         continue
                     if isinstance(expected_cell, decimal.Decimal):
                         self.assertAlmostEqual(float(cell), float(expected_cell), 5, "Decimals didn't match")

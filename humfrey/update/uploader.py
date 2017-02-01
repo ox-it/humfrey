@@ -1,10 +1,10 @@
 import logging
 import os
-import httplib
+import http.client
 import tempfile
-import urllib
-import urllib2
-import urlparse
+import urllib.request
+import urllib.error
+import urllib.parse
 
 from django.conf import settings
 
@@ -40,14 +40,14 @@ class Uploader(object):
     def upload_to_store(cls, store, graph_name, method, filename, mimetype):
         if isinstance(store, Store):
             graph_store_endpoint = store.graph_store_endpoint
-        elif isinstance(store, basestring):
+        elif isinstance(store, str):
             graph_store_endpoint = Store.objects.get(slug=store).graph_store_endpoint
         else:
             raise TypeError("store must be Store or basestring, not %r", type(store))
 
         graph_url = '%s?%s' % (graph_store_endpoint,
-                               urllib.urlencode({'graph': graph_name}))
-        graph_url = urlparse.urlparse(graph_url)
+                               urllib.parse.urlencode({'graph': graph_name}))
+        graph_url = urllib.parse.urlparse(graph_url)
 
 
         netloc = graph_url.netloc
@@ -60,7 +60,7 @@ class Uploader(object):
 
             logger.debug("Opening connection to %s:%d", host, port)
 
-            conn = httplib.HTTPConnection(host=host, port=port)
+            conn = http.client.HTTPConnection(host=host, port=port)
             conn.connect()
 
             logger.debug("Connected")
@@ -81,7 +81,7 @@ class Uploader(object):
 
             if response.status not in (200, 201, 204):
                 logger.error("Upload failed. Code %r", response.status)
-                raise urllib2.HTTPError(graph_url,
+                raise urllib.error.HTTPError(graph_url,
                                         response.status,
                                         "",
                                         response.getheaders(),

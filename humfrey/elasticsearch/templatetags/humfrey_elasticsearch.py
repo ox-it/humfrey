@@ -1,5 +1,5 @@
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 from xml.sax.saxutils import escape
 
 from django import template
@@ -18,16 +18,16 @@ def munge_parameter(context, prefix, name, value):
     else:
         key = name
     
-    url = urlparse.urlparse(context['base_url'])
-    query = urlparse.parse_qsl(url.query, True)
+    url = urllib.parse.urlparse(context['base_url'])
+    query = urllib.parse.parse_qsl(url.query, True)
     query = dict((k, v) for k, v in query if k != key)
     if value is not None:
         query[key] = value
     # Allows us to remove sub-filters when a super-filter is changed.
     for subkey in context.get('dependent_parameters', {}).get(key, ()):
         query.pop(subkey, None)
-    query = sorted(query.iteritems())
-    return escape('?' + urllib.urlencode(query))
+    query = sorted(query.items())
+    return escape('?' + urllib.parse.urlencode(query))
 
 @register.simple_tag(takes_context=True)
 def set_parameter(context, prefix, name, value):
@@ -39,7 +39,7 @@ def remove_parameter(context, prefix, name):
 
 @register.filter
 def search_html(value):
-    if isinstance(value, basestring) and value.startswith('<') and value.endswith('>'):
+    if isinstance(value, str) and value.startswith('<') and value.endswith('>'):
         return sanitize_html(value)
     else:
         return linebreaksbr(value)

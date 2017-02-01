@@ -1,10 +1,10 @@
 import datetime
 from hashlib import sha1
-import httplib
+import http.client
 import logging
 import tempfile
 import time
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 import rdflib
 import redis
@@ -27,7 +27,7 @@ class IndexUpdater(object):
     def hash_result(cls, value):
         def recursive_sort(value):
             if isinstance(value, dict):
-                for subvalue in value.itervalues():
+                for subvalue in value.values():
                     recursive_sort(subvalue)
             elif isinstance(value, list):
                 for subvalue in value:
@@ -50,32 +50,32 @@ class IndexUpdater(object):
         logger.debug("SPARQL server started returning results.")
 
         try:
-            urllib2.urlopen(index.get_index_status_url(store))
+            urllib.request.urlopen(index.get_index_status_url(store))
             index_exists = True
-        except urllib2.HTTPError, e:
-            if e.code == httplib.NOT_FOUND:
+        except urllib.error.HTTPError as e:
+            if e.code == http.client.NOT_FOUND:
                 logger.info("Index %s/%s did not previously exist", store.slug, index.slug)
                 index_exists = False
                 index.update_mapping = True
 
-                request = urllib2.Request(index.get_index_url(store))
+                request = urllib.request.Request(index.get_index_url(store))
                 request.get_method = lambda: 'PUT'
-                urllib2.urlopen(request)
+                urllib.request.urlopen(request)
             else:
                 raise
 
         if index.update_mapping:
             logger.debug("Mapping set to be updated for %s/%s", store.slug, index.slug)
             if index_exists:
-                request = urllib2.Request(index.get_type_url(store))
+                request = urllib.request.Request(index.get_type_url(store))
                 request.get_method = lambda : 'DELETE'
-                urllib2.urlopen(request)
+                urllib.request.urlopen(request)
 
             if index.mapping:
                 logger.info("Updating mapping for %s/%s (%s)", store.slug, index.slug, index.get_mapping_url(store))
-                request = urllib2.Request(index.get_mapping_url(store), index.mapping)
+                request = urllib.request.Request(index.get_mapping_url(store), index.mapping)
                 request.get_method = lambda : 'PUT'
-                urllib2.urlopen(request)
+                urllib.request.urlopen(request)
 
         results = self.parse_results(index, results)
         results = self.serialize_results(hash_key, results)
@@ -95,7 +95,7 @@ class IndexUpdater(object):
 
 
         for request_body_file in request_body_files:
-            conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
+            conn = http.client.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
 
             conn.putrequest('POST', index.get_bulk_url(store, path=True))
@@ -120,7 +120,7 @@ class IndexUpdater(object):
     @classmethod
     def dictify(cls, groups, src):
         dst = {}
-        for key, value in src.iteritems():
+        for key, value in src.items():
             # Ignore unbound fields, and take those beginning with '_' to be
             # things we don't want to appear in our results as they are e.g.
             # intermediary variables.
@@ -172,7 +172,7 @@ class IndexUpdater(object):
         for id in two:
             if id not in one:
                 one[id] = {}
-            if isinstance(two[id], basestring):
+            if isinstance(two[id], str):
                 one[id] = two[id]
                 continue
             for key in two[id]:
@@ -192,11 +192,11 @@ class IndexUpdater(object):
     @classmethod
     def flatten_result(cls, results):
         if results.get('_singleton'):
-            for key, value in results.items():
+            for key, value in list(results.items()):
                 if not value or key in ('_singleton', 'id'):
                     del results[key]
             return results
-        results = results.values()
+        results = list(results.values())
         for result in results:
             if not isinstance(result, dict):
                 continue
@@ -205,7 +205,7 @@ class IndexUpdater(object):
                     result[k] = cls.flatten_result(result[k])
                 elif k == 'id':
                     del result[k]
-        results[:] = filter(bool, results)
+        results[:] = list(filter(bool, results))
         return results
 
     @classmethod

@@ -15,7 +15,7 @@ class IndexView(HTMLView, JSONPView):
     template_name = 'feeds/index'
 
     def get(self, request):
-        feeds = config.FEED_META.values()
+        feeds = list(config.FEED_META.values())
         feeds.sort(key=lambda f: f['name'])
         self.context.update({'feeds':feeds})
         return self.render()

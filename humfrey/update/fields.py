@@ -28,16 +28,14 @@ class BaseEncryptedField(models.Field):
             return value
     
     def get_db_prep_value(self, value, connection=None, prepared=False):
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             padding = 2 * self.cipher.block_size - len(value) % self.cipher.block_size
             if True or padding and padding < self.cipher.block_size:
                 value += "\0" + ''.join([random.choice(string.printable) for index in range(padding-1)])
             value = binascii.b2a_hex(self.cipher.encrypt(value))
         return value
 
-class EncryptedTextField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
+class EncryptedTextField(BaseEncryptedField, metaclass=models.SubfieldBase):
     def get_internal_type(self): 
         return 'TextField'
     
@@ -46,9 +44,7 @@ class EncryptedTextField(BaseEncryptedField):
         defaults.update(kwargs)
         return super(EncryptedTextField, self).formfield(**defaults)
 
-class EncryptedCharField(BaseEncryptedField):
-    __metaclass__ = models.SubfieldBase
-
+class EncryptedCharField(BaseEncryptedField, metaclass=models.SubfieldBase):
     def get_internal_type(self):
         return "CharField"
     

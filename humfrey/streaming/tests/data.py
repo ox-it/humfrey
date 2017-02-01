@@ -1,5 +1,4 @@
 import functools
-import itertools
 
 import rdflib
 
@@ -9,7 +8,7 @@ from humfrey.utils.namespaces import NS
 _TEST_BNODE = rdflib.BNode()
 TEST_RESULTSET_FIELDS = ('one', 'two')
 TEST_RESULTSET_RESULT = functools.partial(Result, TEST_RESULTSET_FIELDS)
-TEST_RESULTSET = SparqlResultList(('one', 'two'), itertools.imap(TEST_RESULTSET_RESULT, [
+TEST_RESULTSET = SparqlResultList(('one', 'two'), map(TEST_RESULTSET_RESULT, [
     (rdflib.URIRef('http://example.org/one'), _TEST_BNODE),
     (rdflib.Literal('hello'), rdflib.Literal('hello', lang='en')),
     (rdflib.Literal('foo"bar'), rdflib.Literal('foo\nbar')),

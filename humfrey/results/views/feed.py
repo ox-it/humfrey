@@ -61,8 +61,8 @@ class FeedView(ContentNegotiatedView):
             #grab a creation date, label and description!
                 subjectDict = {}
                 for (predicate, object) in graph.predicate_objects(subject):
-                    predicate = unicode(predicate)
-                    object = unicode(object)
+                    predicate = str(predicate)
+                    object = str(object)
                     if predicate in _DATE_PROPERTIES:
                         subjectDict['date'] = datetime.strptime(object, '%Y-%m-%d').date()
                     if predicate in _TITLE_PROPERTIES:
@@ -91,17 +91,17 @@ class FeedView(ContentNegotiatedView):
 # This is the troublesome method with a correction, 
 # and must be assigned to the relevant feed class before use! 
 def add_root_elements(self, handler):
-        handler.addQuickElement(u"title", self.feed['title'])
-        handler.addQuickElement(u"link", self.feed['link'])
-        handler.addQuickElement(u"description", self.feed['description'])
+        handler.addQuickElement("title", self.feed['title'])
+        handler.addQuickElement("link", self.feed['link'])
+        handler.addQuickElement("description", self.feed['description'])
         # handler.addQuickElement(u"atom:link", None, {u"rel": u"self", u"href": self.feed['feed_url']})
         if self.feed['language'] is not None:
-            handler.addQuickElement(u"language", self.feed['language'])
+            handler.addQuickElement("language", self.feed['language'])
         for cat in self.feed['categories']:
-            handler.addQuickElement(u"category", cat)
+            handler.addQuickElement("category", cat)
         if self.feed['feed_copyright'] is not None:
-            handler.addQuickElement(u"copyright", self.feed['feed_copyright'])
-        handler.addQuickElement(u"lastBuildDate", rfc2822_date(self.latest_post_date()).decode('utf-8'))
+            handler.addQuickElement("copyright", self.feed['feed_copyright'])
+        handler.addQuickElement("lastBuildDate", rfc2822_date(self.latest_post_date()).decode('utf-8'))
         if self.feed['ttl'] is not None:
-            handler.addQuickElement(u"ttl", self.feed['ttl'])
+            handler.addQuickElement("ttl", self.feed['ttl'])
         

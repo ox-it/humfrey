@@ -1,6 +1,6 @@
 import datetime
-import httplib
-import urlparse
+import http.client
+import urllib.parse
 import wsgiref.util
 
 from django.conf import settings
@@ -14,7 +14,7 @@ from django_conneg.views import HTMLView
 try:
     import feedparser
     import pytz
-except ImportError, e:
+except ImportError as e:
     pass
 else:
     class FeedView(HTMLView):
@@ -27,7 +27,7 @@ else:
                 for entry in feed.entries:
                     entry.updated_datetime = datetime.datetime(*entry.updated_parsed[:6]).replace(tzinfo=pytz.utc) \
                                                  .astimezone(pytz.timezone(settings.TIME_ZONE))
-            except Exception, e:
+            except Exception as e:
                 feed = None
             return feed
     
@@ -56,7 +56,7 @@ class PassThroughView(View):
         return request.method
     def get_headers(self, request, *args, **kwargs):
         headers = {}
-        for name, value in request.META.iteritems():
+        for name, value in request.META.items():
             if name in ('CONTENT_TYPE', 'CONTENT_LENGTH') and value:
                 pass # Good
             elif name in ('HTTP_HOST', 'HTTP_CONNECTION', 'HTTP_COOKIE', 'HTTP_ACCEPT_ENCODING'):
@@ -73,21 +73,21 @@ class PassThroughView(View):
 
     def get(self, request, *args, **kwargs):
         url = self.get_target_url(request, *args, **kwargs)
-        url = urlparse.urlparse(url)
+        url = urllib.parse.urlparse(url)
 
         if ':' in url.netloc:
             host, port = url.netloc.split(':', 1)
             port = int(port)
         else:
             host, port = url.netloc, {'http': 80, 'https': 443}[url.scheme]
-        path = urlparse.urlunparse(url._replace(scheme='', netloc=''))
+        path = urllib.parse.urlunparse(url._replace(scheme='', netloc=''))
 
-        connection_class = httplib.HTTPConnection if url.scheme == 'http' else httplib.HTTPSConnection
+        connection_class = http.client.HTTPConnection if url.scheme == 'http' else http.client.HTTPSConnection
 
         conn = connection_class(host=host, port=port)
         conn.putrequest(method=self.get_method(request, *args, **kwargs),
                         url=path)
-        for k, v in self.get_headers(request, *args, **kwargs).iteritems():
+        for k, v in self.get_headers(request, *args, **kwargs).items():
             conn.putheader(k, v)
         conn.endheaders()
         conn.send(request.raw_post_data)

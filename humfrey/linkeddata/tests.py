@@ -3,7 +3,7 @@
 import functools
 import mock
 import unittest2
-import urlparse
+import urllib.parse
 import rdflib
 
 from django.core.urlresolvers import set_urlconf
@@ -37,7 +37,7 @@ def set_mappingconf(func):
 
 class RelativeURLTestCase(unittest2.TestCase):
     def assertRelativeEqual(self, one, two):
-        self.assertEqual(urlparse.urljoin(two, one), two)
+        self.assertEqual(urllib.parse.urljoin(two, one), two)
 
 class URITestCase(RelativeURLTestCase):
     def setUp(self):
@@ -82,8 +82,8 @@ class URITestCase(RelativeURLTestCase):
                                  doc_root + qs_with_format)
 
         # When we definitely know nothing about it, go straight off-site
-        self.assertRelativeEqual(doc_forward(uri, described=False), unicode(uri))
-        self.assertRelativeEqual(doc_forward(uri, described=False, format='nt'), unicode(uri))
+        self.assertRelativeEqual(doc_forward(uri, described=False), str(uri))
+        self.assertRelativeEqual(doc_forward(uri, described=False, format='nt'), str(uri))
 
         # When we definitely know something about it, go straight off-site
         self.assertRelativeEqual(doc_forward(uri, described=True),
@@ -105,10 +105,10 @@ class URITestCase(RelativeURLTestCase):
 
 class UnicodeURITestCase(RelativeURLTestCase):
     TESTS = [
-        (u'http://id.example.org/fuß', 'http://data.example.org/doc/fu%C3%9F'),
-        (u'http://id.example.org/βήτα', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
-        (u'http://id.other.org/fuß', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2Ffu%C3%9F'),
-        (u'http://id.other.org/βήτα', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2F%CE%B2%CE%AE%CF%84%CE%B1'),
+        ('http://id.example.org/fuß', 'http://data.example.org/doc/fu%C3%9F'),
+        ('http://id.example.org/βήτα', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
+        ('http://id.other.org/fuß', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2Ffu%C3%9F'),
+        ('http://id.other.org/βήτα', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2F%CE%B2%CE%AE%CF%84%CE%B1'),
 
         # Requests with percent-encoded UTF-8 bytes
         ('http://id.example.org/fu%C3%9F', 'http://data.example.org/doc/fu%C3%9F'),
@@ -132,7 +132,7 @@ class UnicodeURITestCase(RelativeURLTestCase):
     @set_mappingconf
     def testUnicodeBackward(self):
         for uri, url in self.TESTS:
-            if isinstance(uri, unicode):
+            if isinstance(uri, str):
                 self.assertRelativeEqual(doc_backward(url)[0], uri)
                 self.assertRelativeEqual(doc_forward(doc_backward(url)[0], described=True), url)
 

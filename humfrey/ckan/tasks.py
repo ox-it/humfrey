@@ -47,7 +47,7 @@ _licenses = {
 
 # TODO: Picking local language
 def _find_inner(graph, subject, predicates, datatypes=None, all=False):
-    coerce = lambda o: unicode(o) if isinstance(o, rdflib.Literal) else o
+    coerce = lambda o: str(o) if isinstance(o, rdflib.Literal) else o
     objects = set()
     for predicate in predicates:
         if predicate.startswith('^'):
@@ -59,14 +59,14 @@ def _find_inner(graph, subject, predicates, datatypes=None, all=False):
         for datatype in datatypes:
             found = [o for o in objects if isinstance(o, rdflib.Literal) and o.datatype == datatype]
             if found and all:
-                return map(coerce, found)
+                return list(map(coerce, found))
             elif found:
                 return coerce(found[0])
         else:
             if all:
                 return []
     elif all:
-        return map(coerce, objects)
+        return list(map(coerce, objects))
     elif objects:
         return coerce(objects[0])
 
@@ -84,7 +84,7 @@ def _find(graph, subject, path, datatypes=None, all=False):
     if all:
         return objects
     elif objects:
-        return iter(objects).next()
+        return next(iter(objects))
 
 @task(name='humfrey.ckan.upload_dataset_metadata', ignore_result=True)
 def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
@@ -141,11 +141,11 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
 
     license = find('dcterms:license|cc:license')
     if license:
-        license = _licenses.get(unicode(license))
+        license = _licenses.get(str(license))
 
     sparql_endpoint = find('void:sparqlEndpoint')
     if sparql_endpoint:
-        sparql_endpoint = unicode(sparql_endpoint)
+        sparql_endpoint = str(sparql_endpoint)
     else:
         sparql_endpoint = 'http:' + reverse_full('data', 'sparql:endpoint')
 
@@ -186,7 +186,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
                                          'format': 'api/sparql',
                                          'url': sparql_endpoint})
 
-    package_entity['resources'] = resources.values()
+    package_entity['resources'] = list(resources.values())
 
     logger.debug("Updated CKAN record")
 

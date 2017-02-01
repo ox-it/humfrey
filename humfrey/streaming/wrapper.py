@@ -3,7 +3,7 @@ Contains wrappers around rdflib parsers and serializers.
 """
 
 import abc
-import Queue
+import queue
 import sys
 import threading
 from xml.sax.saxutils import prepare_input_source
@@ -82,7 +82,7 @@ class RDFLibParser(StreamingParser):
             raise AssertionError("Can only call get_triples once")
         self._get_triples_called = True
         self.mode = 'parse'
-        queue = Queue.Queue()
+        queue = queue.Queue()
         parser_thread = threading.Thread(target=self._parse_to_queue,
                                          args=(self._stream, queue))
 
@@ -95,7 +95,7 @@ class RDFLibParser(StreamingParser):
                 elif type == 'sentinel':
                     break
                 elif type == 'exception':
-                    raise value[0], value[1], value[2]
+                    raise value[0](value[1]).with_traceback(value[2])
             parser_thread.join()
 
     def get_triples(self):
@@ -106,9 +106,9 @@ class RDFLibSerializer(StreamingSerializer):
     format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
-        queue = Queue.Queue()
+        queue = queue.Queue()
         graph = Graph()
-        for prefix, namespace_uri in NS.iteritems():
+        for prefix, namespace_uri in NS.items():
             graph.namespace_manager.bind(prefix, namespace_uri)
 
         triples = list(triples)
@@ -126,7 +126,7 @@ class RDFLibSerializer(StreamingSerializer):
                 elif type == 'sentinel':
                     break
                 elif type == 'exception':
-                    raise value[0], value[1], value[2]
+                    raise value[0](value[1]).with_traceback(value[2])
             serializer_thread.join()
 
     def _serialize_to_queue(self, graph, queue):

@@ -1,10 +1,9 @@
-from __future__ import with_statement
-
 from collections import defaultdict
 import datetime
 import logging
-import urllib2
-import urlparse
+import urllib.request
+import urllib.error
+import urllib.parse
 
 try:
     import simplejson as json
@@ -47,7 +46,7 @@ class SearchNormalization(Normalization):
         self.replacements = {}
         self.mapping = {}
         self.searches = defaultdict(dict)
-        self.safe_predicates = frozenset(map(expand, (safe_predicates or ())))
+        self.safe_predicates = frozenset(list(map(expand, (safe_predicates or ()))))
         self.no_index = set()
 
     def __call__(self, source):
@@ -59,36 +58,36 @@ class SearchNormalization(Normalization):
             if p == HUMFREY.searchNormalization:
                 self.replacements[s] = o
             elif p == HUMFREY.searchQuery:
-                self.searches[s]['query'] = unicode(o)
+                self.searches[s]['query'] = str(o)
             elif p == HUMFREY.searchType:
-                self.searches[s]['type'] = unicode(o)
+                self.searches[s]['type'] = str(o)
             else:
                 yield s, p, o
 
         searches = defaultdict(set)
-        for s, search in self.searches.iteritems():
+        for s, search in self.searches.items():
             searches[(search.get('type'), search.get('query'))].add(s)
 
         logger.debug("Performing searches (%d)", len(searches))
 
         #conn = httplib.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
         #conn.connect()
-        for (ptype, query_string), subjects in searches.iteritems():
+        for (ptype, query_string), subjects in searches.items():
             if ptype:
                 path = '/{store}/{type}/_search'.format(store=self.store.slug,
                                                        type=ptype)
             else:
                 path = '/{store}/_search'.format(store=self.store_slug or self.store.slug)
 
-            elasticsearch_url = urlparse.urlunsplit(('http',
+            elasticsearch_url = urllib.parse.urlunsplit(('http',
                                                      '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
                                                      path, '', ''))
 
             query = {'query': {'query_string': {'query': query_string.replace('-', '')}}}
 
             try:
-                response = urllib2.urlopen(elasticsearch_url, json.dumps(query))
-            except urllib2.HTTPError, e:
+                response = urllib.request.urlopen(elasticsearch_url, json.dumps(query))
+            except urllib.error.HTTPError as e:
                 logger.error("HTTP error when searching",
                              exc_info=1,
                              extra={'body': e.read(),
@@ -134,7 +133,7 @@ class NotationNormalization(Normalization):
         self.datatypes = set(map(expand, datatypes))
         self.notations = defaultdict(set)
         self.pass_function = self.find_notations
-        self.safe_predicates = frozenset(map(expand, (safe_predicates or ())))
+        self.safe_predicates = frozenset(list(map(expand, (safe_predicates or ()))))
     def __call__(self, source):
         for triple in self.pass_function(source):
             yield triple
@@ -168,7 +167,7 @@ class NotationNormalization(Normalization):
                 query = query.format(delimiter.join(term.format(n.n3()) for n in self.notations))
                 try:
                     notation_mapping = dict(self.endpoint.query(query, log_failure=False))
-                except urllib2.HTTPError, e:
+                except urllib.error.HTTPError as e:
                     if e.code != 400:
                         raise
                 else:

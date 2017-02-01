@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # Django settings for humfrey project.
-import ConfigParser
+import configparser
 import os
 
 import rdflib
@@ -13,7 +13,7 @@ try:
 except KeyError:
     raise RuntimeError('You need to provide a HUMFREY_CONFIG_FILE environment variable pointing to an ini file')
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 config.read(HUMFREY_CONFIG_FILE)
 
 def relative_path(*args):
@@ -221,6 +221,6 @@ SPARQL_FORM_COMMON_PREFIXES = (config.get('sparql:form_common_prefixes') or 'tru
 CACHE_TIMES = {
     'page': 1800,
 }
-CACHE_TIMES.update(dict((k[6:], int(v)) for k, v in config.iteritems() if k.startswith('cache:')))
+CACHE_TIMES.update({k[6:]: int(v) for k, v in config.items() if k.startswith('cache:')})
 
 GRAPH_BASE = config.get('main:graph_base') or 'http://localhost/graph/'

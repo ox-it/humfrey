@@ -5,7 +5,7 @@ import itertools
 import logging
 import random
 import re
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from xml.sax.saxutils import escape, quoteattr
 
 from rdflib import URIRef, BNode, Literal
@@ -23,7 +23,7 @@ image_logger = logging.getLogger('humfrey.utils.resource.image')
 
 LOCALPART_RE = re.compile('^[a-zA-Z\d_-]+$')
 
-IRI = re.compile(ur'^([^\\<>"{}|\[\]^`\x00-\x20])*$')
+IRI = re.compile(r'^([^\\<>"{}|\[\]^`\x00-\x20])*$')
 
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
@@ -38,7 +38,7 @@ def cache_per_identifier(f):
 
 class SparqlQueryVars(dict):
     def __init__(self, **kwargs):
-        super(SparqlQueryVars, self).__init__(**dict((k, v.n3()) for k, v in kwargs.iteritems()))
+        super(SparqlQueryVars, self).__init__(**dict((k, v.n3()) for k, v in kwargs.items()))
     def __getitem__(self, key):
         try:
             return super(SparqlQueryVars, self).__getitem__(key)
@@ -122,7 +122,7 @@ class BaseResource(object):
         return []
 
     def __unicode__(self):
-        return unicode(self._identifier)
+        return str(self._identifier)
 
     def __hash__(self):
         return hash((self.__class__, self._identifier))
@@ -130,7 +130,7 @@ class BaseResource(object):
     def render(self):
         if isinstance(self._identifier, BNode):
             return self.label
-        return mark_safe(u'<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
+        return mark_safe('<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
     @property
     def doc_url(self):
@@ -142,11 +142,11 @@ class BaseResource(object):
         return '%s("%s")' % (self.__class__.__name__, self._identifier)
 
     def replace(self, *args, **kwargs):
-        return unicode(self).replace(*args, **kwargs)
+        return str(self).replace(*args, **kwargs)
 
     @property
     def uri(self):
-        return unicode(self._identifier)
+        return str(self._identifier)
 
     @property
     def all(self):
@@ -238,12 +238,12 @@ class BaseResource(object):
         for p in data:
             data[p] = self.localised(data[p])
 
-        return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.iteritems())]
+        return [(Resource(p, self._graph, self._endpoint), os) for p, os in sorted(data.items())]
 
     _LABEL_PROPERTIES = ('skos:prefLabel', 'rdfs:label', 'foaf:name', 'doap:name', 'dcterms:title', 'dc:title', 'rdf:value')
 
     def depictions(self):
-        ds = list(itertools.chain(*map(self.get_all, settings.IMAGE_PROPERTIES)))
+        ds = list(itertools.chain(*list(map(self.get_all, settings.IMAGE_PROPERTIES))))
         return ds
 
     @property
@@ -272,7 +272,7 @@ class BaseResource(object):
 
     @property
     def label2(self):
-        for prefix, uri in NS.iteritems():
+        for prefix, uri in NS.items():
             if self._identifier.startswith(uri):
                 localpart = self._identifier[len(uri):]
                 if LOCALPART_RE.match(localpart):
@@ -363,7 +363,7 @@ class Tel(object):
     types = ('v:Tel', 'v:Voice', 'v:Fax')
 
     _TYPES = {'Voice': 'voice', 'Fax': 'fax'}
-    _TYPES = dict((NS['v'][a], l) for a, l in _TYPES.iteritems())
+    _TYPES = {NS['v'][a]: l for a, l in _TYPES.items()}
     def render(self):
         value = self.get('rdf:value') or self._identifier
         if value.startswith('tel:'):
@@ -390,17 +390,17 @@ class Image(object):
     @property
     @cache_per_identifier
     def is_image(self):
-        request = urllib2.Request(self._identifier)
+        request = urllib.request.Request(self._identifier)
         request.get_method = lambda: 'HEAD'
         try:
-            response = urllib2.urlopen(request)
+            response = urllib.request.urlopen(request)
             if 'content-type' not in response.headers:
-                image_logger.warning("Image resource doesn't respond with Content-Type: %r", unicode(self._identifier))
+                image_logger.warning("Image resource doesn't respond with Content-Type: %r", str(self._identifier))
                 return False
             if response.headers['content-type'] not in ('image/jpeg', 'image/png', 'image/gif'):
-                image_logger.warning("Image resource has wrong content type: %r (%r)", response.headers['Content-Type'], unicode(self._identifier))
+                image_logger.warning("Image resource has wrong content type: %r (%r)", response.headers['Content-Type'], str(self._identifier))
         except:
-            logging.exception("HEAD request for image failed: %r", unicode(self._identifier))
+            logging.exception("HEAD request for image failed: %r", str(self._identifier))
             return False
         return True
 
@@ -444,7 +444,7 @@ class Dataset(object):
         )
         try:
             graph = self._endpoint.query(query)
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             return []
         classes = [Resource(c, graph, self._endpoint) for c in set(graph.subjects())]
         classes.sort(key=lambda c:c.label)
@@ -462,7 +462,7 @@ class Dataset(object):
         )
         try:
             graph = self._endpoint.query(query)
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             return []
         predicates = [Resource(p, graph, self._endpoint) for p in set(graph.subjects())]
         predicates.sort(key=lambda p:p.label)

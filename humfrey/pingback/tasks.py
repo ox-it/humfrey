@@ -1,6 +1,6 @@
 import logging
 import socket
-import urlparse
+import urllib.parse
 
 from celery.task import task
 from django.conf import settings
@@ -16,10 +16,10 @@ download_cache = getattr(settings, 'DOWNLOAD_CACHE', None)
 
 @task(name='humfrey.pingback.process_new_pingback')
 def process_new_pingback(pingback):
-    source_url = urlparse.urlparse(pingback.source)
+    source_url = urllib.parse.urlparse(pingback.source)
     source_domain = source_url.netloc.split(':')[0].lower()
 
-    target_url = urlparse.urlparse(pingback.target)
+    target_url = urllib.parse.urlparse(pingback.target)
     target_domain = target_url.netloc.split(':')[0].lower()
 
     if target_domain not in settings.PINGBACK_TARGET_DOMAINS:
@@ -44,7 +44,7 @@ def process_new_pingback(pingback):
 
         try:
             graph = extraction.extract(pingback, response)
-        except extraction.InvalidPingback, e:
+        except extraction.InvalidPingback as e:
             pingback.mark_invalid(e.reason)
         else:
             pingback.invalid_reason = ''
@@ -55,7 +55,7 @@ def process_new_pingback(pingback):
             except Exception:
                 hostname = None
 
-            source_domain = urlparse.urlparse(pingback.source)[1]
+            source_domain = urllib.parse.urlparse(pingback.source)[1]
 
             actions = models.AutomatedAction.objects.filter(Q(field='ip', value=pingback.remote_addr) |
                                                             Q(field='hostname', value=hostname) |

@@ -1,4 +1,4 @@
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -71,7 +71,7 @@ class QueryView(StoreChooseMixin, QueryView):
 class GraphDataView(StoreChooseMixin, StoreView, misc_views.PassThroughView):
     def get_target_url(self, request):
         return "{0}?{1}".format(self.store.graph_store_endpoint,
-                                urllib.urlencode({'graph': request.GET['graph']}))
+                                urllib.parse.urlencode({'graph': request.GET['graph']}))
 
     def post(self, request, *args, **kwargs):
         return super(GraphDataView, self).get(request, *args, **kwargs)

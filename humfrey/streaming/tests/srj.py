@@ -18,7 +18,7 @@ class SRJSerializerTestCase(unittest.TestCase):
 
         try:
             data = json.loads(data)
-        except Exception, e:
+        except Exception as e:
             raise AssertionError(e)
 
         # Rename bnodes in the order they appear. Otherwise we're comparing
@@ -26,7 +26,7 @@ class SRJSerializerTestCase(unittest.TestCase):
         for results in (data['results']['bindings'], target_data['results']['bindings']):
             i, mapping = 0, {}
             for result in results:
-                result = sorted(result.iteritems())
+                result = sorted(result.items())
                 for _, value in result:
                     if value['type'] == 'bnode':
                         if value['value'] in mapping:
@@ -43,7 +43,7 @@ class SRJSerializerTestCase(unittest.TestCase):
             data = ''.join(SRJSerializer(value))
             try:
                 data = json.loads(data)
-            except Exception, e:
+            except Exception as e:
                 raise AssertionError(e)
             self.assertEqual(data, {'head': {}, 'boolean': value})
 

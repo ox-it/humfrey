@@ -1,5 +1,5 @@
 from hashlib import sha1
-import httplib
+import http.client
 try:
     import simplejson as json
 except ImportError:
@@ -8,7 +8,7 @@ import logging
 import os
 import shutil
 import tempfile
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from celery.task import task
 from django.conf import settings
@@ -26,16 +26,16 @@ def get_filename(url):
 
 def get_opener(url, user, username=None, password=None):
     handlers = []
-    password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
     if username and password:
         password_manager.add_password(None, url, username, password)
     if user and user.is_authenticated():
         for credential in user.credential_set.all():
             logger.debug("Adding credential %s %s", credential.url, credential.username)
             password_manager.add_password(None, credential.url, credential.username, credential.password)
-    handlers.append(urllib2.HTTPDigestAuthHandler(password_manager))
-    handlers.append(urllib2.HTTPBasicAuthHandler(password_manager))
-    return urllib2.build_opener(*handlers)
+    handlers.append(urllib.request.HTTPDigestAuthHandler(password_manager))
+    handlers.append(urllib.request.HTTPBasicAuthHandler(password_manager))
+    return urllib.request.build_opener(*handlers)
 
 
 @task(name='humfrey.update.retrieve')
@@ -43,7 +43,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
     headers = headers or {}
     opener = get_opener(url, user, username, password)
 
-    request = urllib2.Request(url)
+    request = urllib.request.Request(url)
     request.add_header('User-Agent', USER_AGENTS.get(user_agent or 'browser', user_agent))
     request.add_header('Accept', "application/rdf+xml, text/n3, text/turtle, application/xhtml+xml;q=0.9, text/html;q=0.8, application/*;q=0.7, */*;q=0.6")
     for key in headers:
@@ -65,9 +65,9 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
 
     try:
         response = opener.open(request)
-    except urllib2.HTTPError, e:
+    except urllib.error.HTTPError as e:
         response = e
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         logger.exception("Couldn't retrieve %s: %s", url, e)
         return None, {'error': True,
                       'message': str(e),
@@ -77,7 +77,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
     headers['url'] = response.url
     headers['error'] = response.code >= 400
 
-    if response.code == httplib.OK:
+    if response.code == http.client.OK:
         logger.debug("Cache miss: %s", url)
 
         if not os.path.exists(os.path.dirname(filename)):
@@ -101,7 +101,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
         headers['from-cache'] = False
         return filename, headers
 
-    elif response.code == httplib.NOT_MODIFIED:
+    elif response.code == http.client.NOT_MODIFIED:
         logger.debug("Cache hit: %s", url)
 
         previous_headers['from-cache'] = True

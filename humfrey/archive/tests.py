@@ -14,7 +14,7 @@ class OldArchiveRemoverTestCase(unittest.TestCase):
         archive_path = 'testdir/testsubdir'
 
         filenames = []
-        for i in xrange(0, 10000):
+        for i in range(0, 10000):
             dt = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(0, 14400*i)
             dt - dt.replace(microsecond=0)
             filenames.append('{0}.rdf'.format(dt.isoformat()))

@@ -81,7 +81,7 @@ class HTMLSanitizer(object):
     def sanitize(cls, data):
         parser = cls.parser_class()
 
-        if isinstance(data, basestring):
+        if isinstance(data, str):
             data = lxml.etree.fromstring(data, parser=parser)
         elif hasattr(data, 'read'):
             data = lxml.etree.parse(data, parser=parser)

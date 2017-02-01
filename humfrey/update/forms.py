@@ -31,7 +31,7 @@ class UpdatePipelineForm(forms.ModelForm):
         value = self.cleaned_data['value']
         try:
             evaluate_pipeline(value)
-        except Exception, e:
+        except Exception as e:
             raise ValidationError(traceback.format_exc())
         return value
 

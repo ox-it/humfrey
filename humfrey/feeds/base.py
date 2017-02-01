@@ -1,6 +1,6 @@
 import abc
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 
 from django import forms
 from django.core.urlresolvers import reverse
@@ -27,7 +27,7 @@ class FeedForm(forms.Form):
         self.base_fields['format'].choices = format_choices
 
         orderings = kwargs.pop('orderings')
-        order_by_choices = [(k, v[0]) for k,v in orderings.iteritems()]
+        order_by_choices = [(k, v[0]) for k,v in orderings.items()]
         order_by_choices.insert(0, ('', '-'*20))
         self.base_fields['order_by'].choices = order_by_choices
 
@@ -39,9 +39,7 @@ class FeedForm(forms.Form):
                           help_text="Used for HTML-based formats; a link tag will be added.",
                           required=False)
 
-class FeedView(StoreView, MappingView, JSONRDFView, RDFView, HTMLView):
-    __metaclass__ = abc.ABCMeta
-    
+class FeedView(StoreView, MappingView, JSONRDFView, RDFView, HTMLView, metaclass=abc.ABCMeta):
     template_name = 'feeds/view'
     snippet_template = 'feeds/snippet'
     item_template = 'feeds/item'
@@ -76,9 +74,9 @@ class FeedView(StoreView, MappingView, JSONRDFView, RDFView, HTMLView):
                                     orderings=self.orderings)
 
         qs = request.META['QUERY_STRING']
-        qs = urlparse.parse_qs(qs, keep_blank_values=1)
+        qs = urllib.parse.parse_qs(qs, keep_blank_values=1)
         qs.pop('format', None)
-        qs = urllib.urlencode(qs, True)
+        qs = urllib.parse.urlencode(qs, True)
         config_url = reverse('feeds:feed-config', args=[self.slug]) + '?' + qs
 
         self.context.update({'feed': self.meta,

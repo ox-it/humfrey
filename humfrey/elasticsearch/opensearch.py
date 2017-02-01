@@ -6,8 +6,9 @@ http://www.opensearch.org/Specifications/OpenSearch/1.1
 
 import datetime
 import hashlib
-import urllib
-import urlparse
+import urllib.error
+import urllib.parse
+import urllib.request
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -41,15 +42,15 @@ class OpenSearchDescriptionView(ContentNegotiatedView):
 
         meta = OpenSearchView.opensearch_meta.copy()
         meta.update(self.search_view.opensearch_meta)
-        for key, value in meta.iteritems():
+        for key, value in meta.items():
             if value is not None:
                 description.append(OPENSEARCH(key, value))
 
         for image in self.search_view.opensearch_images:
             description.append(OPENSEARCH.Image(image['url'],
-                                                height=unicode(image.get('height', 16)),
-                                                width=unicode(image.get('width', 16)),
-                                                type=unicode(image.get('type' ,'image/x-icon'))))
+                                                height=str(image.get('height', 16)),
+                                                width=str(image.get('width', 16)),
+                                                type=str(image.get('type' ,'image/x-icon'))))
 
         for renderer in Conneg(obj=self.search_view).renderers:
             template = request.build_absolute_uri('?') + '?q={searchTerms}&page={startPage?}&format='+renderer.format
@@ -85,19 +86,19 @@ class OpenSearchView(ContentNegotiatedView):
     
     def munge_query_parameter(self, request, clear=False, **updates):
         url = request.build_absolute_uri()
-        query = urlparse.parse_qsl(urlparse.urlparse(url).query, True)
+        query = urllib.parse.parse_qsl(urllib.parse.urlparse(url).query, True)
         query = dict((k, v) for k, v in query)
-        for key, value in updates.iteritems():
+        for key, value in updates.items():
             if value is None:
                 query.pop(key, None)
             else:
                 query[key] = value
-        query = sorted(query.iteritems())
-        return urlparse.urljoin(url, '?' + urllib.urlencode(query))
+        query = sorted(query.items())
+        return urllib.parse.urljoin(url, '?' + urllib.parse.urlencode(query))
     
     def atom_navigation_link(self, request, rel, page):
         return ATOM.link(rel=rel,
-                         href=self.munge_query_parameter(request, page=unicode(page)),
+                         href=self.munge_query_parameter(request, page=str(page)),
                          type='application/atom+xml')
 
     @renderer(format='atom', mimetypes=('application/atom+xml',), name='Atom')
@@ -110,10 +111,10 @@ class OpenSearchView(ContentNegotiatedView):
         feed = ATOM.feed(
             ATOM.title(self.opensearch_feed_title_template.format(context['q'])),
             ATOM.updated(updated),
-            OPENSEARCH.totalResults(unicode(context['hits']['total'])),
-            OPENSEARCH.startIndex(unicode(context['start'])),
-            OPENSEARCH.itemsPerPage(unicode(context['page_size'])),
-            OPENSEARCH.Query(role='request', searchTerms=context['q'], startPage=unicode(context['page'])),
+            OPENSEARCH.totalResults(str(context['hits']['total'])),
+            OPENSEARCH.startIndex(str(context['start'])),
+            OPENSEARCH.itemsPerPage(str(context['page_size'])),
+            OPENSEARCH.Query(role='request', searchTerms=context['q'], startPage=str(context['page'])),
         )
 
         # atom:link elements
@@ -130,7 +131,7 @@ class OpenSearchView(ContentNegotiatedView):
             feed.append(self.atom_navigation_link(request, rel='next', page=context['page']+1))
         feed.append(self.atom_navigation_link(request, rel='last', page=context['page_count']))
         feed.append(ATOM.link(rel='search',
-                              href=urlparse.urljoin(request.build_absolute_uri(), '?opensearchdescription'),
+                              href=urllib.parse.urljoin(request.build_absolute_uri(), '?opensearchdescription'),
                               type='application/opensearchdescription+xml',
                               title=self.opensearch_meta.get('LongName', 'Search')))
 

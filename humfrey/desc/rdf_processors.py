@@ -24,5 +24,5 @@ def doc_meta(request, context):
     context['graph'] += [
         (doc_uri, NS['foaf'].primaryTopic, context['subject']._identifier),
         (doc_uri, NS['rdf'].type, NS['foaf'].Document),
-        (doc_uri, NS['dcterms']['title'], rdflib.Literal(u'Description of {0}'.format(context['subject'].label)),)
+        (doc_uri, NS['dcterms']['title'], rdflib.Literal('Description of {0}'.format(context['subject'].label)),)
     ]
