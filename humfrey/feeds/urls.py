@@ -1,9 +1,9 @@
-from django.conf.urls import url, patterns
+from django.conf.urls import url
 
 from . import views
 
-urlpatterns = patterns('', 
+urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^(?P<slug>[a-z\d-]+)/$', views.FeedRenderView.as_view(), name='feed-render'),
     url(r'^(?P<slug>[a-z\d-]+)/config/$', views.FeedConfigView.as_view(), name='feed-config'),
-)
+]

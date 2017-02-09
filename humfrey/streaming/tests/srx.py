@@ -29,7 +29,7 @@ class SRXParserTestCase(unittest.TestCase):
 
         actual_mapping, expected_mapping = {}, {}
 
-        f = open(filename, 'r')
+        f = open(filename, 'rb')
         results = SRXParser(f).get()
         try:
             self.assertIsInstance(results, SparqlResultList)

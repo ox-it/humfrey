@@ -6,6 +6,7 @@ junitxml
 lxml
 mock
 Pillow
+python-dateutil
 python-memcached
 pytz
 PyYAML

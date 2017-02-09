@@ -92,7 +92,7 @@ class SRXParser(StreamingParser):
 
         try:
             parser.ParseFile(self._stream)
-        except Exception:
+        except Exception as e:
             logger.exception("Failed to parse stream")
         finally:
             self._queue.put(None)

@@ -104,8 +104,8 @@ class Endpoint(object):
         query = self.normalize_query(query, common_prefixes)
 
         request = urllib.request.Request(self._url, urllib.parse.urlencode({
-            'query': query.encode('utf-8'),
-        }))
+            'query': query,
+        }).encode())
 
         if not defer:
             # Pick the quickest to parse, as it will never be passed through
@@ -127,7 +127,7 @@ class Endpoint(object):
                 response = urllib.request.urlopen(request)
             except urllib.error.HTTPError as e:
                 error_content = e.read()
-                raise QueryError(error_content, e.code)
+                raise QueryError(error_content, e.code) from e
 
             time_to_start = time.time() - start_time
 

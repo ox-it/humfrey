@@ -93,5 +93,5 @@ class HTMLSanitizerTestCase(unittest.TestCase, metaclass=HTMLSanitizerTestCaseMe
                   }
 
     def test_case_method(self, original, expected):
-        self.assertEqual(HTMLSanitizer.sanitize(original),
+        self.assertEqual(HTMLSanitizer.sanitize(original).decode(),
                          expected)

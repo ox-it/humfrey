@@ -101,7 +101,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
 
     client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
 
-    endpoint = Endpoint(settings.ENDPOINT_QUERY)
+    endpoint = Endpoint(Store.objects.get(slug=DEFAULT_STORE_SLUG).query_endpoint)
     query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for g in graphs)
     graph = endpoint.query(query)
 

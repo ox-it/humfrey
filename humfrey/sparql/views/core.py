@@ -171,7 +171,8 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
         """
 
         timeout = self._get_float(request.META.get('HTTP_TIMEOUT')) \
-               or self._get_float(request.REQUEST.get('timeout')) \
+               or self._get_float(request.POST.get('timeout')) \
+               or self._get_float(request.GET.get('timeout')) \
                or self.default_timeout
         if timeout and self.maximum_timeout:
             timeout = min(timeout, self.maximum_timeout)
@@ -194,8 +195,9 @@ class QueryView(StoreView, MappingView, RedisView, HTMLView, RDFView, ResultSetV
         )
 
     def get(self, request):
-        query = request.REQUEST.get('query')
-        form = SparqlQueryForm(request.REQUEST if query else None,
+        request_data = request.POST if request.method == 'POST' else request.GET
+        query = request_data.get('query')
+        form = SparqlQueryForm(request_data if query else None,
                                formats=self.get_format_choices())
 
         context = self.context

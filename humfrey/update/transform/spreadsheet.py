@@ -10,6 +10,7 @@ from lxml import etree
 
 from humfrey.update.transform.base import Transform
 
+
 class Currency(decimal.Decimal):
     def __new__(cls, value, currency, rendered):
         return decimal.Decimal.__new__(cls, value)
@@ -19,6 +20,7 @@ class Currency(decimal.Decimal):
     def __repr__(self):
         return "Currency(%r, %r, %r)" % (decimal.Decimal.__repr__(self), self.currency, self.rendered)
 
+
 class Percentage(decimal.Decimal):
     def __new__(cls, value, rendered, dp=None):
         return decimal.Decimal.__new__(cls, value, dp)
@@ -27,6 +29,7 @@ class Percentage(decimal.Decimal):
         self.rendered = rendered
     def __repr__(self):
         return "Percentage(%r, %r)" % (decimal.Decimal.__str__(self), self.rendered)
+
 
 class SpreadsheetToTEI(Transform):
     class Sheet(object): pass

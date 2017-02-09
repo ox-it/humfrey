@@ -1,3 +1,5 @@
+from importlib import import_module
+
 import base64
 from collections import defaultdict
 import hashlib
@@ -12,7 +14,6 @@ from rdflib import URIRef, BNode, Literal
 
 from django.core.cache import cache
 from django.conf import settings
-from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
 
 from humfrey.utils.namespaces import NS, expand, PINGBACK
@@ -28,7 +29,8 @@ IRI = re.compile(r'^([^\\<>"{}|\[\]^`\x00-\x20])*$')
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
 
-        key = hashlib.sha1('resource-metadata:%s:%s' % (f, base64.b64encode(self._identifier.encode('utf-8')))).hexdigest()
+        key = hashlib.sha1(b'resource-metadata:%s:%s' % (f.encode(),
+                                                         base64.b64encode(self._identifier.encode()))).hexdigest()
         value = cache.get(key)
         if value is None:
             value = f(self, *args, **kwargs)

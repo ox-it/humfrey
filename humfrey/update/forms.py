@@ -35,6 +35,10 @@ class UpdatePipelineForm(forms.ModelForm):
             raise ValidationError(traceback.format_exc())
         return value
 
+    class Meta:
+        model = UpdatePipeline
+        fields = ['value']
+
 UpdatePipelineFormset = inlineformset_factory(UpdateDefinition,
                                               UpdatePipeline,
                                               UpdatePipelineForm,

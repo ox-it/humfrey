@@ -19,7 +19,7 @@ class Index(models.Model):
 
     slug = models.CharField(max_length=50, primary_key=True)
 
-    stores = models.ManyToManyField(Store, null=True)
+    stores = models.ManyToManyField(Store, blank=True)
 
     title = models.CharField(max_length=128)
     query = models.TextField()

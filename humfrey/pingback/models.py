@@ -51,7 +51,7 @@ class InboundPingback(models.Model):
     store = models.ForeignKey(Store)
 
     user_agent = models.TextField(blank=True)
-    remote_addr = models.IPAddressField()
+    remote_addr = models.GenericIPAddressField()
     user = models.ForeignKey(User, null=True, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)

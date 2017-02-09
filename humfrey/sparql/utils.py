@@ -25,7 +25,8 @@ def get_labels(subjects, endpoint=None, mapping=True):
                                    subjects.predicates(),
                                    subjects.objects())
     if not endpoint:
-        endpoint = Endpoint(settings.ENDPOINT_QUERY)
+        from .models import Store, DEFAULT_STORE_SLUG
+        endpoint = Endpoint(Store.objects.get(slug=DEFAULT_STORE_SLUG).query_endpoint)
     elif isinstance(endpoint, str):
         endpoint = Endpoint(endpoint)
     elif hasattr(endpoint, 'query'):

@@ -17,7 +17,7 @@ class EncryptedString(str):
 class BaseEncryptedField(models.Field):
     def __init__(self, *args, **kwargs):
         cipher = kwargs.pop('cipher', 'AES')
-        imp = __import__('Crypto.Cipher', globals(), locals(), [cipher], -1)
+        imp = __import__('Crypto.Cipher', globals(), locals(), [cipher], 0)
         self.cipher = getattr(imp, cipher).new(settings.SECRET_KEY[:32])
         models.Field.__init__(self, *args, **kwargs)
         
@@ -28,14 +28,12 @@ class BaseEncryptedField(models.Field):
             return value
     
     def get_db_prep_value(self, value, connection=None, prepared=False):
-        if isinstance(value, str):
-            padding = 2 * self.cipher.block_size - len(value) % self.cipher.block_size
-            if True or padding and padding < self.cipher.block_size:
-                value += "\0" + ''.join([random.choice(string.printable) for index in range(padding-1)])
-            value = binascii.b2a_hex(self.cipher.encrypt(value))
-        return value
+        padding = 2 * self.cipher.block_size - len(value) % self.cipher.block_size
+        if True or padding and padding < self.cipher.block_size:
+            value += "\0" + ''.join([random.choice(string.printable) for _ in range(padding-1)])
+        return binascii.b2a_hex(self.cipher.encrypt(value))
 
-class EncryptedTextField(BaseEncryptedField, metaclass=models.SubfieldBase):
+class EncryptedTextField(BaseEncryptedField):
     def get_internal_type(self): 
         return 'TextField'
     
@@ -44,7 +42,7 @@ class EncryptedTextField(BaseEncryptedField, metaclass=models.SubfieldBase):
         defaults.update(kwargs)
         return super(EncryptedTextField, self).formfield(**defaults)
 
-class EncryptedCharField(BaseEncryptedField, metaclass=models.SubfieldBase):
+class EncryptedCharField(BaseEncryptedField):
     def get_internal_type(self):
         return "CharField"
     

@@ -1,3 +1,5 @@
+from importlib import import_module
+
 import hashlib
 import logging
 import re
@@ -7,7 +9,6 @@ import rdflib
 
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
-from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import resolve, Resolver404
 
@@ -18,7 +19,6 @@ from django_conneg.http import HttpResponseSeeOther, HttpResponseTemporaryRedire
 from humfrey.linkeddata.resource import Resource, IRI
 from humfrey.linkeddata.uri import doc_forward, doc_backward
 from humfrey.linkeddata.views import MappingView
-from humfrey.sparql.utils import get_labels
 
 from humfrey.results.views.json import JSONRDFView
 from humfrey.results.views.standard import RDFView
@@ -31,8 +31,8 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
     id_mapping_redirects = tuple((re.compile(a), b, frozenset(c)) for a,b,c in getattr(settings, 'ID_MAPPING_REDIRECTS', ()))
 
     if 'django_hosts' in settings.INSTALLED_APPS:
-        from django_hosts.middleware import HostsMiddleware
-        hosts_middleware = HostsMiddleware()
+        from django_hosts.middleware import HostsRequestMiddleware
+        hosts_request_middleware = HostsRequestMiddleware()
 
     def get(self, request):
         uri = rdflib.URIRef(request.build_absolute_uri())
@@ -54,7 +54,7 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
     def override_redirect(self, request, description_url, mimetypes):
         url = urllib.parse.urlparse(description_url)
         if 'django_hosts' in settings.INSTALLED_APPS:
-            host, _ = self.hosts_middleware.get_host(url.netloc)
+            host, _ = self.hosts_request_middleware.get_host(url.netloc)
             urlconf = host.urlconf
         else:
             urlconf = None

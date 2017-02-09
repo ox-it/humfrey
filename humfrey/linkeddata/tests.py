@@ -7,7 +7,7 @@ import urllib.parse
 import rdflib
 
 from django.core.urlresolvers import set_urlconf
-from django_hosts.reverse import get_host
+from django_hosts.resolvers import reverse_host, get_host, reverse
 
 from humfrey.linkeddata import mappingconf, resource
 from humfrey.linkeddata.uri import doc_forward, doc_backward
@@ -22,8 +22,8 @@ TEST_ID_MAPPING = (
 def set_mappingconf(func):
     @functools.wraps(func)
     def f(*args, **kwargs):
-        mappingconf.set_desc_view(('data', 'desc'))
-        mappingconf.set_doc_view(('data', 'doc-generic'))
+        mappingconf.set_desc_view(reverse('desc', host='data'))
+        mappingconf.set_doc_view(reverse('doc-generic', host='data'))
         mappingconf.set_id_mapping(TEST_ID_MAPPING)
         mappingconf.set_resource_registry(resource.base_resource_registry)
         try:
@@ -117,8 +117,8 @@ class UnicodeURITestCase(RelativeURLTestCase):
         ('http://id.other.org/%CE%B2%CE%AE%CF%84%CE%B1', 'http://data.example.org/doc/?uri=http%3A%2F%2Fid.other.org%2F%CE%B2%CE%AE%CF%84%CE%B1'),
 
         # Requests without percent-encoding UTF-8 bytes
-        ('http://id.example.org/fu\xc3\x9f', 'http://data.example.org/doc/fu%C3%9F'),
-        ('http://id.example.org/\xce\xb2\xce\xae\xcf\x84\xce\xb1', 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
+        (b'http://id.example.org/fu\xc3\x9f'.decode(), 'http://data.example.org/doc/fu%C3%9F'),
+        (b'http://id.example.org/\xce\xb2\xce\xae\xcf\x84\xce\xb1'.decode(), 'http://data.example.org/doc/%CE%B2%CE%AE%CF%84%CE%B1'),
     ]
 
     def setUp(self):
