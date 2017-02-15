@@ -1,4 +1,5 @@
 Django
+django-celery-beat
 django-conneg
 django_hosts
 django-guardian
