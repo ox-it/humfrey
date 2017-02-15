@@ -17,6 +17,6 @@ simplejson
 unittest2
 pyparsing
 ckanapi
-django-celery
+celery
 psycopg2
 pycrypto
