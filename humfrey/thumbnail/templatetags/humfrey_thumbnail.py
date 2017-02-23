@@ -2,19 +2,12 @@ from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django import template
-import django_hosts
+from django_hosts import reverse
 
 from humfrey.thumbnail.encoding import encode_parameters
 
 register = template.Library()
 
-THUMBNAIL_URL = getattr(settings, 'THUMBNAIL_URL',
-                        ('static', 'thumbnail'))
-
-#@register.simple_tag(takes_context=True)
-#def thumbnail(context, url, width=None, height=None):
-#    return '{0}?{1}'.format(reverse_full(*THUMBNAIL_URL),
-#                            encode_parameters(url, width, height))
 
 @register.tag(name='thumbnail')
 def do_thumbnail(parser, token):
@@ -28,6 +21,7 @@ def do_thumbnail(parser, token):
             args.append(content)
     return ThumbnailNode(*args, **kwargs)
 
+
 class ThumbnailNode(template.Node):
     def __init__(self, url, width=None, height=None):
         self.url = template.Variable(url)
@@ -36,5 +30,5 @@ class ThumbnailNode(template.Node):
 
     def render(self, context):
         url = self.url.resolve(context)
-        return escape('{0}?{1}'.format(django_hosts.reverse_full(*THUMBNAIL_URL),
-                                encode_parameters(url, self.width, self.height)))
+        return escape('{0}?{1}'.format(getattr(settings, 'THUMBNAIL_URL', None) or reverse('thumbnail', host='static'),
+                                       encode_parameters(url, self.width, self.height)))
