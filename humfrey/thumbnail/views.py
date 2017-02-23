@@ -96,8 +96,8 @@ class ThumbnailView(StoreView):
                 os.unlink(temporary_filename)
 
         if settings.DEBUG:
-            return HttpResponse(open(filename), mimetype='image/jpeg')
+            return HttpResponse(open(filename), content_type='image/jpeg')
         else:
-            response = HttpResponse('', mimetype='image/jpeg')
+            response = HttpResponse('', content_type='image/jpeg')
             response['X-SendFile'] = filename
             return response
