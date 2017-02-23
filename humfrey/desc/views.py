@@ -72,6 +72,7 @@ class IdView(MappingView, StoreView, ContentNegotiatedView):
 
         return renderers and renderers[0] is should_redirect
 
+
 class DescView(MappingView, StoreView):
     """
     Will redirect to DocView if described by endpoint, otherwise to the URI given.
@@ -105,6 +106,7 @@ class DescView(MappingView, StoreView):
             return HttpResponseTemporaryRedirect(str(uri))
         else:
             raise Http404
+
 
 class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
     check_canonical = True

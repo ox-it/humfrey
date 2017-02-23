@@ -40,6 +40,9 @@ def doc_forwards(uri, graph=None, described=None):
     url = get_doc_view() if described else get_desc_view()
 
     base = '%s?%s' % (url, urllib.parse.urlencode((('uri', encoded_uri),)))
+    if not described:
+        from humfrey.desc.views import DescView
+        url += '&token=' + DescView.get_uri_token(uri)
 
     return DocURLs(base,
                    '%s&format=%%(format)s' % base.replace('%', '%%'))
