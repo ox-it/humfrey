@@ -8,8 +8,14 @@ from humfrey.utils.namespaces import NS
 
 from humfrey.utils.statsd import statsd
 
+
 class ModeError(Exception):
-    pass
+    def __init__(self, previous_mode, new_mode):
+        self.previous_mode, self.new_mode = previous_mode, new_mode
+
+    def __repr__(self):
+        return 'ModeError({!r}, {!r})'.format(self.previous_mode, self.new_mode)
+
 
 class StreamingParser(object, metaclass=abc.ABCMeta):
     """
@@ -31,7 +37,7 @@ class StreamingParser(object, metaclass=abc.ABCMeta):
         if self._mode == mode:
             return
         elif self._mode is not None:
-            raise ModeError()
+            raise ModeError(self._mode, mode)
         else:
             self._mode = mode
 

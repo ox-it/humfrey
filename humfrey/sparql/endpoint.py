@@ -124,7 +124,9 @@ class Endpoint(object):
         try:
             logging.debug("Querying %r", self._url)
             try:
-                response = urllib.request.urlopen(request)
+                context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLSv1)
+                context.check_hostname = False
+                response = urllib.request.urlopen(request, context=context)
             except urllib.error.HTTPError as e:
                 error_content = e.read()
                 raise QueryError(error_content, e.code) from e
