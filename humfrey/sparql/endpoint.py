@@ -22,10 +22,12 @@ def is_qname(uri):
 
 logger = logging.getLogger(__name__)
 
+
 class QueryError(Exception):
     def __init__(self, message, status_code):
+        self.message = message
         self.status_code = status_code
-        super(QueryError, self).__init__(message)
+
 
 def trim_indentation(s):
     """Taken from PEP-0257"""
@@ -52,6 +54,7 @@ def trim_indentation(s):
         trimmed.pop(0)
     # Return a single string:
     return '\n'.join(trimmed)
+
 
 class Endpoint(object):
     _supported_media_types = ['application/sparql-results+xml',
