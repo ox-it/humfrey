@@ -11,7 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from celery.task import task
+from celery import shared_task
 import dateutil.parser
 from django.conf import settings
 import rdflib
@@ -240,7 +240,7 @@ class DatasetArchiver(object):
                 break
             last_timestamp = timestamp
 
-@task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
+@shared_task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
 def update_dataset_archives(sender, update_definition, store_graphs, when, **kwargs):
     for store in store_graphs:
         graph_names = store_graphs[store]

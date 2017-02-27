@@ -2,7 +2,7 @@ import logging
 import socket
 import urllib.parse
 
-from celery.task import task
+from celery import shared_task
 from django.conf import settings
 from django.db.models import Q
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 download_cache = getattr(settings, 'DOWNLOAD_CACHE', None)
 
-@task(name='humfrey.pingback.process_new_pingback')
+@shared_task(name='humfrey.pingback.process_new_pingback')
 def process_new_pingback(pingback):
     source_url = urllib.parse.urlparse(pingback.source)
     source_domain = source_url.netloc.split(':')[0].lower()
@@ -71,7 +71,7 @@ def process_new_pingback(pingback):
             else:
                 pingback.mark_pending()
 
-@task(name='humfrey.pingback.accept_pingback')
+@shared_task(name='humfrey.pingback.accept_pingback')
 def accept_pingback(pingback):
     uploader = Uploader()
     uploader.upload(store=pingback.store,

@@ -4,7 +4,7 @@ import functools
 import itertools
 import logging
 
-from celery.task import task
+from celery import shared_task
 import ckanclient
 from django.conf import settings
 from django_hosts import reverse
@@ -86,7 +86,7 @@ def _find(graph, subject, path, datatypes=None, all=False):
     elif objects:
         return next(iter(objects))
 
-@task(name='humfrey.ckan.upload_dataset_metadata', ignore_result=True)
+@shared_task(name='humfrey.ckan.upload_dataset_metadata', ignore_result=True)
 def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
     if store.slug != DEFAULT_STORE_SLUG:
         return

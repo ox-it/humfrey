@@ -49,7 +49,7 @@ def get_renderer(streaming_format):
                                        [');\n'])
             else:
                 actual_mimetype = mimetype
-            return HttpResponse(data, mimetype=actual_mimetype)
+            return HttpResponse(data, content_type=actual_mimetype)
         except TypeError:
             return NotImplemented
     render.__name__ = 'render_%s' % streaming_format['format']
