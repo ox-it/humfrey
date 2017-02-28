@@ -10,7 +10,7 @@ import shutil
 import tempfile
 import urllib.request, urllib.error, urllib.parse
 
-from celery.task import task
+from celery import shared_task
 from django.conf import settings
 
 from humfrey.utils.user_agents import USER_AGENTS
@@ -38,7 +38,7 @@ def get_opener(url, user, username=None, password=None):
     return urllib.request.build_opener(*handlers)
 
 
-@task(name='humfrey.update.retrieve')
+@shared_task(name='humfrey.update.retrieve')
 def retrieve(url, headers=None, user=None, username=None, password=None, user_agent=None):
     headers = headers or {}
     opener = get_opener(url, user, username, password)

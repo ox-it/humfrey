@@ -1,9 +1,9 @@
-from celery.task import task
+from celery import shared_task
 
 from humfrey.signals import update_completed
 from humfrey.update.models import UpdateDefinition, UpdateDefinitionAlreadyQueued
 
-@task(name='humfrey.update.run_dependents')
+@shared_task(name='humfrey.update.run_dependents')
 def run_dependents(sender, update_definition, store_graphs, when, **kwargs):
     """
     Runs dataset updates when updates they depend upon have completed.

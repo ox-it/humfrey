@@ -1,4 +1,4 @@
-from celery.task import task
+from celery import shared_task
 
 import collections
 import contextlib
@@ -130,7 +130,7 @@ def logged(update_log):
                         .filter(slug=update_log.update_definition.slug) \
                         .update(status='idle', last_completed=update_log.completed)
 
-@task(name='humfrey.update.update', ignore_result=True)
+@shared_task(name='humfrey.update.update', ignore_result=True)
 def update(update_log=None, slug=None, trigger=None):
     if slug:
         update_definition = UpdateDefinition.objects.get(slug=slug)
