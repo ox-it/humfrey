@@ -5,7 +5,7 @@ import itertools
 import logging
 
 from celery import shared_task
-import ckanclient
+import ckanapi
 from django.conf import settings
 from django_hosts import reverse
 import rdflib
@@ -99,7 +99,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
         logger.debug("No CKAN_API_KEY setting, not doing anything.")
         return
 
-    client = ckanclient.CkanClient(api_key=settings.CKAN_API_KEY)
+    client = ckanapi.RemoteCKAN('https://ckan.org', api_key=settings.CKAN_API_KEY)
 
     endpoint = Endpoint(Store.objects.get(slug=DEFAULT_STORE_SLUG).query_endpoint)
     query = _dataset_query % '      \n'.join('(%s)' % rdflib.URIRef(g).n3() for g in graphs)
@@ -158,7 +158,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
     try:
         package_entity = client.package_entity_get(package_name)
         logger.debug("Record successfully retrieved")
-    except ckanclient.CkanApiNotFoundError:
+    except ckanapi.NotFound:
         package_entity = {'name': package_name}
         client.package_register_post(package_entity)
         logger.debug("No record found; starting from empty")
