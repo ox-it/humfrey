@@ -5,8 +5,6 @@ import pickle
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
-from humfrey.update import tasks
-
 try:
     import simplejson as json
 except ImportError:
@@ -75,6 +73,7 @@ class UpdateDefinition(models.Model):
         self.last_log = update_log
         self.save()
 
+        from humfrey.update import tasks
         tasks.update.delay(update_log_id=update_log.id)
         return update_log
 
