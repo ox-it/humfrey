@@ -137,13 +137,15 @@ class WithLevels(object):
               'success': {'label': 'success',
                           'icon': 'gnome-icons/32x32/emblem-default.png'},
               'inprogress': {'label': 'in progress',
-                             'icon': 'gnome-icons/32x32/system-run.png'}}
+                             'icon': 'gnome-icons/32x32/system-run.png'},
+              'waiting': {'label': 'waiting',
+                          'icon': 'gnome-icons/32x32/dialog-question.png'}}
 
     @property
     def level(self):
         level = self.log_level
         if level is None:
-            return None
+            return 'waiting'
         if level >= logging.ERROR:
             return 'errors'
         elif level >= logging.WARNING:
