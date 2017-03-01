@@ -77,7 +77,7 @@ class UpdateDefinition(models.Model):
         celery_app.send_task('humfrey.update.update', kwargs={'update_log_id': update_log.id})
         return update_log
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     def get_absolute_url(self):
@@ -182,7 +182,7 @@ class UpdateLog(models.Model, WithLevels):
         return self.updatelogrecord_set.all().order_by('when')
 
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s at %s' % (self.update_definition, self.queued)
 
 
