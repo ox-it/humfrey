@@ -5,6 +5,8 @@ import pickle
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
+from humfrey.update import tasks
+
 try:
     import simplejson as json
 except ImportError:
@@ -16,7 +18,6 @@ from django.core.urlresolvers import reverse
 from humfrey.sparql.models import Store
 from humfrey.update.fields import EncryptedCharField
 from humfrey.update.utils import evaluate_pipeline
-from humfrey.celery import app as celery_app
 
 DEFINITION_STATUS_CHOICES = (
     ('idle', 'Idle'),
@@ -73,8 +74,8 @@ class UpdateDefinition(models.Model):
     
         self.last_log = update_log
         self.save()
-        
-        celery_app.send_task('humfrey.update.update', kwargs={'update_log_id': update_log.id})
+
+        tasks.update.delay(update_log_id=update_log.id)
         return update_log
 
     def __str__(self):
