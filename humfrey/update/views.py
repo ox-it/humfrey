@@ -108,7 +108,7 @@ class DefinitionDetailView(HTMLView):
             raise PermissionDenied
 
         try:
-            update_log = self.context['object'].queue('web', request.user)
+            update_log = self.context['object'].queue(trigger='web', user=request.user)
         except UpdateDefinitionAlreadyQueued:
             self.context.update({'status_code': http.client.CONFLICT,
                                  'success': False})
