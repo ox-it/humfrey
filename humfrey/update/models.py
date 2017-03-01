@@ -142,6 +142,8 @@ class WithLevels(object):
     @property
     def level(self):
         level = self.log_level
+        if level is None:
+            return None
         if level >= logging.ERROR:
             return 'errors'
         elif level >= logging.WARNING:
