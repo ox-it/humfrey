@@ -24,8 +24,10 @@ DEFINITION_STATUS_CHOICES = (
     ('active', 'Active'),
 )
 
+
 class UpdateDefinitionAlreadyQueued(AssertionError):
     pass
+
 
 class UpdateDefinition(models.Model):
     slug = models.SlugField(primary_key=True)
@@ -72,7 +74,7 @@ class UpdateDefinition(models.Model):
         self.last_log = update_log
         self.save()
         
-        celery_app.send_task('humfrey.update.update', kwargs={'update_log': update_log})
+        celery_app.send_task('humfrey.update.update', kwargs={'update_log_id': update_log.id})
         return update_log
 
     def __unicode__(self):
@@ -125,7 +127,8 @@ class UpdateDefinition(models.Model):
         if self.periodic_task:
             self.periodic_task.crontab.delete()
             self.periodic_task.delete()
-        
+
+
 class WithLevels(object):
     levels = {'errors': {'label': 'errors',
                          'icon': 'gnome-icons/32x32/dialog-error.png'},
@@ -154,6 +157,7 @@ class WithLevels(object):
     def get_level_icon(self):
         return self.levels[self.level]['icon']
 
+
 class UpdateLog(models.Model, WithLevels):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
     user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
@@ -177,6 +181,7 @@ class UpdateLog(models.Model, WithLevels):
     def __unicode__(self):
         return '%s at %s' % (self.update_definition, self.queued)
 
+
 class UpdateLogRecord(models.Model, WithLevels):
     update_log = models.ForeignKey(UpdateLog)
     when = models.DateTimeField()
@@ -193,6 +198,7 @@ class UpdateLogRecord(models.Model, WithLevels):
         return self._record_cache
     record = property(_get_record, _set_record)
 
+
 class UpdatePipeline(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines")
     value = models.TextField()
@@ -205,10 +211,12 @@ class UpdatePipeline(models.Model):
             raise ValueError(e)
         return super(UpdatePipeline, self).save(*args, **kwargs)
 
+
 class UpdateVariable(models.Model):
     update_definition = models.ForeignKey(UpdateDefinition, related_name="variables")
     name = models.TextField()
     value = models.TextField()
+
 
 class Credential(models.Model):
     user = models.ForeignKey(User)

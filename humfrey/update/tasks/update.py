@@ -15,7 +15,7 @@ import pytz
 
 from django.conf import settings
 
-from humfrey.update.models import UpdateDefinition, UpdateLogRecord
+from humfrey.update.models import UpdateDefinition, UpdateLogRecord, UpdateLog
 from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
 from humfrey.signals import graphs_updated, update_completed
@@ -131,13 +131,15 @@ def logged(update_log):
                         .update(status='idle', last_completed=update_log.completed)
 
 @shared_task(name='humfrey.update.update', ignore_result=True)
-def update(update_log=None, slug=None, trigger=None):
+def update(update_log_id=None, slug=None, trigger=None):
     if slug:
         update_definition = UpdateDefinition.objects.get(slug=slug)
         update_definition.queue(silent=True, trigger=trigger)
         return
-    elif not update_log:
+    elif not update_log_id:
         raise ValueError("One of update_log and slug needs to be provided.")
+
+    update_log = UpdateLog.objects.get(id=id)
     
     # A mapping from Store to graph names
     store_graphs = collections.defaultdict(set)
