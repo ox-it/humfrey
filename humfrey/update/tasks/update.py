@@ -139,7 +139,7 @@ def update(update_log_id=None, slug=None, trigger=None):
     elif not update_log_id:
         raise ValueError("One of update_log and slug needs to be provided.")
 
-    update_log = UpdateLog.objects.get(id=id)
+    update_log = UpdateLog.objects.get(id=update_log_id)
     
     # A mapping from Store to graph names
     store_graphs = collections.defaultdict(set)

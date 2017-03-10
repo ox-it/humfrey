@@ -39,7 +39,7 @@
         <th>Attribution:</th>
         <td>
           {% if subject.cc_attributionName and subject.cc_attributionURL %}
-            "{{ subject.cc_attributionName }} ({% for url in subject.all.cc_attributionURL %}<a href="{{ url.uri }}">{{ url.uri }}</a>{% if not forloop.last %}, {% endif %}{% endfor %})"
+            "{{ subject.cc_attributionName }} ({% for url in subject.all.cc_attributionURL.label %}<a href="{{ url.uri }}">{{ url.uri }}</a>{% if not forloop.last %}, {% endif %}{% endfor %})"
             <em>({% if subject.dcterms_license.requires.cc_Attribution %}attribution required{% else %}attribution encouraged{% endif %})</em>
           {% else %}
             <em>None specified; <a href="{{ subject.oo_contact.foaf_mbox.uri }}">contact the maintainer for clarification</a>.</em>
