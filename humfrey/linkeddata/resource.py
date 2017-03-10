@@ -435,7 +435,7 @@ class Dataset(object):
 
     @property
     def graph_names(self):
-        if not hasattr(self, '_graph_names'):
+        if '_graph_names' not in self.__dict__:
             self._graph_names = list(self._graph.subjects(NS['void'].inDataset, self._identifier))
         return self._graph_names
 
@@ -447,7 +447,7 @@ class Dataset(object):
         }"""
     def used_classes(self):
         query = self._USED_CLASSES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in random.sample(list(self.graph_names), 10))
+            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
         )
         try:
             graph = self._endpoint.query(query)
@@ -465,7 +465,7 @@ class Dataset(object):
         }"""
     def used_predicates(self):
         query = self._USED_PREDICATES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in random.sample(list(self.graph_names), 10))
+            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
         )
         try:
             graph = self._endpoint.query(query)
