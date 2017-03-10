@@ -29,8 +29,8 @@ IRI = re.compile(r'^([^\\<>"{}|\[\]^`\x00-\x20])*$')
 def cache_per_identifier(f):
     def g(self, *args, **kwargs):
 
-        key = hashlib.sha1(b'resource-metadata:%s:%s' % (f.encode(),
-                                                         base64.b64encode(self._identifier.encode()))).hexdigest()
+        key = hashlib.sha256(b'resource-metadata:%s:%s' % (f.encode(),
+                                                           base64.b64encode(self._identifier.encode()))).hexdigest()
         value = cache.get(key)
         if value is None:
             value = f(self, *args, **kwargs)
@@ -354,7 +354,7 @@ class BaseResource(object):
     @property
     def hexhash(self):
         "Returns a hexadecimal hash of the URI of a resource"
-        return hashlib.sha1(self._identifier.encode('utf-8')).hexdigest()[:8]
+        return hashlib.sha256(self._identifier.encode('utf-8')).hexdigest()[:8]
 
 class Address(object):
     types = ('v:Address',)

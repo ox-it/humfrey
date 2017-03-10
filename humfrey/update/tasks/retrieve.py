@@ -1,4 +1,4 @@
-from hashlib import sha1
+from hashlib import sha256
 import http.client
 try:
     import simplejson as json
@@ -21,7 +21,7 @@ DOWNLOAD_CACHE = getattr(settings, 'DOWNLOAD_CACHE', None)
 logger = logging.getLogger(__name__)
 
 def get_filename(url):
-    h = sha1(url).hexdigest()
+    h = sha256(url.encode()).hexdigest()
     return os.path.join(DOWNLOAD_CACHE, h[:2], h[2:4], h)
 
 def get_opener(url, user, username=None, password=None):
@@ -86,7 +86,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
         with open(filename, 'w') as f:
             shutil.copyfileobj(response, f)
 
-        h = sha1()
+        h = sha256()
         with open(filename, 'r') as f:
             chunk = f.read(4096)
             while chunk:
@@ -94,7 +94,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
                 chunk = f.read(4096)
 
         with open(headers_filename, 'w') as f:
-            headers['sha1'] = h.hexdigest()
+            headers['sha256'] = h.hexdigest()
             headers['delete-after'] = False
             json.dump(headers, f)
             

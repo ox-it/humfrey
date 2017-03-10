@@ -83,7 +83,7 @@ class StoreView(View):
         else:
             if not (parsed.scheme and parsed.netloc):
                 return set()
-        key_name = 'types:%s' % hashlib.sha1(uri.encode('utf8')).hexdigest()
+        key_name = 'types:%s' % hashlib.sha256(uri.encode('utf8')).hexdigest()
         types = cache.get(key_name)
         if False and types:
             types = pickle.loads(base64.b64decode(types))

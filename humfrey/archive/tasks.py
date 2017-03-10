@@ -108,7 +108,7 @@ class DatasetArchiver(object):
             yield triple
 
     def archive(self):
-        notation = self.notation or hashlib.sha1(self.dataset).hexdigest()
+        notation = self.notation or hashlib.sha256(self.dataset).hexdigest()
 
         archive_path = os.path.join(SOURCE_DIRECTORY, 'archive', self.store.slug, notation.replace('/', '-'))
         archive_graph_name = rdflib.URIRef('{0}archive/{1}'.format(settings.GRAPH_BASE, notation))

@@ -58,7 +58,7 @@ class ThumbnailView(StoreView):
         elif not self.image_types & self.get_types(url):
                 raise Http404
 
-        filename = hashlib.sha1('{}:{}:{}'.format(width, height, url).encode()).hexdigest()
+        filename = hashlib.sha256('{}:{}:{}'.format(width, height, url).encode()).hexdigest()
         filename = [filename[:2], filename[2:4], filename[4:6], filename[6:]]
         filename = os.path.abspath(os.path.join(settings.IMAGE_CACHE_DIRECTORY, *filename))
 

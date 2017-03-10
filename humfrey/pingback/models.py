@@ -69,7 +69,7 @@ class InboundPingback(models.Model):
 
     @staticmethod
     def get_slug(source, target):
-        hash = lambda x: hashlib.sha1(x).hexdigest()
+        hash = lambda x: hashlib.sha256(x.encode()).hexdigest()
         return hash(hash(source) + hash(target))
 
     def queue(self):

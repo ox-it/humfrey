@@ -82,7 +82,7 @@ class DescView(MappingView, StoreView):
 
     @classmethod
     def get_uri_token(cls, uri):
-        return hashlib.sha1(settings.SECRET_KEY.encode() + uri.encode()).hexdigest()
+        return hashlib.sha256(settings.SECRET_KEY.encode() + uri.encode()).hexdigest()
 
     def get(self, request):
         uri = rdflib.URIRef(request.GET.get('uri', ''))

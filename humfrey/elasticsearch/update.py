@@ -1,5 +1,5 @@
 import datetime
-from hashlib import sha1
+from hashlib import sha256
 import http.client
 import logging
 import tempfile
@@ -239,7 +239,7 @@ class IndexUpdater(object):
         for result in results:
             result_count += 1
 
-            result_id = sha1(result['uri'].encode('utf-8')).hexdigest()[:8]
+            result_id = sha256(result['uri'].encode('utf-8')).hexdigest()[:8]
             result_ids.add(result_id)
             result_hash = self.hash_result(result)
 
