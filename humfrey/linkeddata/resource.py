@@ -134,6 +134,9 @@ class BaseResource(object):
             return self.label
         return mark_safe('<a href=%s>%s</a>' % (quoteattr(self.doc_url), escape(self.label)))
 
+    def __html__(self):
+        return self.render()
+
     @property
     def doc_url(self):
         if '_doc_url' not in self.__dict__:
@@ -158,6 +161,8 @@ class BaseResource(object):
         return C()
 
     def get(self, name):
+        if name.startswith('__'):
+            raise AttributeError(name)
         if name.endswith('_inv'):
             name, inverse = name[:-4], True
         else:
