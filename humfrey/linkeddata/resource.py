@@ -446,8 +446,11 @@ class Dataset(object):
             OPTIONAL { ?t rdfs:label ?label }
         }"""
     def used_classes(self):
+        graph_names = self.graph_names
+        if len(graph_names) > 10:
+            graph_names = random.sample(graph_names, 10)
         query = self._USED_CLASSES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
+            ' || '.join('?g = %s' % g.n3() for g in graph_names
         )
         try:
             graph = self._endpoint.query(query)
@@ -464,8 +467,11 @@ class Dataset(object):
             OPTIONAL { ?p rdfs:label ?label }
         }"""
     def used_predicates(self):
+        graph_names = self.graph_names
+        if len(graph_names) > 10:
+            graph_names = random.sample(graph_names, 10)
         query = self._USED_PREDICATES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in random.sample(self.graph_names, 10))
+            ' || '.join('?g = %s' % g.n3() for g in graph_names
         )
         try:
             graph = self._endpoint.query(query)
