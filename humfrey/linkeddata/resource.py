@@ -450,7 +450,7 @@ class Dataset(object):
         if len(graph_names) > 10:
             graph_names = random.sample(graph_names, 10)
         query = self._USED_CLASSES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in graph_names
+            ' || '.join('?g = %s' % g.n3() for g in graph_names)
         )
         try:
             graph = self._endpoint.query(query)
@@ -471,7 +471,7 @@ class Dataset(object):
         if len(graph_names) > 10:
             graph_names = random.sample(graph_names, 10)
         query = self._USED_PREDICATES_QUERY % (
-            ' || '.join('?g = %s' % g.n3() for g in graph_names
+            ' || '.join('?g = %s' % g.n3() for g in graph_names)
         )
         try:
             graph = self._endpoint.query(query)
