@@ -11,9 +11,7 @@
         </a>
       {% endif %}
       {% if subject.open_data_stars %}
-        <a href="{% url "help" %}#stars">
-          <img src="{{ STATIC_URL }}desc/{{ subject.open_data_stars.0 }}" alt="{{ subject.open_data_stars.1 }}"/>
-        </a>
+        <img src="{{ STATIC_URL }}desc/{{ subject.open_data_stars.0 }}" alt="{{ subject.open_data_stars.1 }}"/>
       {% endif %}
     </div>
   {% endif %}  
