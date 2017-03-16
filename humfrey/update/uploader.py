@@ -56,7 +56,7 @@ class Uploader(object):
         if graph_url.query:
             path += '?' + graph_url.query
 
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
 
             logger.debug("Opening connection to %s:%d", host, port)
 

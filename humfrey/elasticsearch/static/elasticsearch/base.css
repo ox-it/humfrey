@@ -46,7 +46,7 @@ body.elasticsearch div.search-box input[type='text'] {
     margin-bottom: 5px;
 }
 
-body.elasticsearch div.facet h3 {
+body.elasticsearch div.aggregation h3 {
 	margin:5px 0 0 0;
 	border-bottom:1px solid #aaa;
 }

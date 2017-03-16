@@ -19,7 +19,7 @@ class Construct(Transform):
             with open(query_filename, 'r') as query_file:
                 query = query_file.read()
 
-        with open(transform_manager('nt'), 'w') as output:
+        with open(transform_manager('nt'), 'wb') as output:
             transform_manager.start(self, [])
             serialize(endpoint.query(query, defer=True), output)
             transform_manager.end([output.name])

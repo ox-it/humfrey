@@ -1,7 +1,6 @@
 import datetime
 import json
 
-from celery.execute import send_task
 from django.conf import settings
 from django.db import models
 
@@ -13,6 +12,7 @@ INDEX_STATUS_CHOICES = (
     ('queued', 'Queued'),
     ('active', 'Active'),
 )
+
 
 class Index(models.Model):
     UPDATE_QUEUE = 'humfrey:elasticsearch:index-queue'
@@ -47,9 +47,32 @@ class Index(models.Model):
 
     def save(self, *args, **kwargs):
         if self._original_mapping != self.mapping:
-            self.mapping = json.dumps(json.loads(self.mapping), indent=2)
             self.update_mapping = True
-        return super(Index, self).save(*args, **kwargs) 
+        if self.update_mapping:
+            self.mapping = json.dumps(self.migrate_mapping(json.loads(self.mapping)), indent=2)
+        return super(Index, self).save(*args, **kwargs)
+
+    def migrate_mapping_properties(self, properties):
+        print(properties)
+        for property in properties:
+            if 'properties' in property:
+                self.migrate_mapping_properties(property['properties'].values())
+            if property.get('type') == 'string':
+                if property.get('index') == 'not_analyzed':
+                    property['type'] = 'keyword'
+                    del property['index']
+                else:
+                    property['type'] = 'text'
+            if '_boost' in property:
+                del property['_boost']
+
+    def migrate_mapping(self, mapping):
+        for type_mapping in mapping.values():
+            self.migrate_mapping_properties(type_mapping.get('properties', {}).values())
+            if '_boost' in property:
+                del property['_boost']
+
+        return mapping
 
     def _get_url(self, store, path, pattern):
         params = {'slug': self.slug,
@@ -62,8 +85,11 @@ class Index(models.Model):
     def get_index_url(self, store, path=False):
         return self._get_url(store, path, '/%(store)s')
 
-    def get_index_status_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/_status')
+    def get_index_delete_by_query_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/%(slug)s/_delete_by_query')
+
+    def get_index_stats_url(self, store, path=False):
+        return self._get_url(store, path, '/%(store)s/_stats')
 
     def get_type_url(self, store, path=False):
         return self._get_url(store, path, '/%(store)s/%(slug)s')
@@ -88,4 +114,5 @@ class Index(models.Model):
         self.last_queued = datetime.datetime.now()
         self.save()
 
-        send_task('humfrey.elasticsearch.update_index', kwargs={'index': self.slug})
+        from . import tasks
+        tasks.update_index.delay(index_id=self.pk)

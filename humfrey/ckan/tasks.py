@@ -7,6 +7,7 @@ import logging
 from celery import shared_task
 import ckanapi
 from django.conf import settings
+from django.dispatch import receiver
 from django_hosts import reverse
 import rdflib
 
@@ -86,13 +87,14 @@ def _find(graph, subject, path, datatypes=None, all=False):
     elif objects:
         return next(iter(objects))
 
+
 @shared_task(name='humfrey.ckan.upload_dataset_metadata', ignore_result=True)
-def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
-    if store.slug != DEFAULT_STORE_SLUG:
+def upload_dataset_metadata(store_id, graphs):
+    if store_id != DEFAULT_STORE_SLUG:
         return
 
     if not graphs:
-        logger.debug("No graphs updated for %r; aborting", store.slug)
+        logger.debug("No graphs updated for %r; aborting", store_id)
         return
 
     if not getattr(settings, 'CKAN_API_KEY', None):
@@ -194,4 +196,7 @@ def upload_dataset_metadata(sender, store, graphs, when, **kwargs):
         logger.info("Updating %r at thedatahub.org", package_name)
         client.package_entity_put(package_entity)
 
-graphs_updated.connect(upload_dataset_metadata.delay)
+
+@receiver(graphs_updated)
+def graphs_updated_receiver(sender, store_id, graphs, **kwargs):
+    upload_dataset_metadata.delay(store_id, graphs)

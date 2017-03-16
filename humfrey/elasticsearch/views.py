@@ -106,7 +106,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
     # e.g. {'filter.category.uri': ('filter.subcategory.uri',)}
     dependent_parameters = {}
 
-    facets = {'type': {'terms': {'field': 'type.uri',
+    aggregations = {'type': {'terms': {'field': 'type.uri',
                                           'size': 20}}}
     template_name = 'elasticsearch/search'
     default_search_item_template_name = 'elasticsearch/search_item'
@@ -167,12 +167,16 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
             default_operator = 'AND'
 
         query = {
-            'query': {'query_string': {'query': cleaned_data['q'],
-                                       'default_operator': default_operator}},
+            'query': {
+                'bool': {
+                    'must': {
+                        'query_string': {'query': cleaned_data['q'],
+                                         'default_operator': default_operator}},
+                    'filter':[],
+                },
+            },
             'from': start,
             'size': page_size,
-            # A blank conjunctive filter. We'll remove this later if necessary.
-            'filter': {'and': []},
         }
 
         # Parse query parameters of the form 'FTYPE.FIELDNAME'.
@@ -205,36 +209,34 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
                     continue
                 filters.append(filter)
             if len(filters) == 1:
-                query['filter']['and'].append(filters[0])
+                query['query']['bool']['filter'].append(filters[0])
             elif len(filters) > 1:
-                query['filter']['and'].append({'or': filters})
+                query['query']['bool']['filter'].append({'or': filters})
             else:
                 continue
             filter_fields.add(field)
 
-        if self.facets:
-            # Copy the facet definitions as we'll be playing with them shortly.
-            facets = copy.deepcopy(self.facets)
+        if self.aggregations:
+            # Copy the aggregation definitions as we'll be playing with them shortly.
+            aggregations = copy.deepcopy(self.aggregations)
 
-            # Add facet filters for all active filters except any acting on this
-            # particular facet.
+            # Add aggregation filters for all active filters except any acting on this
+            # particular aggregation.
             if 'filter' in query:
-                for facet in facets.values():
-                    for filter in query['filter']['and']:
-                        if facet['terms']['field'] not in filter_fields:
-                            if 'facet_filter' not in facet:
-                                facet['facet_filter'] = {'and': []}
-                            facet['facet_filter']['and'].append(filter)
-            query['facets'] = facets
+                for aggregation in aggregations.values():
+                    for filter in query['filter']:
+                        if aggregation['terms']['field'] not in filter_fields:
+                            if 'facet_filter' not in aggregation:
+                                aggregation['facet_filter'] = []
+                            aggregation['facet_filter'].append(filter)
+            query['aggregations'] = aggregations
 
         # If default_types set, add a filter to restrict the results.
         if self.default_types and 'type' not in self.request.GET:
-            query['filter']['and'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
+            query['filter'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
 
-        if not query['filter']['and']:
-            del query['filter']['and']
-        if not query['filter']:
-            del query['filter']
+        if not query['query']['bool']['filter']:
+            del query['query']['bool']['filter']
 
         return query
 
@@ -247,38 +249,36 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
 
         # If there aren't any filters defined, we don't want a filter part of
         # our query.
-        if 'filter' in query:
-            if 'and' in query['filter'] and not query['filter']['and']:
-                del query['filter']['and']
-            if not query['filter']:
-                del query['filter']
+        if 'bool' in query['query'] and 'filter' in query['query']['bool']:
+            if not query['query']['bool']['filter']:
+                del query['query']['bool']['filter']
 
         results = self.search_endpoint.query(query)
 
         results.update(self.get_pagination(page_size, page, start, results))
         results['q'] = cleaned_data['q']
 
-        facet_labels = set()
-        for key in query['facets']:
-            meta = results['facets'][key]['meta'] = query['facets'][key]
-            filter_value = parameters.get('filter.%s' % query['facets'][key]['terms']['field'])
-            results['facets'][key]['filter'] = {'present': filter_value is not None,
+        aggregation_labels = set()
+        for key in query['aggregations']:
+            meta = results['aggregations'][key]['meta'] = query['aggregations'][key]
+            filter_value = parameters.get('filter.%s' % query['aggregations'][key]['terms']['field'])
+            results['aggregations'][key]['filter'] = {'present': filter_value is not None,
                                                 'value': filter_value}
             if meta['terms']['field'].endswith('.uri'):
-                for term in results['facets'][key]['terms']:
-                    facet_labels.add(term['term'])
-                    term['value'] = contract(term['term'])
+                for bucket in results['aggregations'][key]['buckets']:
+                    aggregation_labels.add(bucket['key'])
+                    bucket['value'] = contract(bucket['key'])
             else:
-                for term in results['facets'][key]['terms']:
-                    term['value'] = term['term']
+                for bucket in results['aggregations'][key]['buckets']:
+                    bucket['value'] = bucket['key']
 
-        labels = get_labels(list(map(rdflib.URIRef, facet_labels)), endpoint=self.endpoint)
-        for key in query['facets']:
-            if results['facets'][key]['meta']['terms']['field'].endswith('.uri'):
-                for term in results['facets'][key]['terms']:
-                    uri = rdflib.URIRef(term['term'])
+        labels = get_labels(list(map(rdflib.URIRef, aggregation_labels)), endpoint=self.endpoint)
+        for key in query['aggregations']:
+            if results['aggregations'][key]['meta']['terms']['field'].endswith('.uri'):
+                for bucket in results['aggregations'][key]['buckets']:
+                    uri = rdflib.URIRef(bucket['key'])
                     if uri in labels:
-                        term['label'] = str(labels[uri])
+                        bucket['label'] = str(labels[uri])
 
         for hit in results['hits']['hits']:
             try:

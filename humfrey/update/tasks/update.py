@@ -22,11 +22,13 @@ from humfrey.signals import graphs_updated, update_completed
 
 logger = logging.getLogger(__name__)
 
+
 class _SameThreadFilter(logging.Filter):
     def __init__(self):
         self.thread_ident = _thread.get_ident()
     def filter(self, record):
         return record.thread == self.thread_ident
+
 
 class _TransformHandler(logging.Handler):
     ignore_loggers = frozenset(['django.db.backends'])
@@ -130,6 +132,7 @@ def logged(update_log):
                         .filter(slug=update_log.update_definition.slug) \
                         .update(status='idle', last_completed=update_log.completed)
 
+
 @shared_task(name='humfrey.update.update', ignore_result=True)
 def update(update_log_id=None, slug=None, trigger=None):
     if slug:
@@ -176,15 +179,15 @@ def update(update_log_id=None, slug=None, trigger=None):
 
     updated = _time_zone.localize(datetime.datetime.now())
     
-    store_graphs = dict((store, frozenset(store_graphs[store])) for store in store_graphs)
+    store_graphs = {store.pk: sorted(store_graphs[store]) for store in store_graphs}
 
-    for store in store_graphs:
+    for store_id in store_graphs:
         graphs_updated.send(update,
-                            store=store,
-                            graphs=store_graphs[store],
+                            store_id=store_id,
+                            graphs=store_graphs[store_id],
                             when=updated)
 
     update_completed.send(update,
-                          update_definition=update_log.update_definition,
+                          update_definition_id=update_log.update_definition_id,
                           store_graphs=store_graphs,
                           when=updated)

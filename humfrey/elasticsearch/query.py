@@ -35,7 +35,7 @@ class ElasticSearchEndpoint(object):
 
     def query(self, query):
         logger.debug("Query: %s", query)
-        request = urllib.request.Request(self.search_url, json.dumps(query))
+        request = urllib.request.Request(self.search_url, json.dumps(query).encode())
         request.add_header("User-Agent", USER_AGENTS['agent'])
         response = json.load(urllib.request.urlopen(request))
         logger.debug("Query returned %d hits: %s", response['hits']['total'], query)

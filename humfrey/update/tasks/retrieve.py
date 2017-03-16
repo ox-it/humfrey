@@ -83,11 +83,11 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
 
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             shutil.copyfileobj(response, f)
 
         h = sha256()
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             chunk = f.read(4096)
             while chunk:
                 h.update(chunk)

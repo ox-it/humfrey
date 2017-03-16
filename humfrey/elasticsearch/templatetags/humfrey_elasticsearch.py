@@ -5,12 +5,14 @@ from xml.sax.saxutils import escape
 from django import template
 from django.template.defaultfilters import linebreaksbr
 import rdflib
+from django.utils.safestring import mark_safe
 
 from humfrey.desc.templatetags.humfrey_desc import sanitize_html
 from humfrey.linkeddata.resource import Resource
 from humfrey.utils.namespaces import NS
 
 register = template.Library()
+
 
 def munge_parameter(context, prefix, name, value):
     if prefix:
@@ -27,15 +29,18 @@ def munge_parameter(context, prefix, name, value):
     for subkey in context.get('dependent_parameters', {}).get(key, ()):
         query.pop(subkey, None)
     query = sorted(query.items())
-    return escape('?' + urllib.parse.urlencode(query))
+    return mark_safe('?' + urllib.parse.urlencode(query))
+
 
 @register.simple_tag(takes_context=True)
 def set_parameter(context, prefix, name, value):
     return munge_parameter(context, prefix, name, value)
 
+
 @register.simple_tag(takes_context=True)
 def remove_parameter(context, prefix, name):
     return munge_parameter(context, prefix, name, None)
+
 
 @register.filter
 def search_html(value):
@@ -43,6 +48,7 @@ def search_html(value):
         return sanitize_html(value)
     else:
         return linebreaksbr(value)
+
 
 @register.filter
 def search_item_template(hit, default_search_item_template_name):

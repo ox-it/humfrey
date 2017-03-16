@@ -1,6 +1,7 @@
 import datetime
 
 from celery import shared_task
+from django.dispatch import receiver
 
 from humfrey.signals import update_completed
 
@@ -8,16 +9,19 @@ from .models import Index
 from .update import IndexUpdater
 
 @shared_task(name='humfrey.elasticsearch.update_indexes_after_dataset_update', ignore_result=True)
-def update_indexes_after_dataset_update(sender, update_definition, store_graphs, when, **kwargs):
-    for index in Index.objects.filter(update_after=update_definition):
-        update_index(index)
+def update_indexes_after_dataset_update(update_definition_id):
+    for index in Index.objects.filter(update_after__pk=update_definition_id):
+        update_index.delay(index.pk)
 
-update_completed.connect(update_indexes_after_dataset_update.delay)
+
+@receiver(update_completed)
+def update_completed_receiver(sender, update_definition_id, **kwargs):
+    update_indexes_after_dataset_update.delay(update_definition_id=update_definition_id)
+
 
 @shared_task(name='humfrey.elasticsearch.update_index', ignore_result=True)
-def update_index(index):
-    if isinstance(index, str):
-        index = Index.objects.get(slug=index)
+def update_index(index_id):
+    index = Index.objects.get(pk=index_id)
     index.status = 'active'
     index.last_started = datetime.datetime.now()
     index.save()

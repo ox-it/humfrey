@@ -12,21 +12,22 @@ def reducer(self):
     return (Signal, (self.providing_args,))
 Signal.__reduce__ = reducer
 
-graphs_updated = Signal(providing_args=['store', 'graphs', 'when'])
-graph_updated = Signal(providing_args=['store', 'graph', 'when'])
+graphs_updated = Signal(providing_args=['store_id', 'graphs', 'when'])
+graph_updated = Signal(providing_args=['store_id', 'graph', 'when'])
 
-resources_updated = Signal(providing_args=['store', 'uris', 'when'])
-resource_updated = Signal(providing_args=['store', 'uri', 'when'])
+resources_updated = Signal(providing_args=['store_id', 'uris', 'when'])
+resource_updated = Signal(providing_args=['store_id', 'uri', 'when'])
 
-update_completed = Signal(providing_args=['update_definition', 'store_graphs', 'when'])
+update_completed = Signal(providing_args=['update_definition_id', 'store_graphs', 'when'])
+
 
 @receiver(graphs_updated)
-def _graphs_updated(sender, store, graphs, when, **kwargs):
+def _graphs_updated(sender, store_id, graphs, when, **kwargs):
     for graph in graphs:
-        graph_updated.send(sender, store=store, graph=graph, when=when, **kwargs)
+        graph_updated.send(sender, store_id=store_id, graph=graph, when=when, **kwargs)
+
 
 @receiver(resources_updated)
-def _resources_updated(sender, store, uris, when, **kwargs):
+def _resources_updated(sender, store_id, uris, when, **kwargs):
     for uri in uris:
-        resources_updated.send(sender, store=store, uri=uri, when=when, **kwargs)
-
+        resources_updated.send(sender, store_id=store_id, uri=uri, when=when, **kwargs)

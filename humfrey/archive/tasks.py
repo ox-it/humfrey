@@ -16,6 +16,7 @@ import dateutil.parser
 from django.conf import settings
 import rdflib
 import pytz
+from django.dispatch import receiver
 
 from humfrey.utils.namespaces import NS, expand, HUMFREY
 from humfrey.sparql.endpoint import Endpoint
@@ -34,8 +35,8 @@ SOURCE_URL = getattr(settings, 'SOURCE_URL', None)
 
 logger = logging.getLogger(__name__)
 
-class DatasetArchiver(object):
 
+class DatasetArchiver(object):
     def __init__(self, store, dataset, notation, updated):
         self.store = store
         self.dataset = dataset
@@ -240,10 +241,14 @@ class DatasetArchiver(object):
                 break
             last_timestamp = timestamp
 
+
 @shared_task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
-def update_dataset_archives(sender, update_definition, store_graphs, when, **kwargs):
-    for store in store_graphs:
-        graph_names = store_graphs[store]
+def update_dataset_archives(store_graphs, when):
+    from humfrey.sparql.models import Store
+
+    for store_id in store_graphs:
+        store = Store.objects.get(pk=store_id)
+        graph_names = store_graphs[store_id]
         endpoint = Endpoint(store.query_endpoint)
 
         if DATASET_NOTATION:
@@ -258,7 +263,7 @@ def update_dataset_archives(sender, update_definition, store_graphs, when, **kwa
           VALUES ?graph {{ {0} }}
           ?graph void:inDataset ?dataset .
           {1}
-        }}""".format(" ".join(g.n3() for g in graph_names),
+        }}""".format(" ".join(rdflib.URIRef(g).n3() for g in graph_names),
                      notation_clause)
         datasets = dict(endpoint.query(query))
 
@@ -269,4 +274,7 @@ def update_dataset_archives(sender, update_definition, store_graphs, when, **kwa
             archiver = DatasetArchiver(store, dataset, notation, when)
             archiver.archive()
 
-update_completed.connect(update_dataset_archives.delay)
+
+@receiver(update_completed)
+def update_completed_receiver(sender, store_graphs, when, **kwargs):
+    update_dataset_archives.delay(store_graphs, when)

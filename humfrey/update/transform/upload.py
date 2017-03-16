@@ -48,7 +48,7 @@ class Upload(Transform):
             raise
 
         graph = rdflib.ConjunctiveGraph()
-        graph.parse(open(input, 'r'),
+        graph.parse(open(input, 'rb'),
                     format=serializer,
                     publicID=self.graph_name)
 
@@ -76,7 +76,7 @@ class Upload(Transform):
         logger.debug("About to serialize")
 
         output = transform_manager('rdf')
-        with open(output, 'w') as f:
+        with open(output, 'wb') as f:
             graph.serialize(f)
 
         logger.debug("Serialization done; about to upload")

@@ -20,11 +20,11 @@
       </form>
     </div>
   
-  {% if facets and hits.total %}
+  {% if aggregations and hits.total %}
   <div class="sidebar-item">
     <h2>Refine by…</h2>
-    {% if facets.type %}
-      {% include "elasticsearch/facet.html" with facet=facets.type facet_name="type" %}
+    {% if aggregations.type %}
+      {% include "elasticsearch/aggregation.html" with aggregation=aggregations.type aggregation_name="type" %}
 	{% endif %}
   </div>
   {% endif %}

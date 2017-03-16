@@ -136,10 +136,11 @@ class OpenSearchView(ContentNegotiatedView):
                               title=self.opensearch_meta.get('LongName', 'Search')))
 
         for hit in context['hits']['hits']:
-            source = hit['_source']
+            source = hit['source']
+            print(hit)
             entry = ATOM.entry(
                 ATOM.title(source.get('label', '')),
-                ATOM.link(request.build_absolute_uri(hit['_url'])),
+                ATOM.link(request.build_absolute_uri(hit['url'])),
                 ATOM.updated(updated), # For want of something better
             )
             if 'uri' in source:
@@ -160,4 +161,4 @@ class OpenSearchView(ContentNegotiatedView):
             feed.append(entry)
         
         return HttpResponse(etree.tostring(feed, pretty_print=True, xml_declaration=True),
-                            mimetype='application/atom+xml')
+                            content_type='application/atom+xml')

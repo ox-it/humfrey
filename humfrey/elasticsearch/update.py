@@ -1,4 +1,6 @@
 import datetime
+
+from celery.utils.log import get_task_logger
 from hashlib import sha256
 import http.client
 import logging
@@ -15,7 +17,12 @@ from humfrey.sparql.endpoint import Endpoint
 from humfrey.update.tasks.retrieve import USER_AGENTS
 from humfrey.utils import json
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
+
+
+class MappingUpdateFailed(Exception):
+    pass
+
 
 class IndexUpdater(object):
     _SEND_BLOCK_SIZE = 8096
@@ -25,15 +32,7 @@ class IndexUpdater(object):
 
     @classmethod
     def hash_result(cls, value):
-        def recursive_sort(value):
-            if isinstance(value, dict):
-                for subvalue in value.values():
-                    recursive_sort(subvalue)
-            elif isinstance(value, list):
-                for subvalue in value:
-                    recursive_sort(subvalue)
-                value.sort()
-        return hash(json.dumps(recursive_sort(value)))
+        return hash(json.dumps(value, sort_keys=True))
 
     def update(self, index):
         item_count = 0
@@ -50,7 +49,7 @@ class IndexUpdater(object):
         logger.debug("SPARQL server started returning results.")
 
         try:
-            urllib.request.urlopen(index.get_index_status_url(store))
+            urllib.request.urlopen(index.get_index_stats_url(store))
             index_exists = True
         except urllib.error.HTTPError as e:
             if e.code == http.client.NOT_FOUND:
@@ -67,15 +66,24 @@ class IndexUpdater(object):
         if index.update_mapping:
             logger.debug("Mapping set to be updated for %s/%s", store.slug, index.slug)
             if index_exists:
-                request = urllib.request.Request(index.get_type_url(store))
-                request.get_method = lambda : 'DELETE'
+                request = urllib.request.Request(index.get_index_delete_by_query_url(store), data=json.dumps({
+                    'query': {
+                        "match_all": {}
+                    },
+                }).encode(), method='POST')
                 urllib.request.urlopen(request)
 
             if index.mapping:
                 logger.info("Updating mapping for %s/%s (%s)", store.slug, index.slug, index.get_mapping_url(store))
-                request = urllib.request.Request(index.get_mapping_url(store), index.mapping)
+                request = urllib.request.Request(index.get_mapping_url(store), index.mapping.encode())
                 request.get_method = lambda : 'PUT'
-                urllib.request.urlopen(request)
+                try:
+                    urllib.request.urlopen(request)
+                except urllib.request.HTTPError as e:
+                    if e.status == http.client.BAD_REQUEST:
+                        raise MappingUpdateFailed(json.load(e)) from e
+                    else:
+                        raise MappingUpdateFailed from e
 
         results = self.parse_results(index, results)
         results = self.serialize_results(hash_key, results)
@@ -90,10 +98,11 @@ class IndexUpdater(object):
             if request_body_file is None or request_body_file.tell() >= 52428800:
                 request_body_file = tempfile.TemporaryFile()
                 request_body_files.append(request_body_file)
-            request_body_file.write(result)
+            request_body_file.write(result.encode())
             result_count += 1
 
-
+        logger.info("Starting bulk update of index for %s/%s (%i files)",
+                    store.slug, index.slug, len(request_body_files))
         for request_body_file in request_body_files:
             conn = http.client.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
@@ -110,7 +119,9 @@ class IndexUpdater(object):
                 conn.send(block)
                 block = request_body_file.read(self._SEND_BLOCK_SIZE)
 
-            conn.getresponse()
+            response = conn.getresponse()
+            if response.status not in (http.client.OK, http.client.NO_CONTENT):
+                raise Exception(response)
             conn.close()
 
         logger.info("ElasticSearch update complete")
@@ -239,7 +250,7 @@ class IndexUpdater(object):
         for result in results:
             result_count += 1
 
-            result_id = sha256(result['uri'].encode('utf-8')).hexdigest()[:8]
+            result_id = sha256(result['uri'].encode('utf-8')).hexdigest()[:8].encode()
             result_ids.add(result_id)
             result_hash = self.hash_result(result)
 
