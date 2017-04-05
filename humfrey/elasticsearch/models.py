@@ -53,8 +53,8 @@ class Index(models.Model):
         return super(Index, self).save(*args, **kwargs)
 
     def migrate_mapping_properties(self, properties):
-        print(properties)
         for property in properties:
+
             if 'properties' in property:
                 self.migrate_mapping_properties(property['properties'].values())
             if property.get('type') == 'string':
