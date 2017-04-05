@@ -41,6 +41,8 @@ class DatasetArchiver(object):
         self.store = store
         self.dataset = dataset
         self.notation = notation
+        if isinstance(updated, str):
+            updated = dateutil.parser.parse(updated)
         self.updated = updated.replace(microsecond=0)
         self.endpoint = Endpoint(store.query_endpoint)
 
@@ -244,6 +246,8 @@ class DatasetArchiver(object):
 
 @shared_task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
 def update_dataset_archives(store_graphs, when):
+    if isinstance(when, str):
+        when = dateutil.parser.parse(when)
     from humfrey.sparql.models import Store
 
     for store_id in store_graphs:

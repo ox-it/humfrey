@@ -14,6 +14,7 @@ import traceback
 import pytz
 
 from django.conf import settings
+from django.utils import timezone
 
 from humfrey.update.models import UpdateDefinition, UpdateLogRecord, UpdateLog
 from humfrey.update.transform.base import NotChanged, TransformException
@@ -177,7 +178,7 @@ def update(update_log_id=None, slug=None, trigger=None):
                 finally:
                     shutil.rmtree(output_directory)
 
-    updated = _time_zone.localize(datetime.datetime.now())
+    updated = timezone.now()
     
     store_graphs = {store.pk: sorted(store_graphs[store]) for store in store_graphs}
 

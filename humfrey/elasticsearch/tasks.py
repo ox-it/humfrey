@@ -22,7 +22,6 @@ def update_completed_receiver(sender, update_definition_id, **kwargs):
 
 @shared_task(name='humfrey.elasticsearch.update_index', ignore_result=True)
 def update_index(index_id=None, store_id=None):
-    print("A", repr(index_id), repr(store_id))
     indexes = Index.objects.all()
     stores = Store.objects.all()
     if index_id:
@@ -36,7 +35,6 @@ def update_index(index_id=None, store_id=None):
         index.save()
         try:
             index_updater = IndexUpdater()
-            print("B", repr(index), repr(stores))
             index_updater.update(index, stores=stores)
         finally:
             index.status = 'idle'

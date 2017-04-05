@@ -25,8 +25,6 @@ class MappingUpdateFailed(Exception):
 
 
 class IndexUpdater(object):
-    _SEND_BLOCK_SIZE = 8096
-
     def __init__(self):
         self.client = redis.client.Redis(**settings.REDIS_PARAMS)
 
@@ -105,7 +103,7 @@ class IndexUpdater(object):
 
         logger.info("Starting bulk update of index for %s/%s (%i files)",
                     store.slug, index.slug, len(request_body_files))
-        for request_body_file in request_body_files:
+        for i, request_body_file in enumerate(request_body_files):
             conn = http.client.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
             conn.connect()
 
@@ -116,10 +114,8 @@ class IndexUpdater(object):
 
             request_body_file.seek(0)
 
-            block = request_body_file.read(self._SEND_BLOCK_SIZE)
-            while block:
-                conn.send(block)
-                block = request_body_file.read(self._SEND_BLOCK_SIZE)
+            logger.info("Uploading file %i/%i for %s/%s", i+1, len(request_body_files), store.slug, index.slug)
+            conn.send(request_body_file)
 
             response = conn.getresponse()
             if response.status not in (http.client.OK, http.client.NO_CONTENT):
