@@ -14,8 +14,11 @@ class Store(models.Model):
     update_endpoint = models.URLField(null=True, blank=True)
     graph_store_endpoint = models.URLField(null=True, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return "<Store '{}'>".format(self.pk)
 
     def query(self, *args, **kwargs):
         return Endpoint(self.query_endpoint).query(*args, **kwargs)

@@ -12,8 +12,8 @@ from rdflib import Graph, URIRef, Literal, BNode
 
 from humfrey.utils.namespaces import NS
 
-from .base import StreamingParser, StreamingSerializer
-from .wrapper import get_rdflib_parser
+from .base import StreamingSerializer
+
 
 class RDFXMLSerializer(StreamingSerializer):
     localpart = re.compile(r'[A-Za-z_][A-Za-z_\d\-]+$')
@@ -39,9 +39,9 @@ class RDFXMLSerializer(StreamingSerializer):
                     yield '  </rdf:Description>\n'
                 last_subject = s
                 if isinstance(s, URIRef):
-                    yield '  <rdf:Description rdf:about=%s>\n' % quoteattr(s).encode('utf-8')
+                    yield '  <rdf:Description rdf:about={}>\n'.format(quoteattr(s))
                 elif isinstance(s, BNode):
-                    yield '  <rdf:Description rdf:nodeID=%s>\n' % quoteattr(s).encode('utf-8')
+                    yield '  <rdf:Description rdf:nodeID={}>\n'.format(quoteattr(s))
                 else:
                     raise AssertionError("Unexpected subject term: %r (%r)" % (type(s), s))
 

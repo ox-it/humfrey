@@ -34,13 +34,15 @@ class IndexUpdater(object):
     def hash_result(cls, value):
         return hash(json.dumps(value, sort_keys=True))
 
-    def update(self, index):
+    def update(self, index, stores=None):
         item_count = 0
         for store in index.stores.all():
-            item_count += self.update_for_store(index, store)
+            if not stores or store in stores:
+                item_count += self.update_for_store(index, store)
         index.item_count = item_count
 
     def update_for_store(self, index, store):
+        logger.info("Indexing {} for {}".format(index.pk, store.pk))
         hash_key = 'humfrey:elasticsearch:indices:%s:%s' % (index.slug, store.slug)
         endpoint = Endpoint(store.query_endpoint)
 

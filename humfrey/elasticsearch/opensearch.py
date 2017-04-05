@@ -137,7 +137,6 @@ class OpenSearchView(ContentNegotiatedView):
 
         for hit in context['hits']['hits']:
             source = hit['source']
-            print(hit)
             entry = ATOM.entry(
                 ATOM.title(source.get('label', '')),
                 ATOM.link(request.build_absolute_uri(hit['url'])),

@@ -65,12 +65,18 @@ class Index(models.Model):
                     property['type'] = 'text'
             if '_boost' in property:
                 del property['_boost']
+            if 'boost' in property:
+                del property['boost']
 
     def migrate_mapping(self, mapping):
         for type_mapping in mapping.values():
-            self.migrate_mapping_properties(type_mapping.get('properties', {}).values())
-            if '_boost' in property:
-                del property['_boost']
+            properties = type_mapping.get('properties', {})
+            self.migrate_mapping_properties(properties.values())
+            type_mapping.pop('_boost', None)
+            properties['uri'] = {'type': 'keyword'}
+            properties['location'] = {'type': 'geo_point'}
+        if '_boost' in mapping:
+            del mapping['_boost']
 
         return mapping
 
@@ -105,6 +111,12 @@ class Index(models.Model):
 
     class Meta:
         verbose_name_plural = 'indexes'
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return "<Index '{}'>".format(self.pk)
 
     def queue(self):
         if self.status != 'idle':
