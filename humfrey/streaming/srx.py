@@ -122,6 +122,7 @@ class SRXParser(StreamingParser):
     def get_triples(self):
         raise TypeError("This isn't a graph result.")
 
+
 class SRXSerializer(StreamingSerializer):
     media_type = 'application/sparql-results+xml'
     supported_results_types = ('resultset', 'boolean')
@@ -131,41 +132,41 @@ class SRXSerializer(StreamingSerializer):
         if sparql_results_type not in ('resultset', 'boolean'):
             raise TypeError("Unexpected results type: {0}".format(sparql_results_type))
 
-        yield '<?xml version="1.0"?>\n'
-        yield '<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
+        yield b'<?xml version="1.0"?>\n'
+        yield b'<sparql xmlns="http://www.w3.org/2005/sparql-results#">\n'
 
         if fields is not None:
-            yield '  <head>\n'
+            yield b'  <head>\n'
             for field in fields:
-                yield '    <variable name="%s"/>\n' % escape(field)
-            yield '  </head>\n'
+                yield '    <variable name="{}"/>\n'.format(escape(field)).encode()
+            yield b'  </head>\n'
 
-            yield '  <results>\n'
+            yield b'  <results>\n'
             for binding in bindings:
-                yield '    <result>\n'
+                yield b'    <result>\n'
                 for field in fields:
                     value = getattr(binding, field)
                     if value is None:
                         continue
-                    yield '      <binding name="%s">\n' % escape(field)
-                    yield ' ' * 8
+                    yield '      <binding name="{}">\n'.format(escape(field))
+                    yield b'        '
                     if isinstance(value, rdflib.URIRef):
-                        yield '<uri>%s</uri>' % escape(value).encode('utf-8')
+                        yield '<uri>{}</uri>'.format(escape(value)).encode()
                     elif isinstance(value, rdflib.BNode):
-                        yield '<bnode>%s</bnode>' % escape(value).encode('utf-8')
+                        yield '<bnode>{}</bnode>'.format(escape(value)).encode()
                     elif isinstance(value, rdflib.Literal):
-                        yield '<literal'
+                        yield b'<literal'
                         if value.datatype:
-                            yield ' datatype="%s"' % escape(value.datatype).encode('utf-8')
+                            yield ' datatype="{}"'.format(escape(value.datatype)).encode()
                         if value.language:
-                            yield ' xml:lang="%s"' % escape(value.language).encode('utf-8')
-                        yield '>%s</literal>' % escape(value).encode('utf-8')
-                    yield '\n      </binding>\n'
-                yield '    </result>\n'
-            yield '  </results>\n'
+                            yield ' xml:lang="{}"'.format(escape(value.language)).encode()
+                        yield '>{}</literal>'.format(escape(value)).encode()
+                    yield b'\n      </binding>\n'
+                yield b'    </result>\n'
+            yield b'  </results>\n'
 
         else:
-            yield '  <head/>\n'
-            yield '  <boolean>%s</boolean>\n' % ('true' if boolean else 'false')
+            yield b'  <head/>\n'
+            yield '  <boolean>{}</boolean>\n'.format('true' if boolean else 'false').encode()
 
-        yield '</sparql>\n'
+        yield b'</sparql>\n'

@@ -60,51 +60,51 @@ class SRJSerializer(StreamingSerializer):
             raise TypeError("Unexpected results type: {0}".format(sparql_results_type))
 
         # We'll spool to a buffer, and only yield when it gets a bit big.
-        buffer = io.StringIO()
+        buffer = io.BytesIO()
 
         # Do these attribute lookups only once.
-        json_dumps, json_dump, buffer_write = json.dumps, json.dump, buffer.write
+        json_dumps, buffer_write = json.dumps, buffer.write
 
-        buffer_write('{\n')
+        buffer_write(b'{\n')
         if sparql_results_type == 'boolean':
-            buffer_write('  "head": {},\n')
-            buffer_write('  "boolean": %s' % ('true' if boolean else 'false'))
+            buffer_write(b'  "head": {},\n')
+            buffer_write('  "boolean": {}'.format('true' if boolean else 'false').encode())
         elif sparql_results_type == 'resultset':
-            buffer_write('  "head": {\n')
-            buffer_write('    "vars": [ %s ]\n' % ', '.join(json_dumps(field) for field in fields))
-            buffer_write('  },\n')
-            buffer_write('  "results": {\n')
-            buffer_write('    "bindings": [\n')
+            buffer_write(b'  "head": {\n')
+            buffer_write('    "vars": [ {} ]\n'.format(', '.join(json_dumps(field) for field in fields)).encode())
+            buffer_write(b'  },\n')
+            buffer_write(b'  "results": {\n')
+            buffer_write(b'    "bindings": [\n')
             for i, binding in enumerate(bindings):
-                buffer_write('      {' if i == 0 else ',\n      {')
+                buffer_write(b'      {' if i == 0 else b',\n      {')
                 j = 0
                 for field in fields:
                     value = binding.get(field)
                     if value is None:
                         continue
-                    buffer_write(',\n        ' if j > 0 else '\n        ')
-                    json_dump(field, buffer)
+                    buffer_write(b',\n        ' if j > 0 else b'\n        ')
+                    buffer_write(json.dumps(field).encode())
                     if isinstance(value, rdflib.URIRef):
-                        buffer_write(': { "type": "uri"')
+                        buffer_write(b': { "type": "uri"')
                     elif isinstance(value, rdflib.BNode):
-                        buffer_write(': { "type": "bnode"')
+                        buffer_write(b': { "type": "bnode"')
                     elif value.datatype is not None:
-                        buffer_write(': { "type": "typed-literal", "datatype": ')
-                        json_dump(value.datatype, buffer)
+                        buffer_write(b': { "type": "typed-literal", "datatype": ')
+                        buffer_write(json.dumps(value.datatype).encode())
                     elif value.language is not None:
-                        buffer_write(': { "type": "literal", "xml:lang": ')
-                        json_dump(value.language, buffer)
+                        buffer_write(b': { "type": "literal", "xml:lang": ')
+                        buffer_write(json.dumps(value.language).encode())
                     else:
-                        buffer_write(': { "type": "literal"')
-                    buffer_write(', "value": ')
-                    json_dump(value, buffer)
-                    buffer_write(' }')
+                        buffer_write(b': { "type": "literal"')
+                    buffer_write(b', "value": ')
+                    buffer_write(json.dumps(value).encode())
+                    buffer_write(b' }')
 
                     j += 1
 
-                buffer_write('\n      }')
-            buffer_write('\n    ]')
-            buffer_write('\n  }')
+                buffer_write(b'\n      }')
+            buffer_write(b'\n    ]')
+            buffer_write(b'\n  }')
 
 
             if buffer.tell() > 65000: # Almost 64k
@@ -112,6 +112,6 @@ class SRJSerializer(StreamingSerializer):
                 buffer.seek(0)
                 buffer.truncate()
 
-        buffer_write('\n}')
+        buffer_write(b'\n}')
         yield buffer.getvalue()
         buffer.close()

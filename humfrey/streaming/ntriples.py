@@ -55,4 +55,4 @@ class NTriplesSerializer(StreamingSerializer):
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
         for s, p, o in triples:
-            yield '{0} {1} {2} .\n'.format(s.n3(), p.n3(), o.n3()).encode('utf-8')
+            yield '{0} {1} {2} .\n'.format(s.n3(), p.n3(), o.n3()).encode()

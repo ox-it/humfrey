@@ -23,22 +23,22 @@ class RDFXMLSerializer(StreamingSerializer):
         last_subject = None
 
         # XML declaration, root element and namespaces
-        yield '<?xml version="1.0" encoding="utf-8"?>\n'
-        yield '<rdf:RDF'
+        yield b'<?xml version="1.0" encoding="utf-8"?>\n'
+        yield b'<rdf:RDF'
         for prefix, uri in namespaces:
-            yield '\n    xmlns:%s=%s' % (prefix, quoteattr(uri))
-        yield '>\n'
+            yield '\n    xmlns:{}={}'.format(prefix.encode(), quoteattr(uri)).encode()
+        yield b'>\n'
 
         # Triples
         for s, p, o in triples:
             if s != last_subject:
                 if last_subject is not None:
-                    yield '  </rdf:Description>\n'
+                    yield b'  </rdf:Description>\n'
                 last_subject = s
                 if isinstance(s, URIRef):
-                    yield '  <rdf:Description rdf:about={}>\n'.format(quoteattr(s))
+                    yield '  <rdf:Description rdf:about={}>\n'.format(quoteattr(s)).encode()
                 elif isinstance(s, BNode):
-                    yield '  <rdf:Description rdf:nodeID={}>\n'.format(quoteattr(s))
+                    yield '  <rdf:Description rdf:nodeID={}>\n'.format(quoteattr(s)).encode()
                 else:
                     raise AssertionError("Unexpected subject term: %r (%r)" % (type(s), s))
 
@@ -47,26 +47,26 @@ class RDFXMLSerializer(StreamingSerializer):
             for prefix, uri in namespaces:
                 if p.startswith(uri) and self.localpart.match(p[len(uri):]):
                     tag_name = '{}:{}'.format(prefix, p[len(uri):])
-                    yield '    <{}'.format(tag_name)
+                    yield '    <{}'.format(tag_name).encode()
                     break
             else:
                 match = self.localpart.search(p)
                 tag_name = p[match.start():]
-                yield '    <{} xmlns={}'.format(tag_name, quoteattr(p[:match.start()]))
+                yield '    <{} xmlns={}'.format(tag_name, quoteattr(p[:match.start()])).encode()
 
             if isinstance(o, Literal):
                 if o.language:
-                    yield ' xml:lang={}'.format(quoteattr(o.language))
+                    yield ' xml:lang={}'.format(quoteattr(o.language)).encode()
                 if o.datatype:
-                    yield ' rdf:datatype={}'.format(quoteattr(o.datatype))
-                yield '>{}</{}>\n'.format(escape(o), tag_name)
+                    yield ' rdf:datatype={}'.format(quoteattr(o.datatype)).encode()
+                yield '>{}</{}>\n'.format(escape(o), tag_name).encode()
             elif isinstance(o, BNode):
-                yield ' rdf:nodeID={}/>\n'.format(quoteattr(o))
+                yield ' rdf:nodeID={}/>\n'.format(quoteattr(o)).encode()
             elif isinstance(o, URIRef):
-                yield ' rdf:resource={}/>\n'.format(quoteattr(o))
+                yield ' rdf:resource={}/>\n'.format(quoteattr(o)).encode()
             else:
                 raise AssertionError("Unexpected object term: %r (%r)" % (type(o), o))
 
         if last_subject is not None:
-            yield '  </rdf:Description>\n'
-        yield '</rdf:RDF>\n'
+            yield b'  </rdf:Description>\n'
+        yield b'</rdf:RDF>\n'
