@@ -125,8 +125,8 @@ class DatasetArchiver(object):
         rdf_fd, rdf_name = tempfile.mkstemp('.rdf')
         rdf_with_labels_fd, rdf_with_labels_name = tempfile.mkstemp('.rdf')
         try:
-            nt_out, rdf_out = os.fdopen(nt_fd, 'w'), os.fdopen(rdf_fd, 'w')
-            rdf_with_labels_out = os.fdopen(rdf_with_labels_fd, 'w')
+            nt_out, rdf_out = os.fdopen(nt_fd, 'wb'), os.fdopen(rdf_fd, 'wb')
+            rdf_with_labels_out = os.fdopen(rdf_with_labels_fd, 'wb')
             for graph_name in self.graph_names:
                 self._graph_triples(nt_out, graph_name)
             nt_out.close()
