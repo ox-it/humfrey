@@ -1,11 +1,7 @@
-import datetime
 import http.client
 
-from django.conf import settings
-from django.http import Http404, HttpResponseBadRequest
-from django.views.generic.base import View
+from django.http import HttpResponseBadRequest
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -13,9 +9,9 @@ from django.utils.decorators import method_decorator
 from django_conneg.views import HTMLView, JSONView
 from django_conneg.http import HttpResponseSeeOther
 
-from guardian.shortcuts import get_objects_for_user, get_perms, assign_perm
+from guardian.shortcuts import get_objects_for_user, get_perms
 
-from humfrey.update.models import UpdateDefinition, UpdateLog, UpdateLogRecord, UpdateDefinitionAlreadyQueued
+from humfrey.update.models import UpdateDefinition, UpdateLog, UpdateDefinitionAlreadyQueued
 from humfrey.update.forms import UpdateDefinitionForm, UpdatePipelineFormset
 
 class IndexView(HTMLView):
@@ -134,8 +130,6 @@ class UpdateLogView(HTMLView, JSONView):
                                   'trigger': value.trigger,
                                   'log_level': value.log_level,
                                   'records': list(value.records)})
-        elif isinstance(value, UpdateLogRecord):
-            return self.simplify(value.record)
         else:
             return super(UpdateLogView, self).simplify(value)
 
@@ -147,7 +141,7 @@ class UpdateLogListView(UpdateLogView):
             raise PermissionDenied
         context = {
             'definition': definition,
-            'logs': list(definition.update_log.all().order_by('-id')),
+            'logs': list(definition.update_log.all().order_by('-id')[:100]),
         }
         return self.render(request, context, 'update/log-list')
 

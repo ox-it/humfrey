@@ -26,31 +26,6 @@
       </tr>
     </tbody>
   </table>
-  
-  <table class="update-log-records">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Level</th>
-        <th>Logger</th>
-    </thead>
-    <tbody>{% for record in log.records %}
-      <tr class="outcome-{{ record.level }}{% if not forloop.first %} overline{% endif %}">
-        <td>{{ record.when|date:"c" }}</td>
-        <td>{{ record.record.levelname }}</td>
-        <td>{{ record.record.name }}</td>
-      </tr>
-      <tr class="outcome-{{ record.level }}">
-        <td colspan="3">{{ record.record.message|linebreaksbr }}</td>
-      </tr>
-      {% if record.record.exc_info %}
-      <tr class="outcome-{{ record.level }}">
-        <td colspan="3"><pre>{% for line in record.record.exc_info.2 %}{{ line }}{% endfor %}
 
-{{ record.record.exc_info.1 }}</pre></td>
-      </tr>
-              {% endif %}
-      {% endfor %}
-    </tbody>
-  </table>
+  <pre>{{ log.log }}</pre>
 {% endblock %} 

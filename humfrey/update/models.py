@@ -169,6 +169,7 @@ class UpdateLog(models.Model, WithLevels):
 
     trigger = models.CharField(max_length=80, blank=True)
     log_level = models.SmallIntegerField(null=True, blank=True)
+    log = models.TextField()
 
     queued = models.DateTimeField(null=True, blank=True)
     started = models.DateTimeField(null=True, blank=True)
@@ -184,23 +185,6 @@ class UpdateLog(models.Model, WithLevels):
 
     def __str__(self):
         return '%s at %s' % (self.update_definition, self.queued)
-
-
-class UpdateLogRecord(models.Model, WithLevels):
-    update_log = models.ForeignKey(UpdateLog)
-    when = models.DateTimeField()
-    _record = models.TextField()
-    log_level = models.SmallIntegerField()
-
-    def _set_record(self, value):
-        self._record = base64.b64encode(pickle.dumps(value))
-        self.log_level = value['levelno']
-        self.when = value['time']
-    def _get_record(self):
-        if not hasattr(self, '_record_cache'):
-            self._record_cache = pickle.loads(base64.b64decode(self._record))
-        return self._record_cache
-    record = property(_get_record, _set_record)
 
 
 class UpdatePipeline(models.Model):

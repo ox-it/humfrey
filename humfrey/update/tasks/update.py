@@ -16,7 +16,7 @@ import pytz
 from django.conf import settings
 from django.utils import timezone
 
-from humfrey.update.models import UpdateDefinition, UpdateLogRecord, UpdateLog
+from humfrey.update.models import UpdateDefinition, UpdateLog
 from humfrey.update.transform.base import NotChanged, TransformException
 from humfrey.update.utils import evaluate_pipeline
 from humfrey.signals import graphs_updated, update_completed
@@ -43,30 +43,13 @@ class _TransformHandler(logging.Handler):
     def emit(self, record):
         if self.ignore or record.name in self.ignore_loggers:
             return
-        record = dict(record.__dict__)
-        if record.get('exc_info'):
-            exc_info = record['exc_info']
-            record['exc_info'] = exc_info[:2] + (traceback.format_tb(exc_info[2]),)
-        previous = self.update_log.log_level
-        if not previous or record['levelno'] > previous:
-            self.update_log.log_level = record['levelno']
-        record['time'] = pytz.utc.localize(datetime.datetime.utcnow()).astimezone(pytz.timezone(settings.TIME_ZONE))
-
-        try:
-            pickle.dumps(record)
-        except Exception:
-            for key in list(record.keys()):
-                try:
-                    pickle.dumps(record[key])
-                except Exception:
-                    del record[key]
 
         # Ignore all log messages while attempting to save.
         self.ignore = True
         try:
-            update_log_record = UpdateLogRecord(update_log = self.update_log)
-            update_log_record.record = record
-            update_log_record.save()
+            self.update_log.log += self.formatter.format(record) + '\n'
+            self.update_log.log_level = max(self.update_log.log_level or 0, record.levelno)
+            self.update_log.save()
         finally:
             self.ignore = False
 
@@ -115,6 +98,7 @@ def logged(update_log):
 
     logger = logging.getLogger()
     handler = _TransformHandler(update_log)
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s  %(name)s %(message)s'))
     handler.addFilter(_SameThreadFilter())
 
     UpdateDefinition.objects \
