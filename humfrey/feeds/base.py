@@ -4,7 +4,7 @@ import urllib.parse
 
 from django import forms
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext, TemplateDoesNotExist
 from django.template.loader import get_template
 from django.utils.decorators import classonlymethod
@@ -123,9 +123,7 @@ class FeedView(StoreView, MappingView, JSONRDFView, RDFView, HTMLView, metaclass
         if template_name is None:
             return NotImplemented
         try:
-            return render_to_response(template_name,
-                                      context, context_instance=RequestContext(request),
-                                      mimetype='text/html')
+            return render(request, template_name, context, content_type='text/html')
         except TemplateDoesNotExist:
             raise
             return NotImplemented

@@ -1,6 +1,6 @@
 import rdflib
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 
 from django_conneg.decorators import renderer
@@ -21,6 +21,5 @@ class KMLView(ContentNegotiatedView):
                 subjects.add(subject)
         context['subjects'] = subjects
 
-        return render_to_response('results/graph.kml',
-                                  context, context_instance=RequestContext(request),
-                                  mimetype='application/vnd.google-earth.kml+xml')
+        return render(request, 'results/graph.kml', context,
+                      content_type='application/vnd.google-earth.kml+xml')
