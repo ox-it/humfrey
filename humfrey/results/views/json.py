@@ -73,11 +73,11 @@ class JSONRDFView(ContentNegotiatedView):
     #@renderer(format='json', mimetypes=('application/json',), name='JSON', test=render_json_test)
     def render_json(self, request, context, template_name):
         data = self.render_json_data(context)
-        return HttpResponse(json.dumps(data, indent=2), mimetype="application/json")
+        return HttpResponse(json.dumps(data, indent=2), content_type="application/json")
 
     #@renderer(format='js', mimetypes=('application/javascript','text/javascript'), name='JavaScript (JSONP)', test=render_json_test)
     def render_js(self, request, context, template_name):
         callback = request.REQUEST.get('callback', 'callback')
         data = [callback, '(', self.render_json_data(context), ');']
-        return HttpResponse(json.dumps(data, indent=2), mimetype="application/javascript")
+        return HttpResponse(json.dumps(data, indent=2), content_type="application/javascript")
 

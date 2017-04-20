@@ -88,7 +88,7 @@ class ElasticSearchView(HTMLView, JSONPView, MappingView, StoreView):
         content, mimetype = json.dumps(context), 'application/json'
         if 'callback' in request.GET:
             content, mimetype = [request.GET['callback'], '(', content, ');'], 'application/javascript'
-        return HttpResponse(content, mimetype=mimetype)
+        return HttpResponse(content, content_type=mimetype)
 
     def error(self, request, exception, args, kwargs, status_code):
         if isinstance(exception, self.MissingQuery):
@@ -322,7 +322,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
         content, mimetype = json.dumps(context), 'application/json'
         if 'callback' in request.GET:
             content, mimetype = [request.GET['callback'], '(', content, ');'], 'application/javascript'
-        return HttpResponse(content, mimetype=mimetype)
+        return HttpResponse(content, content_type=mimetype)
 
     def error(self, request, exception, args, kwargs, status_code):
         if isinstance(exception, self.MissingQuery):

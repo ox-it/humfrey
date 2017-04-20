@@ -51,7 +51,7 @@ class XMLRPCPingbackView(PingbackView):
         dispatcher = SimpleXMLRPCDispatcher(allow_none=False, encoding=None)
         dispatcher.register_function(partial(self.ping, request), 'pingback:ping')
 
-        response = HttpResponse(mimetype="application/xml")
+        response = HttpResponse(content_type="application/xml")
         response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
         return response
 

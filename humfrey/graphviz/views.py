@@ -5,7 +5,7 @@ import rdflib
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext, loader
 from django.template.defaultfilters import slugify
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 from django_conneg.http import HttpBadRequest
 from django_conneg.decorators import renderer
@@ -155,7 +155,7 @@ class GraphVizView(RDFView, StoreView, MappingView):
             plain_gv = template.render(RequestContext(request, context))
             dot = subprocess.Popen(['dot', '-K'+layout, '-T'+dot_output], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             dot_stdout, _ = dot.communicate(input=plain_gv.encode('utf-8'))
-            response = HttpResponse(dot_stdout, mimetype=output['mimetypes'][0])
+            response = HttpResponse(dot_stdout, content_type=output['mimetypes'][0])
             response['Content-Disposition'] = 'inline; filename="{0}.{1}"'.format(context['filename_base'],
                                                                                   output['format'])
             return response
@@ -170,8 +170,7 @@ class GraphVizView(RDFView, StoreView, MappingView):
 
     @renderer(format="graphml", mimetypes=('application/x-graphml+xml',), name="GraphML")
     def render_graphml(self, request, context, template_name):
-        response = render_to_response(template_name + '.graphml',
-                                      context, context_instance=RequestContext(request),
-                                      mimetype='application/x-graphml+xml')
+        response = render(request, template_name + '.graphml', context,
+                          content_type='application/x-graphml+xml')
         response['Content-Disposition'] = 'attachment; filename="{0}.graphml"'.format(context['filename_base'])
         return response
