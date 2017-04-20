@@ -61,7 +61,7 @@ class OpenSearchDescriptionView(ContentNegotiatedView):
                 description.append(url)
 
         return HttpResponse(etree.tostring(description, pretty_print=True, xml_declaration=True),
-                            mimetype='application/xml')
+                            content_type='application/xml')
 
 class OpenSearchView(ContentNegotiatedView):
     opensearch_meta = {'ShortName': 'Search',
