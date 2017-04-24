@@ -20,3 +20,5 @@ ckanapi
 celery
 psycopg2
 pycrypto
+coloredlogs
+ansi2html

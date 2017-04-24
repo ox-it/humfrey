@@ -1,4 +1,4 @@
-{% extends "update/base.html" %}
+{% extends "update/base.html" %}{% load humfrey_update %}
 
 {% block title %}Log {{ log.id }} for {{ definition }}{% endblock %}
 
@@ -27,5 +27,5 @@
     </tbody>
   </table>
 
-  <pre>{{ log.log }}</pre>
+  <pre>{{ log.log|ansi2html }}</pre>
 {% endblock %} 

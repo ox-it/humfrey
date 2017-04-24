@@ -1,3 +1,4 @@
+import coloredlogs
 from celery import shared_task
 
 import collections
@@ -53,6 +54,7 @@ class _TransformHandler(logging.Handler):
         finally:
             self.ignore = False
 
+
 class TransformManager(object):
     def __init__(self, update_log, output_directory, parameters, force, store_graphs, store):
         self.update_log = update_log
@@ -98,7 +100,7 @@ def logged(update_log):
 
     logger = logging.getLogger()
     handler = _TransformHandler(update_log)
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s  %(name)s %(message)s'))
+    handler.setFormatter(coloredlogs.ColoredFormatter())
     handler.addFilter(_SameThreadFilter())
 
     UpdateDefinition.objects \
