@@ -1,4 +1,5 @@
 import ansi2html
+import ansi2html.style
 from django import template
 from django.utils.safestring import mark_safe
 
@@ -33,4 +34,4 @@ ansi._conv = ansi2html.Ansi2HTMLConverter()
 
 @register.simple_tag(name='ansi2html_styles')
 def ansi_styles(scheme='solarized', dark_bg=True):
-    return "\n".join(map(str, ansi2html.get_styles(dark_bg, scheme)[1:]))
+    return "\n".join(map(str, ansi2html.style.get_styles(dark_bg, scheme)[1:]))
