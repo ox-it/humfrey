@@ -26,7 +26,7 @@ class RDFXMLSerializer(StreamingSerializer):
         yield b'<?xml version="1.0" encoding="utf-8"?>\n'
         yield b'<rdf:RDF'
         for prefix, uri in namespaces:
-            yield '\n    xmlns:{}={}'.format(prefix.encode(), quoteattr(uri)).encode()
+            yield '\n    xmlns:{}={}'.format(prefix, quoteattr(uri)).encode()
         yield b'>\n'
 
         # Triples
