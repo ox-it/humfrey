@@ -74,7 +74,7 @@ class UpdateDefinition(models.Model):
         self.save()
 
         from humfrey.update import tasks
-        tasks.update.delay(update_log_id=update_log.id)
+        tasks.update.delay(update_log_id=update_log.id, slug=self.slug, trigger=trigger)
         return update_log
 
     def __str__(self):

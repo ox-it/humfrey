@@ -126,7 +126,7 @@ def logged(update_log):
 
 @shared_task(name='humfrey.update.update', ignore_result=True)
 def update(update_log_id=None, slug=None, trigger=None):
-    if slug:
+    if not update_log_id and slug:
         update_definition = UpdateDefinition.objects.get(slug=slug)
         update_definition.queue(silent=True, trigger=trigger)
         return
