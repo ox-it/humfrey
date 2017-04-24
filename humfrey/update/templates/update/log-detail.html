@@ -2,6 +2,12 @@
 
 {% block title %}Log {{ log.id }} for {{ definition }}{% endblock %}
 
+{% block extra_head %}{{ block.super }}
+<style type="text/css">
+    {% ansi2html_styles %}
+</style>
+{% endblock %}
+
 {% block content %}
   <h1>Log {{ log.id }} for {{ definition }}</h1>
   
@@ -27,5 +33,5 @@
     </tbody>
   </table>
 
-  <pre>{{ log.log|ansi2html }}</pre>
+  <pre>{{ log.log|escape|ansi2html }}</pre>
 {% endblock %} 

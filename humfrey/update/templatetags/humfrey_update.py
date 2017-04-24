@@ -1,5 +1,6 @@
 import ansi2html
 from django import template
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -26,5 +27,10 @@ def can_delete(obj, user):
 
 @register.filter(name='ansi2html')
 def ansi(value):
-    return ansi._conv.convert(value, full=False)
+    return mark_safe(ansi._conv.convert(value, full=False))
 ansi._conv = ansi2html.Ansi2HTMLConverter()
+
+
+@register.simple_tag(name='ansi2html_styles')
+def ansi_styles(scheme='solarized', dark_bg=True):
+    return "\n".join(map(str, ansi2html.get_styles(dark_bg, scheme)[1:]))
