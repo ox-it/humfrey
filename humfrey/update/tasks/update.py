@@ -1,3 +1,5 @@
+import socket
+
 import coloredlogs
 from celery import shared_task
 
@@ -44,6 +46,8 @@ class _TransformHandler(logging.Handler):
     def emit(self, record):
         if self.ignore or record.name in self.ignore_loggers:
             return
+
+        record.hostname = socket.gethostname()
 
         # Ignore all log messages while attempting to save.
         self.ignore = True
