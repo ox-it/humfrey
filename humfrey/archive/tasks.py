@@ -248,6 +248,8 @@ class DatasetArchiver(object):
 def update_dataset_archives(store_graphs, when):
     if isinstance(when, str):
         when = dateutil.parser.parse(when)
+    if not when.tzinfo:
+        when = pytz.utc.localize(when)
     from humfrey.sparql.models import Store
 
     for store_id in store_graphs:
