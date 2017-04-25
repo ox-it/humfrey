@@ -233,7 +233,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
 
         # If default_types set, add a filter to restrict the results.
         if self.default_types and 'type' not in self.request.GET:
-            query['filter'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
+            query['query']['bool']['filter'].append({'or': [{'type': {'value': t}} for t in self.default_types]})
 
         if not query['query']['bool']['filter']:
             del query['query']['bool']['filter']
