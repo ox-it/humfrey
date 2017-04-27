@@ -3,7 +3,7 @@ Contains wrappers around rdflib parsers and serializers.
 """
 
 import abc
-import queue
+from queue import Queue
 import sys
 import threading
 from xml.sax.saxutils import prepare_input_source
@@ -82,7 +82,7 @@ class RDFLibParser(StreamingParser):
             raise AssertionError("Can only call get_triples once")
         self._get_triples_called = True
         self.mode = 'parse'
-        queue = queue.Queue()
+        queue = Queue()
         parser_thread = threading.Thread(target=self._parse_to_queue,
                                          args=(self._stream, queue))
 
@@ -106,7 +106,7 @@ class RDFLibSerializer(StreamingSerializer):
     format_type = 'graph'
 
     def _iter(self, sparql_results_type, fields, bindings, boolean, triples):
-        queue = queue.Queue()
+        queue = Queue()
         graph = Graph()
         for prefix, namespace_uri in NS.items():
             graph.namespace_manager.bind(prefix, namespace_uri)
