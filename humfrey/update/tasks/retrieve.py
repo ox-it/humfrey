@@ -112,6 +112,6 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
         headers['delete-after'] = True
         headers['from-cache'] = False
         headers['error'] = True
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
             shutil.copyfileobj(response, f)
         return f.name, headers
