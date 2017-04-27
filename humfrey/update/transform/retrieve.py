@@ -45,9 +45,9 @@ class Retrieve(Transform):
 
             logger.debug("Response had content-type %r; assigning extension %r" % (content_type, extension))
 
-            with open(transform_manager(extension, self.name), 'w') as output:
+            with open(transform_manager(extension, self.name), 'wb') as output:
                 transform_manager.start(self, [input], type='identity')
-                with open(filename, 'r') as f:
+                with open(filename, 'rb') as f:
                     shutil.copyfileobj(f, output)
 
                 logger.info("File from %r saved to %r" % (self.url, output.name))
