@@ -247,11 +247,11 @@ class Normalize(Transform):
             normalization.store = transform_manager.store
 
         while self.normalizations:
-            with open(input, 'r') as source:
+            with open(input, 'rb') as source:
                 pipeline = parse(source).get_triples()
                 for normalization in self.normalizations:
                     pipeline = normalization(pipeline)
-                with open(transform_manager('rdf'), 'w') as target:
+                with open(transform_manager('rdf'), 'wb') as target:
                     serialize(pipeline, target)
 
             input = target.name

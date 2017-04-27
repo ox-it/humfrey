@@ -172,6 +172,8 @@ class DatasetArchiver(object):
             os.unlink(nt_name)
             if os.path.exists(rdf_name):
                 os.unlink(rdf_name)
+            if os.path.exists(rdf_with_labels_name):
+                os.unlink(rdf_with_labels_name)
             self.filter_old_archives(archive_path)
 
     @classmethod

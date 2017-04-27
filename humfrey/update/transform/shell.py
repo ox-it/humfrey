@@ -23,7 +23,7 @@ class Shell(Transform):
 
         popen_args = [input if arg is None else arg.format(params) for arg in self.shell]
 
-        with open(transform_manager(self.extension), 'w') as output:
+        with open(transform_manager(self.extension), 'wb') as output:
             with tempfile.TemporaryFile() as stderr:
                 transform_manager.start(self, [input])
 

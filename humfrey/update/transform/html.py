@@ -5,9 +5,9 @@ from humfrey.update.transform.base import Transform
 
 class HTMLToXML(Transform):
     def execute(self, transform_manager, input):
-        with open(transform_manager('xml'), 'w') as output:
+        with open(transform_manager('xml'), 'wb') as output:
             stderr_filename = output.name[:-3] + 'stderr'
-            with open(stderr_filename, 'w') as stderr:
+            with open(stderr_filename, 'wb') as stderr:
                 transform_manager.start(self, [input])
                 output_filenames = [output.name]
                 
