@@ -37,7 +37,7 @@ class UpdatePipelineForm(forms.ModelForm):
 
     class Meta:
         model = UpdatePipeline
-        fields = ['value']
+        fields = ['value', 'stores']
 
 UpdatePipelineFormset = inlineformset_factory(UpdateDefinition,
                                               UpdatePipeline,
