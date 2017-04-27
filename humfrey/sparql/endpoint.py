@@ -125,7 +125,7 @@ class Endpoint(object):
         start_time = time.time()
 
         try:
-            logging.debug("Querying %r", self._url)
+            logger.debug("Querying %r", self._url)
             try:
                 response = urllib.request.urlopen(request)
             except urllib.error.HTTPError as e:
