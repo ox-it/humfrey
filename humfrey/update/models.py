@@ -14,7 +14,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from humfrey.sparql.models import Store
-from humfrey.update.fields import EncryptedCharField
 from humfrey.update.utils import evaluate_pipeline
 
 DEFINITION_STATUS_CHOICES = (
@@ -210,4 +209,4 @@ class Credential(models.Model):
     user = models.ForeignKey(User)
     url = models.CharField(max_length=4096, verbose_name="Base URL")
     username = models.CharField(max_length=128)
-    password = EncryptedCharField(max_length=4096)
+    password = models.CharField(max_length=4096)

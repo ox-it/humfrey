@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import humfrey.update.fields
 import humfrey.update.models
 
 
@@ -26,7 +25,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('url', models.CharField(max_length=4096, verbose_name='Base URL')),
                 ('username', models.CharField(max_length=128)),
-                ('password', humfrey.update.fields.EncryptedCharField(max_length=4096)),
+                ('password', models.CharField(max_length=4096)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),
