@@ -1,5 +1,4 @@
-import imp
-import os
+import pkgutil
 import unittest
 
 from humfrey.utils import json
@@ -10,14 +9,12 @@ from .data import TEST_RESULTSET
 class SRJSerializerTestCase(unittest.TestCase):
 
     def testValidSRJResultSet(self):
-        data = ''.join(SRJSerializer(TEST_RESULTSET))
+        data = b''.join(SRJSerializer(TEST_RESULTSET))
 
-        target_data_filename = os.path.join(imp.find_module('humfrey')[1], 'tests', 'data', 'linkeddata', 'srj_resultset.json')
-        with open(target_data_filename, 'rb') as json_file:
-            target_data = json.load(json_file)
+        target_data = json.loads(pkgutil.get_data('humfrey.tests', 'data/linkeddata/srj_resultset.json'))
 
         try:
-            data = json.loads(data)
+            data = json.loads(data.decode())
         except Exception as e:
             raise AssertionError(e)
 
@@ -40,9 +37,9 @@ class SRJSerializerTestCase(unittest.TestCase):
 
     def testValidSRJBoolean(self):
         for value in (True, False):
-            data = ''.join(SRJSerializer(value))
+            data = b''.join(SRJSerializer(value))
             try:
-                data = json.loads(data)
+                data = json.loads(data.decode())
             except Exception as e:
                 raise AssertionError(e)
             self.assertEqual(data, {'head': {}, 'boolean': value})

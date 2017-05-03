@@ -1,5 +1,3 @@
-
-
 import csv
 import io
 import unittest
@@ -9,10 +7,10 @@ from .data import TEST_RESULTSET
 
 class CSVRendererTestCase(unittest.TestCase):
     def testValidCSVResultSet(self):
-        data = ''.join(CSVSerializer(TEST_RESULTSET))
+        data = b''.join(CSVSerializer(TEST_RESULTSET))
 
         try:
-            data = csv.reader(io.StringIO(data))
+            data = csv.reader(io.StringIO(data.decode()))
         except Exception as e:
             raise AssertionError(e)
 
@@ -22,7 +20,6 @@ class CSVRendererTestCase(unittest.TestCase):
 
         for result, target_result in zip(data, TEST_RESULTSET):
             for term, target_term in zip(result, target_result):
-                term = term.decode('utf-8')
                 if target_term is None:
                     self.assertEqual(term, '')
                 else:
@@ -30,5 +27,5 @@ class CSVRendererTestCase(unittest.TestCase):
 
     def testValidCSVBoolean(self):
         for value in (True, False):
-            data = ''.join(CSVSerializer(value))
-            self.assertEqual(data, 'true\n' if value else 'false\n')
+            data = b''.join(CSVSerializer(value))
+            self.assertEqual(data, b'true\n' if value else b'false\n')

@@ -75,7 +75,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django_hosts',
     'django_conneg',
-    'djcelery',
+    'django_celery_beat',
     'guardian',
     'humfrey.base',
     'humfrey.desc',

@@ -14,19 +14,21 @@ from humfrey.update.transform.base import Transform
 class Currency(decimal.Decimal):
     def __new__(cls, value, currency, rendered):
         return decimal.Decimal.__new__(cls, value)
+
     def __init__(self, value, currency, rendered):
-        super(Currency, self).__init__(value)
         self.currency, self.rendered = currency, rendered
+
     def __repr__(self):
         return "Currency(%r, %r, %r)" % (decimal.Decimal.__repr__(self), self.currency, self.rendered)
 
 
 class Percentage(decimal.Decimal):
-    def __new__(cls, value, rendered, dp=None):
-        return decimal.Decimal.__new__(cls, value, dp)
-    def __init__(self, value, rendered, dp=None):
-        super(Percentage, self).__init__(value, dp)
+    def __new__(cls, value, rendered):
+        return decimal.Decimal.__new__(cls, value)
+
+    def __init__(self, value, rendered):
         self.rendered = rendered
+
     def __repr__(self):
         return "Percentage(%r, %r)" % (decimal.Decimal.__str__(self), self.rendered)
 
@@ -106,7 +108,7 @@ class GnumericToTEI(SpreadsheetToTEI):
             if format.endswith('%'):
                 dp = len(format) - 3 # "0.000%"; len 6, dp 3
                 rendered = ('%%0.%df%%%%' % dp) % (float(cell.text) * 100)
-                return Percentage(cell.text, rendered, dp)
+                return Percentage(cell.text, rendered)
             elif format in ('dd/mm/yyyy', 'm/d/yy', 'm/d/yyyy', 'yyyy-mm-dd', 'dd/mm/yy'):
                 value = datetime.date(1899, 12, 31) + datetime.timedelta(int(cell.text))
                 # Lotus incorrectly believes that 1900 was a leap year

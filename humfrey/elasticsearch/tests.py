@@ -1,3 +1,5 @@
+import json
+
 import copy
 import mock
 import unittest
@@ -105,15 +107,17 @@ class ResultsParserTestCase(unittest.TestCase):
 
         def sort_recursive(value):
             if isinstance(value, list):
-                for subvalue in value:
-                    sort_recursive(subvalue)
-                value.sort()
+                if all(isinstance(v, str) for v in value):
+                    value.sort()
+                else:
+                    for v in value:
+                        sort_recursive(v)
             elif isinstance(value, dict):
-                for subvalue in value.values():
-                    sort_recursive(subvalue)
+                for v in value.values():
+                    sort_recursive(v)
 
-        sort_recursive(actual)
-        sort_recursive(expected)
+        actual = json.dumps(sort_recursive(actual), sort_keys=True)
+        expected = json.dumps(sort_recursive(expected), sort_keys=True)
 
         self.assertEqual(actual, expected)
 
