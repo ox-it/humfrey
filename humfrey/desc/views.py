@@ -1,3 +1,4 @@
+from django_hosts import reverse_host
 from importlib import import_module
 
 import hashlib
@@ -10,7 +11,7 @@ import rdflib
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import resolve, Resolver404, reverse
+from django.core.urlresolvers import resolve, Resolver404
 
 from django_conneg import decorators
 from django_conneg.views import HTMLView, ContentNegotiatedView
@@ -121,7 +122,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
 
     @property
     def sparql_view_url(self):
-        return reverse('sparql:endpoint')
+        return reverse_host('data', 'sparql:endpoint')
 
     def get(self, request):
         additional_headers = {}
