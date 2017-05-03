@@ -10,7 +10,7 @@ import rdflib
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import resolve, Resolver404
+from django.core.urlresolvers import resolve, Resolver404, reverse
 
 from django_conneg import decorators
 from django_conneg.views import HTMLView, ContentNegotiatedView
@@ -119,6 +119,10 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
         self._doc_rdf_processors_cache = None
         super(DocView, self).__init__(*args, **kwargs)
 
+    @property
+    def sparql_view_url(self):
+        return reverse('sparql:endpoint', kwargs={'store': self.request.kwargs['store']})
+
     def get(self, request):
         additional_headers = {}
 
@@ -205,6 +209,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
             'datasets': [Resource(uri, graph, self.endpoint) for uri in datasets],
             'queries': list(map(self.endpoint.normalize_query, queries)),
             'template_name': self.template_name,
+            'sparql_view_url': self.sparql_view_url,
         })
 
         self.set_renderers()

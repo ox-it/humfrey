@@ -60,8 +60,14 @@ class StoreChooseMixin(object):
         else:
             return login_required(lambda request:None)(request)
 
+
 class DocView(StoreChooseMixin, desc_views.DocView):
     check_canonical = False
+
+    @property
+    def sparql_view_url(self):
+        return reverse('sparql-admin:query', kwargs={'store': self.request.kwargs['store']})
+
 
 class QueryView(StoreChooseMixin, QueryView):
     permission_requirements = {'get': 'sparql.query_store',
