@@ -200,6 +200,9 @@ class IndexUpdater(object):
 
     @classmethod
     def flatten_result(cls, results):
+        # Remove extraneous elements from latlon dicts
+        if isinstance(results, dict) and 'lat' in results and 'lon' in results:
+            return {'lat': results['lat'], 'lon': results['lon']}
         if results.get('_singleton'):
             for key, value in list(results.items()):
                 if not value or key in ('_singleton', 'id'):
