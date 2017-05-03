@@ -121,7 +121,7 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
 
     @property
     def sparql_view_url(self):
-        return reverse('sparql:endpoint', kwargs={'store': self.request.kwargs['store']})
+        return reverse('sparql:endpoint')
 
     def get(self, request):
         additional_headers = {}
