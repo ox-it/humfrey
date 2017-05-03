@@ -66,7 +66,7 @@ class DocView(StoreChooseMixin, desc_views.DocView):
 
     @property
     def sparql_view_url(self):
-        return reverse('sparql-admin:query', kwargs={'store': self.kwargs['store']})
+        return reverse('sparql-admin:query', kwargs={'store': self.store_name})
 
 
 class QueryView(StoreChooseMixin, QueryView):
