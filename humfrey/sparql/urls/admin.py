@@ -5,7 +5,7 @@ from humfrey.sparql.views import admin as admin_views
 urlpatterns = [
     url(r'^$', admin_views.IndexView.as_view(), name='index'),
     url(r'^(?P<store>[a-z\-]+)/query/$', admin_views.QueryView.as_view(default_timeout=10,
-                                    maximum_timeout=10), name='query'),
+                                    maximum_timeout=300), name='query'),
     url(r'^(?P<store>[a-z\-]+)/data/$', admin_views.GraphView.as_view(), name='data'),
     url(r'^(?P<store>[a-z\-]+)/view/$', admin_views.DocView.as_view(), name='view'),
 ]
