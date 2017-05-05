@@ -136,7 +136,7 @@ class OpenSearchView(ContentNegotiatedView):
                               title=self.opensearch_meta.get('LongName', 'Search')))
 
         for hit in context['hits']['hits']:
-            source = hit['source']
+            source = hit['_source']
             entry = ATOM.entry(
                 ATOM.title(source.get('label', '')),
                 ATOM.link(request.build_absolute_uri(hit['url'])),
