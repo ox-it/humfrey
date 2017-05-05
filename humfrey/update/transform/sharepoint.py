@@ -21,7 +21,7 @@ else:
             opener = get_opener(self.site_url, transform_manager.owner)
             site = sharepoint.SharePointSite(self.site_url, opener)
             
-            with open(transform_manager('xml'), 'w') as f:
+            with open(transform_manager('xml'), 'wb') as f:
                 xml = site.as_xml(**self.kwargs)
                 f.write(etree.tostring(xml))
                 return f.name
