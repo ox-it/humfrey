@@ -139,7 +139,7 @@ class OpenSearchView(ContentNegotiatedView):
             source = hit['_source']
             entry = ATOM.entry(
                 ATOM.title(source.get('label', '')),
-                ATOM.link(request.build_absolute_uri(hit['url'])),
+                ATOM.link(request.build_absolute_uri(hit['_url'])),
                 ATOM.updated(updated), # For want of something better
             )
             if 'uri' in source:
