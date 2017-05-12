@@ -52,7 +52,7 @@ class XMLRPCPingbackView(PingbackView):
         dispatcher.register_function(partial(self.ping, request), 'pingback:ping')
 
         response = HttpResponse(content_type="application/xml")
-        response.write(dispatcher._marshaled_dispatch(request.raw_post_data))
+        response.write(dispatcher._marshaled_dispatch(request.body))
         return response
 
     def ping(self, request, sourceURI, targetURI):

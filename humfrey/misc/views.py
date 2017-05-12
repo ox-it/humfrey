@@ -90,7 +90,7 @@ class PassThroughView(View):
         for k, v in self.get_headers(request, *args, **kwargs).items():
             conn.putheader(k, v)
         conn.endheaders()
-        conn.send(request.raw_post_data)
+        conn.send(request.body)
 
         http_response = conn.getresponse()
         
