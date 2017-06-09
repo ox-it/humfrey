@@ -86,7 +86,7 @@ class SearchNormalization(Normalization):
             query = {'query': {'query_string': {'query': query_string.replace('-', '')}}}
 
             try:
-                response = urllib.request.urlopen(elasticsearch_url, json.dumps(query))
+                response = urllib.request.urlopen(elasticsearch_url, json.dumps(query).encode())
             except urllib.error.HTTPError as e:
                 logger.error("HTTP error when searching",
                              exc_info=1,
