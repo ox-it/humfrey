@@ -300,6 +300,8 @@ class ProtectedQueryView(QueryView):
             return
         queries = list(map(self.unpack, client.mget([self.query_key.format(u) for u in uuids])))
         for query in queries:
+            if not query:
+                continue
             if 'started' in query:
                 query['intensity'] = max(self.minimum_query_intensity,
                                          time.time() - query['started'])

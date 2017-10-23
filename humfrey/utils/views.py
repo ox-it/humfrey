@@ -11,7 +11,8 @@ class RedisView(View):
         return base64.b64encode(pickle.dumps(value))
     @classmethod
     def unpack(self, value):
-        return pickle.loads(base64.b64decode(value))
+        if value:
+            return pickle.loads(base64.b64decode(value))
     @classmethod
     def get_redis_client(self):
         return redis.client.Redis(**settings.REDIS_PARAMS)
