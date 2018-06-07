@@ -152,7 +152,7 @@ class GraphVizView(RDFView, StoreView, MappingView):
             if layout not in self._DOT_LAYOUTS:
                 layout = 'fdp'
             template = loader.get_template(template_name + '.gv')
-            plain_gv = template.render(RequestContext(request, context))
+            plain_gv = template.render(context)
             dot = subprocess.Popen(['dot', '-K'+layout, '-T'+dot_output], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             dot_stdout, _ = dot.communicate(input=plain_gv.encode('utf-8'))
             response = HttpResponse(dot_stdout, content_type=output['mimetypes'][0])

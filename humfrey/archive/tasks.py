@@ -196,7 +196,7 @@ class DatasetArchiver(object):
         # partition as the timestamp before it.
         limits = [{'name': 'all',
                    'epoch': lambda dt: dt,
-                   'limit': today - datetime.timedelta(1)},
+                   'limit': today - datetime.timedelta(hours=3)},
                   {'name': 'daily',
                    'epoch': lambda dt: dt.replace(hour=0, minute=0, second=0, microsecond=0),
                    'limit': today.replace(day=1) - datetime.timedelta(today.isoweekday() % 7 - 7)},

@@ -57,7 +57,10 @@ class Uploader(object):
             path += '?' + graph_url.query
 
         with open(filename, 'rb') as f:
-
+            if (store.name == 'Research equipment'):
+                logger.warning("Uploader - store is %s", store)
+                logger.warning("Uploading %s", f.read())
+                f.seek(0)
             logger.debug("Opening connection to %s:%d", host, port)
 
             conn = http.client.HTTPConnection(host=host, port=port)

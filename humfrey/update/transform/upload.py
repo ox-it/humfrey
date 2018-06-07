@@ -39,7 +39,7 @@ class Upload(Transform):
         transform_manager.start(self, [input])
 
         logger.debug("Starting upload of %r", input)
-
+      
         extension = input.rsplit('.', 1)[-1]
         try:
             serializer = self.formats[extension]

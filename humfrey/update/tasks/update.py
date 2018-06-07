@@ -165,8 +165,10 @@ def update(update_log_id=None, slug=None, trigger=None):
                     logger.exception("Transform failed.")
                 except Exception:
                     logger.exception("Transform failed, perhaps ungracefully.")
-                finally:
+                else:
                     shutil.rmtree(output_directory)
+                finally:
+                    pass #shutil.rmtree(output_directory)
 
     updated = timezone.now()
     

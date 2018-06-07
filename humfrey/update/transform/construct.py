@@ -5,6 +5,7 @@ from humfrey.update.transform.base import Transform, TransformException
 from humfrey.sparql.endpoint import Endpoint
 from humfrey.streaming import serialize
 
+
 class Construct(Transform):
     def __init__(self, query):
         self.query = query
