@@ -38,8 +38,8 @@ class Upload(Transform):
     def execute(self, transform_manager, input):
         transform_manager.start(self, [input])
 
-        logger.debug("Starting upload of %r", input)
-      
+        logger.warn("Starting upload of %r", input)
+
         extension = input.rsplit('.', 1)[-1]
         try:
             serializer = self.formats[extension]
@@ -52,14 +52,14 @@ class Upload(Transform):
                     format=serializer,
                     publicID=self.graph_name)
 
-        logger.debug("Parsed graph")
+        logger.warn("Parsed graph")
 
         datetime_now = self.site_timezone.localize(datetime.datetime.now().replace(microsecond=0))
         modified = graph.value(self.graph_name, NS['dcterms'].modified,
                                default=rdflib.Literal(datetime_now))
         created = graph.value(self.graph_name, NS['dcterms'].created)
         if not created:
-            logger.debug("Getting created date from %r", transform_manager.store.query_endpoint)
+            logger.warn("Getting created date from %r", transform_manager.store.query_endpoint)
             endpoint = Endpoint(transform_manager.store.query_endpoint)
             results = list(endpoint.query(self.created_query % {'graph': self.graph_name.n3()}))
             if results:
@@ -73,13 +73,13 @@ class Upload(Transform):
             (self.graph_name, NS.dcterms.created, created),
         )
 
-        logger.debug("About to serialize")
+        logger.warn("About to serialize")
 
         output = transform_manager('rdf')
         with open(output, 'wb') as f:
             graph.serialize(f)
 
-        logger.debug("Serialization done; about to upload")
+        logger.warn("Serialization done; about to upload")
 
         uploader = Uploader()
         uploader.upload(stores=(transform_manager.store,),
@@ -88,7 +88,7 @@ class Upload(Transform):
                         method=self.method,
                         mimetype='application/rdf+xml')
 
-        logger.debug("Upload complete")
+        logger.warn("Upload complete")
 
         transform_manager.end([self.graph_name])
         transform_manager.touched_graph(self.graph_name)
