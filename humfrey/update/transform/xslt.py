@@ -40,6 +40,15 @@ class XSLT(Transform):
         else:
             template_filename = self.template.execute(transform_manager)
 
+        logger.warn("Template name %s", self.template)
+        if self.template == 'https://github.com/ox-it/dataox/raw/master/dataox/static/datasets/itservices/teams.xsl':
+            logger.warn("XSLT Processing Teams list")
+            with open(input, 'rb') as inputfile:
+                logger.warn('Teams input file: %s', inputfile.read(30000))
+        elif self.template == 'https://github.com/ox-it/dataox/raw/master/dataox/static/datasets/itservices/groups.xsl':
+            logger.warn("XSLT Processing User Information List")
+            with open(input, 'rb') as inputfile:
+                logger.warn('User info input file: %s', inputfile.read(30000))
         with open(transform_manager(self.extension), 'w') as output:
             with open(transform_manager('stderr'), 'w+b') as stderr:
                 transform_manager.start(self, [template_filename, input], type='xslt')
@@ -66,4 +75,13 @@ class XSLT(Transform):
                     raise TransformException
 
                 transform_manager.end([output.name])
+                logger.warn("Template filename %s", self.template)
+                if self.template == 'https://github.com/ox-it/dataox/raw/master/dataox/static/datasets/itservices/teams.xsl':
+                    logger.warn('XSLT Processed Teams list')
+                    with open(output.name, 'rb') as outputfile:
+                        logger.warn('Teams output file: %s', outputfile.read(30000))
+                elif self.template == 'https://github.com/ox-it/dataox/raw/master/dataox/static/datasets/itservices/groups.xsl':
+                    logger.warn("XSLT Processed User Information List")
+                    with open(output.name, 'rb') as outputfile:
+                        logger.warn('User info output file: %s', outputfile.read(30000))
                 return output.name
