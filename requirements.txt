@@ -4,9 +4,9 @@ django-conneg
 django_hosts
 django-guardian
 junitxml
-lxml
+lxml==3.7.3,<4.0
 mock
-Pillow
+Pillow==4.1.0
 python-dateutil
 python-memcached
 pytz
