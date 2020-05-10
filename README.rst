@@ -28,9 +28,9 @@ due course we plan to provide a simple demonstration site that will run out of
 the box.
 
 It requires a backing SPARQL endpoint to run queries against. The sites listed
-above use `Fuseki <http://openjena.org/wiki/Fuseki>`_, but it should work with
-any endpoint. If it doesn't, raise an issue in `the GitHub issue tracker
-<https://github.com/ox-it/humfrey/issues>`_.
+above use `Fuseki <http://jena.apache.org/documentation/fuseki2/index.html>`_,
+but it should work with any endpoint. If it doesn't, raise an issue in `the
+GitHub issue tracker <https://github.com/ox-it/humfrey/issues>`_.
 
 You will also need running ``memcached`` and ``redis`` instances.
 
