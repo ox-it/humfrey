@@ -47,12 +47,12 @@ class InboundPingback(models.Model):
     slug = models.CharField(max_length=40, primary_key=True)
     source = models.URLField()
     target = models.URLField()
-    
-    store = models.ForeignKey(Store)
+
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
 
     user_agent = models.TextField(blank=True)
     remote_addr = models.GenericIPAddressField()
-    user = models.ForeignKey(User, null=True, blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
