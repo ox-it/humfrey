@@ -3,7 +3,7 @@ import traceback
 from django import forms
 from django.forms.models import inlineformset_factory
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse, resolve
+from django.urls import reverse, resolve
 
 from .models import UpdateDefinition, UpdatePipeline
 from .utils import evaluate_pipeline

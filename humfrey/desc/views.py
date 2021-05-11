@@ -10,7 +10,7 @@ import rdflib
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import resolve, Resolver404
+from django.urls import resolve, Resolver404
 from django_hosts import reverse
 
 from django_conneg import decorators

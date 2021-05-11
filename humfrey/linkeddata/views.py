@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.views.generic import View
 
 from humfrey.linkeddata.mappingconf import set_id_mapping, set_doc_view, set_desc_view, set_resource_registry
