@@ -2,6 +2,8 @@ from django.conf.urls import url
 
 from humfrey.sparql.views import admin as admin_views
 
+app_name = "sparql-admin"
+
 urlpatterns = [
     url(r'^$', admin_views.IndexView.as_view(), name='index'),
     url(r'^(?P<store>[a-z\-]+)/query/$', admin_views.QueryView.as_view(default_timeout=10,

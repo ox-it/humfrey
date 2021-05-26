@@ -2,6 +2,8 @@ from django.conf.urls import url
 
 from humfrey.update import views
 
+app_name = "update"
+
 urlpatterns = [
     url(r'^$', views.IndexView.as_view(), {}, 'index'),
     url(r'^create/$', views.DefinitionDetailView.as_view(), name='definition-create'),
