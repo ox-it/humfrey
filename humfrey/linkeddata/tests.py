@@ -6,7 +6,7 @@ import unittest2
 import urllib.parse
 import rdflib
 
-from django.core.urlresolvers import set_urlconf
+from django.urls import set_urlconf
 from django_hosts.resolvers import reverse_host, get_host, reverse
 
 from humfrey.linkeddata import mappingconf, resource

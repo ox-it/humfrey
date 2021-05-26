@@ -10,7 +10,7 @@ import rdflib
 from django.conf import settings
 from django.http import Http404, HttpResponsePermanentRedirect
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import resolve, Resolver404
+from django.urls import resolve, Resolver404
 from django_hosts import reverse
 
 from django_conneg import decorators
@@ -273,12 +273,11 @@ class DocView(MappingView, StoreView, RDFView, JSONRDFView, HTMLView):
 #        for header in request.META:
 #            if header.startswith('
 #            req.headers[header] = request.headers[header]
-#            
+#
 #        try:
 #            resp = urllib2.urlopen(req)
 #        except urllib2.HTTPError, e:
 #            resp = e
 #        response = HttpResponse(response, status_code=e.code)
-#        
+#
 #        return response
-

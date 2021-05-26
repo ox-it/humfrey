@@ -12,7 +12,7 @@ except ImportError:
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from humfrey.sparql.models import Store
 from humfrey.update.utils import evaluate_pipeline
 
