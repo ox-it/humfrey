@@ -29,8 +29,8 @@ class Store(models.Model):
                        ('update_store', 'can update'))
 
 class UserPrivileges(models.Model):
-    user = models.ForeignKey(User, null=True, blank=True)
-    group = models.ForeignKey(Group, null=True, blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, null=True, blank=True, on_delete=models.CASCADE)
 
     allow_concurrent_queries = models.BooleanField()
     disable_throttle = models.BooleanField()

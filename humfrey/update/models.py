@@ -32,18 +32,18 @@ class UpdateDefinition(models.Model):
     title = models.CharField(max_length=80)
     description = models.TextField(blank=True)
 
-    owner = models.ForeignKey(User, related_name='owned_updates')
+    owner = models.ForeignKey(User, related_name='owned_updates', on_delete=models.CASCADE)
 
     cron_schedule = models.TextField(blank=True)
-    periodic_task = models.ForeignKey(PeriodicTask, null=True, blank=True)
+    periodic_task = models.ForeignKey(PeriodicTask, null=True, blank=True, on_delete=models.CASCADE)
 
     status = models.CharField(max_length=10, choices=DEFINITION_STATUS_CHOICES, default='idle')
-    last_log = models.ForeignKey('UpdateLog', null=True, blank=True)
+    last_log = models.ForeignKey('UpdateLog', null=True, blank=True, on_delete=models.CASCADE)
 
     last_queued = models.DateTimeField(null=True, blank=True)
     last_started = models.DateTimeField(null=True, blank=True)
     last_completed = models.DateTimeField(null=True, blank=True)
-    
+
     depends_on = models.ManyToManyField('self', symmetrical=False, blank=True)
 
     class Meta:
@@ -62,13 +62,13 @@ class UpdateDefinition(models.Model):
             raise UpdateDefinitionAlreadyQueued()
         self.status = 'queued'
         self.last_queued = datetime.datetime.now()
-    
+
         update_log = UpdateLog.objects.create(update_definition=self,
                                               user=user,
                                               trigger=trigger or '',
                                               queued=self.last_queued,
                                               forced=forced)
-    
+
         self.last_log = update_log
         self.save()
 
@@ -81,15 +81,15 @@ class UpdateDefinition(models.Model):
 
     def get_absolute_url(self):
         return reverse('update:definition-detail', args=[self.slug])
-    
+
     def __init__(self, *args, **kwargs):
         super(UpdateDefinition, self).__init__(*args, **kwargs)
         self._original_cron_schedule = self.cron_schedule
-    
+
     def save(self, *args, **kwargs):
         if self.cron_schedule != self._original_cron_schedule and self.cron_schedule:
             minute, hour, day_of_week = self.cron_schedule.split()[:3]
-            
+
             if not self.periodic_task:
                 periodic_task = PeriodicTask(task='humfrey.update.update',
                                                   kwargs=json.dumps({'slug': self.slug,
@@ -98,29 +98,29 @@ class UpdateDefinition(models.Model):
                                                   enabled=True)
                 periodic_task.save()
                 self.periodic_task = periodic_task
-                
+
             crontab = self.periodic_task.crontab or CrontabSchedule()
             crontab.minute = minute
             crontab.hour = hour
             crontab.day_of_week = day_of_week
             crontab.save()
-            
+
             self.periodic_task.crontab = crontab
             self.periodic_task.save()
-            
+
             super(UpdateDefinition, self).save(*args, **kwargs)
-            
+
         elif self.cron_schedule != self._original_cron_schedule and self.periodic_task:
             periodic_task, self.periodic_task = self.periodic_task, None
-            
+
             super(UpdateDefinition, self).save(*args, **kwargs)
-            
+
             periodic_task.crontab.delete()
             periodic_task.delete()
         else:
             super(UpdateDefinition, self).save(*args, **kwargs)
-        
-    
+
+
     def delete(self, *args, **kwargs):
         super(UpdateDefinition, self).delete(*args, **kwargs)
         if self.periodic_task:
@@ -162,8 +162,8 @@ class WithLevels(object):
 
 
 class UpdateLog(models.Model, WithLevels):
-    update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log")
-    user = models.ForeignKey(User, related_name='update_log', blank=True, null=True)
+    update_definition = models.ForeignKey(UpdateDefinition, related_name="update_log", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='update_log', blank=True, null=True, on_delete=models.CASCADE)
     forced = models.BooleanField(default=False)
 
     trigger = models.CharField(max_length=80, blank=True)
@@ -187,7 +187,7 @@ class UpdateLog(models.Model, WithLevels):
 
 
 class UpdatePipeline(models.Model):
-    update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines")
+    update_definition = models.ForeignKey(UpdateDefinition, related_name="pipelines", on_delete=models.CASCADE)
     value = models.TextField()
     stores = models.ManyToManyField(Store)
 
@@ -200,13 +200,13 @@ class UpdatePipeline(models.Model):
 
 
 class UpdateVariable(models.Model):
-    update_definition = models.ForeignKey(UpdateDefinition, related_name="variables")
+    update_definition = models.ForeignKey(UpdateDefinition, related_name="variables", on_delete=models.CASCADE)
     name = models.TextField()
     value = models.TextField()
 
 
 class Credential(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     url = models.CharField(max_length=4096, verbose_name="Base URL")
     username = models.CharField(max_length=128)
     password = models.CharField(max_length=4096)
