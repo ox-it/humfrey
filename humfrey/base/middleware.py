@@ -1,4 +1,6 @@
-class AccessControlAllowOriginMiddleware(object):
+from django.utils.deprecation import MiddlewareMixin
+
+class AccessControlAllowOriginMiddleware(MiddlewareMixin):
     """
     Implements the Access-Control-Allow-Origin: * header, as per
     https://developer.mozilla.org/En/HTTP_access_control#Access-Control-Allow-Origin
