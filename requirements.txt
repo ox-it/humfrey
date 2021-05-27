@@ -1,6 +1,5 @@
 Django>=2.2,<3.0
 django-celery-beat
-django-conneg
 django_hosts
 django-guardian
 junitxml
@@ -22,3 +21,4 @@ psycopg2
 pycrypto
 coloredlogs
 ansi2html
+-e git+git://github.com/ox-it/django-conneg#egg=django-conneg
