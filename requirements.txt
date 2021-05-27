@@ -4,7 +4,7 @@ django-conneg
 django_hosts
 django-guardian
 junitxml
-lxml==3.7.3,<4.0
+lxml
 mock
 Pillow==4.1.0
 python-dateutil
