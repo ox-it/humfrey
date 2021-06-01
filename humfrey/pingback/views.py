@@ -30,7 +30,7 @@ class PingbackView(StoreView):
 
         pingback.user_agent = request.META.get('HTTP_USER_AGENT')
         pingback.remote_addr = request.META['REMOTE_ADDR']
-        pingback.user = request.user if request.user.is_authenticated() else None
+        pingback.user = request.user if request.user.is_authenticated else None
         pingback.store = self.store
 
         pingback.queue()

@@ -268,7 +268,7 @@ class ProtectedQueryView(QueryView):
     query_key = 'humfrey:sparql:query:{0}'
 
     # For queries that haven't started, or which haven't been going very long,
-    # this is their (minimum) contribution towards the intensity 
+    # this is their (minimum) contribution towards the intensity
     minimum_query_intensity = 2
     # Intensity decays at this rate of seconds per second.
     intensity_decay = 0.05
@@ -289,7 +289,7 @@ class ProtectedQueryView(QueryView):
             self.intensity, self.threshold = intensity, threshold
 
     def get_user_key(self, request):
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             return request.user.id
         else:
             return request.META['REMOTE_ADDR']

@@ -55,7 +55,7 @@ class StoreChooseMixin(object):
         return super(StoreChooseMixin, self).dispatch(request, *args, **kwargs)
 
     def not_authorized(self, request):
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             raise PermissionDenied
         else:
             return login_required(lambda request:None)(request)
