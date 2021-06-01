@@ -29,7 +29,7 @@ def get_opener(url, user, username=None, password=None):
     password_manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
     if username and password:
         password_manager.add_password(None, url, username, password)
-    if user and user.is_authenticated():
+    if user and user.is_authenticated:
         for credential in user.credential_set.all():
             logger.debug("Adding credential %s %s", credential.url, credential.username)
             password_manager.add_password(None, credential.url, credential.username, credential.password)
@@ -97,7 +97,7 @@ def retrieve(url, headers=None, user=None, username=None, password=None, user_ag
             headers['sha256'] = h.hexdigest()
             headers['delete-after'] = False
             json.dump(headers, f)
-            
+
         headers['from-cache'] = False
         return filename, headers
 
