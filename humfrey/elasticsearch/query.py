@@ -37,10 +37,7 @@ class ElasticSearchEndpoint(object):
     
     @property
     def search_url(self):
-        if self.index:
-            path = '/{0}/{1}/_search'.format(self.store, self.index)
-        else:
-            path = '/{0}/_search'.format(self.store)
+        path = '/{0}/_search'.format(self.store)
         return urllib.parse.urlunsplit(('http',
                                         '{host}:{port}'.format(**settings.ELASTICSEARCH_SERVER),
                                         path, '', ''))
@@ -49,6 +46,7 @@ class ElasticSearchEndpoint(object):
         logger.debug("Query: %s", query)
         request = urllib.request.Request(self.search_url, json.dumps(query).encode())
         request.add_header("User-Agent", USER_AGENTS['agent'])
+        request.add_header("Content-Type", "application/json")
         reader = codecs.getreader('utf-8')
         try:
             response = json.load(reader(urllib.request.urlopen(request)))
