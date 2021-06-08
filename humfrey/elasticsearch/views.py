@@ -294,7 +294,7 @@ class SearchView(HTMLView, JSONPView, MappingView, OpenSearchView, StoreView):
         return results
 
     def get_pagination(self, page_size, page, start, results):
-        page_count = int(math.ceil(results['hits']['total'] / page_size))
+        page_count = int(math.ceil(results['hits']['total']['value'] / page_size))
         pages = set([1, page_count])
         pages.update(p for p in range(page-5, page+6) if 1 <= p <= page_count)
         pages = sorted(pages)
