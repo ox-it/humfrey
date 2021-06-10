@@ -245,8 +245,8 @@ class DatasetArchiver(object):
                 break
             last_timestamp = timestamp
 
-
-@shared_task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
+# We don't want to archive datasets anymore.
+#@shared_task(name='humfrey.archive.update_dataset_archives', ignore_result=True)
 def update_dataset_archives(store_graphs, when):
     if isinstance(when, str):
         when = dateutil.parser.parse(when)
