@@ -90,12 +90,12 @@ class IndexUpdater(object):
 
         result_count = 0
 
-        # ElasticSearch can only deal with requests up to 100MiB in size,
-        # so we'll write about 50MiB into each of a series of temporary files,
+        # ElasticSearch can only deal with requests up to 50MiB in size,
+        # so we'll write about 25MiB into each of a series of temporary files,
         # and then sent each file as a separate request to ElasticSearch.
         request_body_files, request_body_file = [], None
         for result in results:
-            if request_body_file is None or request_body_file.tell() >= 52428800:
+            if request_body_file is None or request_body_file.tell() >= 25000000:
                 request_body_file = tempfile.TemporaryFile()
                 request_body_files.append(request_body_file)
             request_body_file.write(result.encode())
@@ -104,15 +104,22 @@ class IndexUpdater(object):
         logger.info("Starting bulk update of index for %s/%s (%i files)",
                     store.slug, index.slug, len(request_body_files))
         for i, request_body_file in enumerate(request_body_files):
-            conn = http.client.HTTPConnection(**settings.ELASTICSEARCH_SERVER)
+            conn = http.client.HTTPConnection(settings.ELASTICSEARCH_SERVER['host'], settings.ELASTICSEARCH_SERVER['port'])
             conn.connect()
 
+            bulk_url = index.get_bulk_url(store, path=True)
             conn.putrequest('POST', index.get_bulk_url(store, path=True))
             conn.putheader("User-Agent", USER_AGENTS['agent'])
-            conn.putheader("Content-Length", str(request_body_file.tell()))
+            file_length = str(request_body_file.tell())
+            logger.info('Length of file to be submitted %s', file_length)
+            conn.putheader("Content-Length", file_length)
+            conn.putheader("Content-Type", "application/x-ndjson")
             conn.endheaders()
 
             request_body_file.seek(0)
+            firstline = request_body_file.readline()
+            request_body_file.seek(0)
+            logger.info('First line of file %s', firstline)
 
             logger.info("Uploading file %i/%i for %s/%s", i+1, len(request_body_files), store.slug, index.slug)
             conn.send(request_body_file)

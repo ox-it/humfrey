@@ -92,22 +92,22 @@ class Index(models.Model):
         return self._get_url(store, path, '/%(store)s')
 
     def get_index_delete_by_query_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/%(slug)s/_delete_by_query')
+        return self._get_url(store, path, '/%(store)s/_delete_by_query')
 
     def get_index_stats_url(self, store, path=False):
         return self._get_url(store, path, '/%(store)s/_stats')
 
     def get_type_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/%(slug)s')
+        return self._get_url(store, path, '/%(store)s/')
 
     def get_type_status_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/%(slug)s/_status')
+        return self._get_url(store, path, '/%(store)s/_status')
 
     def get_bulk_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/%(slug)s/_bulk')
+        return self._get_url(store, path, '/%(store)s/_bulk')
 
     def get_mapping_url(self, store, path=False):
-        return self._get_url(store, path, '/%(store)s/%(slug)s/_mapping')
+        return self._get_url(store, path, '/%(store)s/_mapping')
 
     class Meta:
         verbose_name_plural = 'indexes'
