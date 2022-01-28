@@ -282,7 +282,7 @@ def update_dataset_archives(store_graphs, when):
             archiver = DatasetArchiver(store, dataset, notation, when)
             archiver.archive()
 
-
-@receiver(update_completed)
-def update_completed_receiver(sender, store_graphs, when, **kwargs):
-    update_dataset_archives.delay(store_graphs, when)
+# Stop trying to trigger the dataset archive task altogether.
+# @receiver(update_completed)
+# def update_completed_receiver(sender, store_graphs, when, **kwargs):
+#     update_dataset_archives.delay(store_graphs, when)
