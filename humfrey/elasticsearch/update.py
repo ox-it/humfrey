@@ -7,6 +7,7 @@ import logging
 import tempfile
 import time
 import urllib.request, urllib.error, urllib.parse
+import requests
 
 import rdflib
 import redis
@@ -66,24 +67,18 @@ class IndexUpdater(object):
         if index.update_mapping:
             logger.debug("Mapping set to be updated for %s/%s", store.slug, index.slug)
             if index_exists:
-                request = urllib.request.Request(index.get_index_delete_by_query_url(store), data=json.dumps({
+                requests.post(index.get_index_delete_by_query_url(store), data=json.dumps({
                     'query': {
                         "match_all": {}
                     },
-                }).encode(), method='POST')
-                urllib.request.urlopen(request)
+                }).encode())
 
             if index.mapping:
                 logger.info("Updating mapping for %s/%s (%s)", store.slug, index.slug, index.get_mapping_url(store))
-                request = urllib.request.Request(index.get_mapping_url(store), index.mapping.encode())
-                request.get_method = lambda : 'PUT'
                 try:
-                    urllib.request.urlopen(request)
-                except urllib.request.HTTPError as e:
-                    if e.status == http.client.BAD_REQUEST:
-                        raise MappingUpdateFailed(json.load(e)) from e
-                    else:
-                        raise MappingUpdateFailed from e
+                    requests.put(index.get_mapping_url(store), data = index.mapping.encode())
+                except requests.exceptions.RequestException as e:
+                    raise MappingUpdateFailed from e
 
         results = self.parse_results(index, results)
         results = self.serialize_results(hash_key, results)
